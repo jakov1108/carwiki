@@ -1,0 +1,43 @@
+import { Route, Router } from "wouter";
+import { AuthProvider } from "./lib/auth";
+import Home from "./pages/Home";
+import Cars from "./pages/Cars";
+import CarDetail from "./pages/CarDetail";
+import Compare from "./pages/Compare";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Admin from "./pages/Admin";
+import Contact from "./pages/Contact";
+import About from "./pages/About";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+
+function App() {
+  return (
+    <AuthProvider>
+      <div className="min-h-screen flex flex-col bg-slate-950 text-white">
+        <Navbar />
+        <main className="flex-1">
+          <Router>
+            <Route path="/" component={Home} />
+            <Route path="/automobili" component={Cars} />
+            <Route path="/automobili/:id" component={CarDetail} />
+            <Route path="/usporedi" component={Compare} />
+            <Route path="/blog" component={Blog} />
+            <Route path="/blog/:id" component={BlogPost} />
+            <Route path="/prijava" component={Login} />
+            <Route path="/registracija" component={Register} />
+            <Route path="/admin" component={Admin} />
+            <Route path="/kontakt" component={Contact} />
+            <Route path="/o-nama" component={About} />
+          </Router>
+        </main>
+        <Footer />
+      </div>
+    </AuthProvider>
+  );
+}
+
+export default App;
