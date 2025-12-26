@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../lib/auth";
-import { Car, Menu, X, LogOut, UserCircle, Scale } from "lucide-react";
+import { Car, Menu, X, LogOut, UserCircle, Scale, PlusCircle } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -44,6 +44,10 @@ export default function Navbar() {
 
             {user ? (
               <>
+                <Link href="/predlozi-auto" className="flex items-center gap-1 text-green-400 hover:text-green-300 transition" data-testid="link-submit-car">
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Dodaj auto</span>
+                </Link>
                 {user.role === "admin" && (
                   <Link href="/admin" className="text-blue-400 hover:text-blue-300 transition font-medium" data-testid="link-admin">
                     Admin
@@ -133,6 +137,15 @@ export default function Navbar() {
 
               {user ? (
                 <>
+                  <Link 
+                    href="/predlozi-auto" 
+                    className="flex items-center gap-2 text-green-400 hover:text-green-300 transition py-2"
+                    data-testid="link-submit-car-mobile"
+                    onClick={closeMobileMenu}
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Dodaj auto</span>
+                  </Link>
                   {user.role === "admin" && (
                     <Link 
                       href="/admin" 

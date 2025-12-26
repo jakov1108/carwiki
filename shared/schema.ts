@@ -21,6 +21,9 @@ export const cars = pgTable("cars", {
   category: text("category").notNull(),
   videoUrl: text("video_url"),
   reliability: integer("reliability").notNull().default(3),
+  status: text("status").notNull().default("approved"), // pending, approved, rejected
+  submittedBy: text("submitted_by"), // user id who submitted
+  submittedByName: text("submitted_by_name"), // user name for display
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 

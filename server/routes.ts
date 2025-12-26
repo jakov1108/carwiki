@@ -59,10 +59,30 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/cars", async (_req: Request, res: Response) => {
     try {
-      const allCars = await storage.getCars();
+      const allCars = await storage.getCars(); // Returns only approved cars
       res.json(allCars);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch cars" });
+    }
+  });
+
+  // Get all cars including pending (admin only)
+  app.get("/api/cars/admin/all", isAdmin, async (_req: Request, res: Response) => {
+    try {
+      const allCars = await storage.getAllCars();
+      res.json(allCars);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch cars" });
+    }
+  });
+
+  // Get pending cars (admin only)
+  app.get("/api/cars/admin/pending", isAdmin, async (_req: Request, res: Response) => {
+    try {
+      const pendingCars = await storage.getPendingCars();
+      res.json(pendingCars);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pending cars" });
     }
   });
 
@@ -78,14 +98,50 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Admin creates car (auto-approved)
   app.post("/api/cars", isAdmin, async (req: Request, res: Response) => {
     try {
       const carData = insertCarSchema.parse(req.body);
-      const car = await storage.createCar(carData);
+      const car = await storage.createCar({ ...carData, status: "approved" });
       res.json(car);
     } catch (error: any) {
       const validationError = fromError(error);
       res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  // User submits car (pending approval)
+  app.post("/api/cars/submit", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const session = (req as any).session;
+      const carData = insertCarSchema.parse(req.body);
+      const car = await storage.createCar({
+        ...carData,
+        status: "pending",
+        submittedBy: session.user.id,
+        submittedByName: session.user.name || session.user.email,
+      });
+      res.json(car);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  // Approve or reject car (admin only)
+  app.post("/api/cars/:id/status", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      if (status !== "approved" && status !== "rejected") {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      const car = await storage.updateCarStatus(req.params.id, status);
+      if (!car) {
+        return res.status(404).json({ message: "Car not found" });
+      }
+      res.json(car);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update car status" });
     }
   });
 
@@ -187,7 +243,7 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/upload-image", isAdmin, (req: Request, res: Response) => {
+  app.post("/api/upload-image", isAuthenticated, (req: Request, res: Response) => {
     handleImageUpload(req, res);
   });
 

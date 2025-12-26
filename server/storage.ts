@@ -7,11 +7,22 @@ import {
   type InsertBlogPost,
   type InsertContactMessage,
 } from "../shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export const storage = {
+  // Get only approved cars (for public display)
   async getCars() {
+    return await db.select().from(cars).where(eq(cars.status, "approved")).orderBy(desc(cars.createdAt));
+  },
+
+  // Get all cars including pending (for admin)
+  async getAllCars() {
     return await db.select().from(cars).orderBy(desc(cars.createdAt));
+  },
+
+  // Get pending cars (for admin approval)
+  async getPendingCars() {
+    return await db.select().from(cars).where(eq(cars.status, "pending")).orderBy(desc(cars.createdAt));
   },
 
   async getCarById(id: string) {
@@ -28,6 +39,16 @@ export const storage = {
     const [car] = await db
       .update(cars)
       .set(data)
+      .where(eq(cars.id, id))
+      .returning();
+    return car;
+  },
+
+  // Approve or reject a car
+  async updateCarStatus(id: string, status: "approved" | "rejected") {
+    const [car] = await db
+      .update(cars)
+      .set({ status })
       .where(eq(cars.id, id))
       .returning();
     return car;

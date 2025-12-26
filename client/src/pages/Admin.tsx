@@ -3,20 +3,22 @@ import { useAuth } from "../lib/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { Car, BlogPost, ContactMessage } from "@shared/schema";
-import { Plus, Edit, Trash2, X } from "lucide-react";
+import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye } from "lucide-react";
 import { ObjectUploader } from "../components/ObjectUploader";
 
 export default function Admin() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"cars" | "blog" | "messages">("cars");
+  const [activeTab, setActiveTab] = useState<"cars" | "pending" | "blog" | "messages">("cars");
   const [showCarForm, setShowCarForm] = useState(false);
   const [showBlogForm, setShowBlogForm] = useState(false);
   const [editingCar, setEditingCar] = useState<Car | null>(null);
   const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
+  const [viewingCar, setViewingCar] = useState<Car | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: cars } = useQuery<Car[]>({ queryKey: ["/api/cars"] });
+  const { data: cars } = useQuery<Car[]>({ queryKey: ["/api/cars/admin/all"] });
+  const { data: pendingCars } = useQuery<Car[]>({ queryKey: ["/api/cars/admin/pending"] });
   const { data: posts } = useQuery<BlogPost[]>({ queryKey: ["/api/blog"] });
   const { data: messages } = useQuery<ContactMessage[]>({ queryKey: ["/api/contact"] });
 
@@ -25,7 +27,28 @@ export default function Admin() {
       const res = await fetch(`/api/cars/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/cars"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cars/admin/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cars/admin/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cars"] });
+    },
+  });
+
+  const updateCarStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
+      const res = await fetch(`/api/cars/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cars/admin/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cars/admin/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cars"] });
+    },
   });
 
   const deleteBlog = useMutation({
@@ -61,7 +84,23 @@ export default function Admin() {
           Admin Panel
         </h1>
 
-        <div className="flex space-x-2 mb-8">
+        <div className="flex flex-wrap gap-2 mb-8">
+          <button
+            onClick={() => setActiveTab("pending")}
+            className={`px-6 py-3 rounded-lg font-semibold transition relative ${
+              activeTab === "pending"
+                ? "bg-yellow-600 text-white"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <Clock className="w-4 h-4 inline mr-2" />
+            Na čekanju ({pendingCars?.length || 0})
+            {(pendingCars?.length || 0) > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                {pendingCars?.length}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setActiveTab("cars")}
             className={`px-6 py-3 rounded-lg font-semibold transition ${
@@ -70,7 +109,7 @@ export default function Admin() {
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
-            Automobili ({cars?.length || 0})
+            Automobili ({cars?.filter(c => (c as any).status === "approved").length || 0})
           </button>
           <button
             onClick={() => setActiveTab("blog")}
@@ -93,6 +132,83 @@ export default function Admin() {
             Poruke ({messages?.length || 0})
           </button>
         </div>
+
+        {activeTab === "pending" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 text-yellow-400">Automobili na čekanju</h2>
+            {pendingCars?.length === 0 ? (
+              <div className="bg-slate-800 p-8 rounded-lg text-center border border-slate-700">
+                <Clock className="w-12 h-12 mx-auto mb-4 text-slate-500" />
+                <p className="text-slate-400">Nema automobila na čekanju za odobrenje.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {pendingCars?.map((car) => (
+                  <div key={car.id} className="bg-slate-800 p-6 rounded-lg border border-yellow-500/50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex space-x-4">
+                        <img src={car.image} alt={car.model} className="w-32 h-32 object-cover rounded" />
+                        <div>
+                          <h3 className="text-xl font-bold">{car.brand} {car.model}</h3>
+                          <p className="text-slate-400">{car.year} - {car.category}</p>
+                          <p className="text-sm text-slate-500 mt-1">{car.engine} - {car.power}</p>
+                          <p className="text-sm text-slate-500">{car.description.substring(0, 100)}...</p>
+                          {(car as any).submittedByName && (
+                            <p className="text-xs text-blue-400 mt-2">
+                              Poslao: {(car as any).submittedByName}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <button
+                          onClick={() => setViewingCar(car)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded flex items-center space-x-2"
+                        >
+                          <Eye className="w-5 h-5" />
+                          <span>Pregledaj</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingCar(car);
+                            setShowCarForm(true);
+                          }}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded flex items-center space-x-2"
+                        >
+                          <Edit className="w-5 h-5" />
+                          <span>Uredi</span>
+                        </button>
+                        <button
+                          onClick={() => updateCarStatus.mutate({ id: car.id, status: "approved" })}
+                          disabled={updateCarStatus.isPending}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded flex items-center space-x-2 disabled:opacity-50"
+                        >
+                          <Check className="w-5 h-5" />
+                          <span>Odobri</span>
+                        </button>
+                        <button
+                          onClick={() => updateCarStatus.mutate({ id: car.id, status: "rejected" })}
+                          disabled={updateCarStatus.isPending}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center space-x-2 disabled:opacity-50"
+                        >
+                          <XCircle className="w-5 h-5" />
+                          <span>Odbij</span>
+                        </button>
+                        <button
+                          onClick={() => confirm("Jeste li sigurni?") && deleteCar.mutate(car.id)}
+                          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded flex items-center space-x-2"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                          <span>Obriši</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {activeTab === "cars" && (
           <div>
@@ -119,31 +235,77 @@ export default function Admin() {
               />
             )}
 
+            {viewingCar && (
+              <CarViewModal
+                car={viewingCar}
+                onClose={() => setViewingCar(null)}
+                onEdit={() => {
+                  setEditingCar(viewingCar);
+                  setShowCarForm(true);
+                  setViewingCar(null);
+                }}
+                onApprove={() => {
+                  updateCarStatus.mutate({ id: viewingCar.id, status: "approved" });
+                  setViewingCar(null);
+                }}
+                onReject={() => {
+                  updateCarStatus.mutate({ id: viewingCar.id, status: "rejected" });
+                  setViewingCar(null);
+                }}
+              />
+            )}
+
             <div className="grid gap-4">
               {cars?.map((car) => (
-                <div key={car.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                <div key={car.id} className={`bg-slate-800 p-6 rounded-lg border ${
+                  (car as any).status === "pending" 
+                    ? "border-yellow-500/50" 
+                    : (car as any).status === "rejected"
+                    ? "border-red-500/50"
+                    : "border-slate-700"
+                }`}>
                   <div className="flex justify-between items-start">
                     <div className="flex space-x-4">
                       <img src={car.image} alt={car.model} className="w-24 h-24 object-cover rounded" />
                       <div>
-                        <h3 className="text-xl font-bold">{car.brand} {car.model}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xl font-bold">{car.brand} {car.model}</h3>
+                          {(car as any).status && (car as any).status !== "approved" && (
+                            <span className={`px-2 py-0.5 rounded text-xs ${
+                              (car as any).status === "pending" 
+                                ? "bg-yellow-500/20 text-yellow-400" 
+                                : "bg-red-500/20 text-red-400"
+                            }`}>
+                              {(car as any).status === "pending" ? "Na čekanju" : "Odbijeno"}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-slate-400">{car.year} - {car.category}</p>
                         <p className="text-sm text-slate-500 mt-2">{car.engine} - {car.power}</p>
                       </div>
                     </div>
                     <div className="flex space-x-2">
                       <button
+                        onClick={() => setViewingCar(car)}
+                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded"
+                        title="Pregledaj"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                      <button
                         onClick={() => {
                           setEditingCar(car);
                           setShowCarForm(true);
                         }}
                         className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
+                        title="Uredi"
                       >
                         <Edit className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => confirm("Jeste li sigurni?") && deleteCar.mutate(car.id)}
                         className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                        title="Obriši"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -609,6 +771,154 @@ function BlogForm({ post, onClose }: { post: BlogPost | null; onClose: () => voi
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function CarViewModal({ 
+  car, 
+  onClose, 
+  onEdit, 
+  onApprove, 
+  onReject 
+}: { 
+  car: Car; 
+  onClose: () => void; 
+  onEdit: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-6 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">{car.brand} {car.model}</h2>
+            <p className="text-slate-400">{car.year} • {car.category}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {/* Main Image */}
+          <div className="mb-6">
+            <img 
+              src={car.image} 
+              alt={`${car.brand} ${car.model}`} 
+              className="w-full h-64 md:h-96 object-cover rounded-lg"
+            />
+          </div>
+
+          {/* Status Badge */}
+          {(car as any).status && (
+            <div className="mb-6">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                (car as any).status === "approved" 
+                  ? "bg-green-500/20 text-green-400" 
+                  : (car as any).status === "pending"
+                  ? "bg-yellow-500/20 text-yellow-400"
+                  : "bg-red-500/20 text-red-400"
+              }`}>
+                {(car as any).status === "approved" ? "Odobreno" : 
+                 (car as any).status === "pending" ? "Na čekanju" : "Odbijeno"}
+              </span>
+              {(car as any).submittedByName && (
+                <span className="ml-3 text-sm text-slate-400">
+                  Poslao: <span className="text-blue-400">{(car as any).submittedByName}</span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Description */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2 text-slate-300">Opis</h3>
+            <p className="text-slate-400 whitespace-pre-wrap">{car.description}</p>
+          </div>
+
+          {/* Specifications Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-slate-900 p-4 rounded-lg">
+              <p className="text-xs text-slate-500 uppercase">Motor</p>
+              <p className="text-lg font-semibold">{car.engine}</p>
+            </div>
+            <div className="bg-slate-900 p-4 rounded-lg">
+              <p className="text-xs text-slate-500 uppercase">Snaga</p>
+              <p className="text-lg font-semibold">{car.power}</p>
+            </div>
+            <div className="bg-slate-900 p-4 rounded-lg">
+              <p className="text-xs text-slate-500 uppercase">0-100 km/h</p>
+              <p className="text-lg font-semibold">{car.acceleration}</p>
+            </div>
+            <div className="bg-slate-900 p-4 rounded-lg">
+              <p className="text-xs text-slate-500 uppercase">Potrošnja</p>
+              <p className="text-lg font-semibold">{car.consumption}</p>
+            </div>
+            <div className="bg-slate-900 p-4 rounded-lg">
+              <p className="text-xs text-slate-500 uppercase">Pogon</p>
+              <p className="text-lg font-semibold">{car.driveType}</p>
+            </div>
+            <div className="bg-slate-900 p-4 rounded-lg">
+              <p className="text-xs text-slate-500 uppercase">Pouzdanost</p>
+              <p className="text-lg font-semibold">{car.reliability}/5</p>
+            </div>
+          </div>
+
+          {/* Video */}
+          {car.videoUrl && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2 text-slate-300">Video</h3>
+              <a 
+                href={car.videoUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                {car.videoUrl}
+              </a>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-700">
+            <button
+              onClick={onEdit}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center space-x-2"
+            >
+              <Edit className="w-5 h-5" />
+              <span>Uredi podatke</span>
+            </button>
+            {(car as any).status === "pending" && (
+              <>
+                <button
+                  onClick={onApprove}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg flex items-center space-x-2"
+                >
+                  <Check className="w-5 h-5" />
+                  <span>Odobri</span>
+                </button>
+                <button
+                  onClick={onReject}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg flex items-center space-x-2"
+                >
+                  <XCircle className="w-5 h-5" />
+                  <span>Odbij</span>
+                </button>
+              </>
+            )}
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg"
+            >
+              Zatvori
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
