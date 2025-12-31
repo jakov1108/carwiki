@@ -1,8 +1,10 @@
 import { Route, Router } from "wouter";
 import { AuthProvider } from "./lib/auth";
 import Home from "./pages/Home";
-import Cars from "./pages/Cars";
-import CarDetail from "./pages/CarDetail";
+import Models from "./pages/Models";
+import ModelDetail from "./pages/ModelDetail";
+import GenerationDetail from "./pages/GenerationDetail";
+import VariantDetail from "./pages/VariantDetail";
 import Compare from "./pages/Compare";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
@@ -11,7 +13,7 @@ import Register from "./pages/Register";
 import Admin from "./pages/Admin";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
-import SubmitCar from "./pages/SubmitCar";
+import SubmitVariant from "./pages/SubmitVariant";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -23,8 +25,10 @@ function App() {
         <main className="flex-1">
           <Router>
             <Route path="/" component={Home} />
-            <Route path="/automobili" component={Cars} />
-            <Route path="/automobili/:id" component={CarDetail} />
+            <Route path="/automobili" component={Models} />
+            <Route path="/automobili/:id" component={ModelDetail} />
+            <Route path="/generacija/:id" component={GenerationDetail} />
+            <Route path="/varijanta/:id" component={VariantDetail} />
             <Route path="/usporedi" component={Compare} />
             <Route path="/blog" component={Blog} />
             <Route path="/blog/:id" component={BlogPost} />
@@ -33,7 +37,7 @@ function App() {
             <Route path="/admin" component={Admin} />
             <Route path="/kontakt" component={Contact} />
             <Route path="/o-nama" component={About} />
-            <Route path="/predlozi-auto" component={SubmitCar} />
+            <Route path="/predlozi-auto" component={SubmitVariant} />
           </Router>
         </main>
         <Footer />

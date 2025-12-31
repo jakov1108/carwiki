@@ -4,6 +4,9 @@ import { auth } from "./auth";
 import { fromNodeHeaders } from "better-auth/node";
 import {
   insertCarSchema,
+  insertCarModelSchema,
+  insertCarGenerationSchema,
+  insertCarVariantSchema,
   insertBlogPostSchema,
   insertContactMessageSchema,
 } from "../shared/schema";
@@ -56,6 +59,245 @@ export function registerRoutes(app: Express) {
     
     res.json(session.user);
   });
+
+  // ========== CAR MODELS ==========
+  app.get("/api/models", async (_req: Request, res: Response) => {
+    try {
+      const models = await storage.getCarModels();
+      res.json(models);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car models" });
+    }
+  });
+
+  app.get("/api/models/:id", async (req: Request, res: Response) => {
+    try {
+      const model = await storage.getCarModelById(req.params.id);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+      res.json(model);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car model" });
+    }
+  });
+
+  app.post("/api/models", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const modelData = insertCarModelSchema.parse(req.body);
+      const model = await storage.createCarModel(modelData);
+      res.json(model);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.put("/api/models/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const modelData = insertCarModelSchema.partial().parse(req.body);
+      const model = await storage.updateCarModel(req.params.id, modelData);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+      res.json(model);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.delete("/api/models/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteCarModel(req.params.id);
+      res.json({ message: "Car model deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete car model" });
+    }
+  });
+
+  // ========== CAR GENERATIONS ==========
+  app.get("/api/generations", async (_req: Request, res: Response) => {
+    try {
+      const generations = await storage.getCarGenerations();
+      res.json(generations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car generations" });
+    }
+  });
+
+  app.get("/api/models/:modelId/generations", async (req: Request, res: Response) => {
+    try {
+      const generations = await storage.getCarGenerationsByModelId(req.params.modelId);
+      res.json(generations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car generations" });
+    }
+  });
+
+  app.get("/api/generations/:id", async (req: Request, res: Response) => {
+    try {
+      const generation = await storage.getCarGenerationById(req.params.id);
+      if (!generation) {
+        return res.status(404).json({ message: "Car generation not found" });
+      }
+      res.json(generation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car generation" });
+    }
+  });
+
+  app.post("/api/generations", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const generationData = insertCarGenerationSchema.parse(req.body);
+      const generation = await storage.createCarGeneration(generationData);
+      res.json(generation);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.put("/api/generations/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const generationData = insertCarGenerationSchema.partial().parse(req.body);
+      const generation = await storage.updateCarGeneration(req.params.id, generationData);
+      if (!generation) {
+        return res.status(404).json({ message: "Car generation not found" });
+      }
+      res.json(generation);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.delete("/api/generations/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteCarGeneration(req.params.id);
+      res.json({ message: "Car generation deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete car generation" });
+    }
+  });
+
+  // ========== CAR VARIANTS ==========
+  app.get("/api/variants", async (_req: Request, res: Response) => {
+    try {
+      const variants = await storage.getCarVariants();
+      res.json(variants);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car variants" });
+    }
+  });
+
+  app.get("/api/variants/admin/all", isAdmin, async (_req: Request, res: Response) => {
+    try {
+      const variants = await storage.getAllCarVariants();
+      res.json(variants);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car variants" });
+    }
+  });
+
+  app.get("/api/variants/admin/pending", isAdmin, async (_req: Request, res: Response) => {
+    try {
+      const variants = await storage.getPendingCarVariants();
+      res.json(variants);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pending car variants" });
+    }
+  });
+
+  app.get("/api/generations/:generationId/variants", async (req: Request, res: Response) => {
+    try {
+      const variants = await storage.getCarVariantsByGenerationId(req.params.generationId);
+      res.json(variants);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car variants" });
+    }
+  });
+
+  app.get("/api/variants/:id", async (req: Request, res: Response) => {
+    try {
+      const variant = await storage.getCarVariantById(req.params.id);
+      if (!variant) {
+        return res.status(404).json({ message: "Car variant not found" });
+      }
+      res.json(variant);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car variant" });
+    }
+  });
+
+  app.post("/api/variants", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const variantData = insertCarVariantSchema.parse(req.body);
+      const variant = await storage.createCarVariant({ ...variantData, status: "approved" });
+      res.json(variant);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.post("/api/variants/submit", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const session = (req as any).session;
+      const variantData = insertCarVariantSchema.parse(req.body);
+      const variant = await storage.createCarVariant({
+        ...variantData,
+        status: "pending",
+        submittedBy: session.user.id,
+        submittedByName: session.user.name || session.user.email,
+      });
+      res.json(variant);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.post("/api/variants/:id/status", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      if (status !== "approved" && status !== "rejected") {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      const variant = await storage.updateCarVariantStatus(req.params.id, status);
+      if (!variant) {
+        return res.status(404).json({ message: "Car variant not found" });
+      }
+      res.json(variant);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update car variant status" });
+    }
+  });
+
+  app.put("/api/variants/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const variantData = insertCarVariantSchema.partial().parse(req.body);
+      const variant = await storage.updateCarVariant(req.params.id, variantData);
+      if (!variant) {
+        return res.status(404).json({ message: "Car variant not found" });
+      }
+      res.json(variant);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.delete("/api/variants/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteCarVariant(req.params.id);
+      res.json({ message: "Car variant deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete car variant" });
+    }
+  });
+
+  // ========== LEGACY CAR ENDPOINTS (keeping for backward compatibility) ==========
 
   app.get("/api/cars", async (_req: Request, res: Response) => {
     try {

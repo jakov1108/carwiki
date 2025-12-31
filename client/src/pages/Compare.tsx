@@ -1,227 +1,414 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearch } from "wouter";
-import { X, Check, Search } from "lucide-react";
-import type { Car } from "@shared/schema";
+import { X, Check, ChevronDown, Fuel, Gauge, Zap, Settings, Car } from "lucide-react";
+import type { CarModel, CarGeneration, CarVariant } from "@shared/schema";
+
+interface VariantWithDetails extends CarVariant {
+  generation?: CarGeneration;
+  model?: CarModel;
+}
 
 export default function Compare() {
-  const search = useSearch();
-  const searchParams = new URLSearchParams(search);
-  const initialCarIds = searchParams.getAll('id');
+  const [selectedVariants, setSelectedVariants] = useState<VariantWithDetails[]>([]);
+  const [searchBrand, setSearchBrand] = useState("");
+  const [selectedModelId, setSelectedModelId] = useState("");
+  const [selectedGenerationId, setSelectedGenerationId] = useState("");
+  const [showSelector, setShowSelector] = useState(false);
 
-  const [selectedIds, setSelectedIds] = useState<string[]>(initialCarIds);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-
-  const { data: cars = [], isLoading } = useQuery<Car[]>({
-    queryKey: ["/api/cars"],
+  // Fetch all models
+  const { data: models = [] } = useQuery<CarModel[]>({
+    queryKey: ["/api/models"],
   });
 
-  useEffect(() => {
-    if (initialCarIds.length > 0 && selectedIds.length === 0) {
-      setSelectedIds(initialCarIds);
-    }
-  }, [initialCarIds]);
-
-  const selectedCars = cars.filter(car => selectedIds.includes(car.id));
-
-  const toggleCar = (carId: string) => {
-    if (selectedIds.includes(carId)) {
-      setSelectedIds(selectedIds.filter(id => id !== carId));
-    } else if (selectedIds.length < 3) {
-      setSelectedIds([...selectedIds, carId]);
-    }
-  };
-
-  const removeCar = (carId: string) => {
-    setSelectedIds(selectedIds.filter(id => id !== carId));
-  };
-
-  const categories = ["all", ...Array.from(new Set(cars.map(car => car.category)))];
-
-  const filteredCars = cars.filter(car => {
-    const matchesSearch = 
-      car.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      car.model.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || car.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+  // Fetch generations for selected model
+  const { data: generations = [] } = useQuery<CarGeneration[]>({
+    queryKey: ["/api/models", selectedModelId, "generations"],
+    queryFn: async () => {
+      const res = await fetch(`/api/models/${selectedModelId}/generations`);
+      if (!res.ok) throw new Error("Failed to fetch generations");
+      return res.json();
+    },
+    enabled: !!selectedModelId,
   });
+
+  // Fetch variants for selected generation
+  const { data: variants = [] } = useQuery<CarVariant[]>({
+    queryKey: ["/api/generations", selectedGenerationId, "variants"],
+    queryFn: async () => {
+      const res = await fetch(`/api/generations/${selectedGenerationId}/variants`);
+      if (!res.ok) throw new Error("Failed to fetch variants");
+      return res.json();
+    },
+    enabled: !!selectedGenerationId,
+  });
+
+  // Get unique brands
+  const brands = [...new Set(models.map(m => m.brand))].sort();
+  
+  // Get models for selected brand
+  const brandModels = searchBrand 
+    ? models.filter(m => m.brand === searchBrand).sort((a, b) => a.model.localeCompare(b.model))
+    : [];
+
+  const selectedModel = models.find(m => m.id === selectedModelId);
+  const selectedGeneration = generations.find(g => g.id === selectedGenerationId);
+
+  const addVariant = (variant: CarVariant) => {
+    if (selectedVariants.length >= 3) return;
+    if (selectedVariants.find(v => v.id === variant.id)) return;
+    
+    const variantWithDetails: VariantWithDetails = {
+      ...variant,
+      generation: selectedGeneration,
+      model: selectedModel,
+    };
+    
+    setSelectedVariants([...selectedVariants, variantWithDetails]);
+    // Reset selection
+    setSelectedGenerationId("");
+    setShowSelector(false);
+  };
+
+  const removeVariant = (variantId: string) => {
+    setSelectedVariants(selectedVariants.filter(v => v.id !== variantId));
+  };
+
+  const resetSelection = () => {
+    setSearchBrand("");
+    setSelectedModelId("");
+    setSelectedGenerationId("");
+  };
 
   const specs = [
-    { label: "Motor", key: "engine" as keyof Car },
-    { label: "Snaga", key: "power" as keyof Car },
-    { label: "Ubrzanje 0-100", key: "acceleration" as keyof Car },
-    { label: "Potrošnja", key: "consumption" as keyof Car },
-    { label: "Pogon", key: "driveType" as keyof Car },
-    { label: "Godina", key: "year" as keyof Car },
-    { label: "Kategorija", key: "category" as keyof Car },
+    { label: "Gorivo", key: "fuelType", icon: Fuel },
+    { label: "Snaga", key: "power", icon: Zap },
+    { label: "Okretni moment", key: "torque", icon: Settings },
+    { label: "Ubrzanje 0-100", key: "acceleration", icon: Gauge },
+    { label: "Max brzina", key: "topSpeed", icon: Gauge },
+    { label: "Potrošnja", key: "consumption", icon: Fuel },
+    { label: "Mjenjač", key: "transmission", icon: Settings },
+    { label: "Pogon", key: "driveType", icon: Car },
+    { label: "Obujam", key: "displacement", icon: Settings },
   ];
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="text-center">
-          <p className="text-lg text-slate-400">Učitavanje...</p>
-        </div>
-      </div>
-    );
-  }
+  // Helper to get best value for comparison
+  const getBestValue = (key: string): string | null => {
+    if (selectedVariants.length < 2) return null;
+    
+    const values = selectedVariants.map(v => {
+      const val = v[key as keyof CarVariant];
+      if (!val) return null;
+      // Extract number from string like "150 KS" -> 150
+      const match = String(val).match(/[\d.]+/);
+      return match ? parseFloat(match[0]) : null;
+    });
+
+    if (values.some(v => v === null)) return null;
+
+    // For these keys, higher is better
+    const higherIsBetter = ["power", "torque", "topSpeed"];
+    // For these keys, lower is better
+    const lowerIsBetter = ["acceleration", "consumption"];
+
+    if (higherIsBetter.includes(key)) {
+      const maxVal = Math.max(...(values as number[]));
+      const idx = values.indexOf(maxVal);
+      return selectedVariants[idx]?.id || null;
+    }
+    
+    if (lowerIsBetter.includes(key)) {
+      const minVal = Math.min(...(values as number[]));
+      const idx = values.indexOf(minVal);
+      return selectedVariants[idx]?.id || null;
+    }
+
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 py-8">
       <div className="max-w-7xl mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-2 text-white text-center" data-testid="text-page-title">
+        <h1 className="text-4xl font-bold mb-2 text-white text-center">
           Usporedba automobila
         </h1>
         <p className="text-slate-400 text-center mb-8">
-          Odaberite do 3 automobila za usporedbu ({selectedIds.length}/3 odabrano)
+          Odaberite do 3 varijante za usporedbu ({selectedVariants.length}/3 odabrano)
         </p>
 
-        {selectedCars.length > 0 && (
+        {/* Selected variants comparison */}
+        {selectedVariants.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-6 text-white" data-testid="text-comparison-title">
-              Usporedba
+            <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
+              <Gauge className="w-6 h-6 text-blue-400" />
+              Usporedba specifikacija
             </h2>
+            
             <div className="overflow-x-auto">
               <div className="inline-block min-w-full align-middle">
-                <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${selectedCars.length}, minmax(280px, 1fr))` }}>
-                  {selectedCars.map((car) => (
+                {/* Header cards */}
+                <div 
+                  className="grid gap-4 mb-6" 
+                  style={{ gridTemplateColumns: `200px repeat(${selectedVariants.length}, minmax(200px, 1fr))` }}
+                >
+                  <div></div>
+                  {selectedVariants.map((variant) => (
                     <div 
-                      key={car.id} 
-                      className="bg-slate-800 rounded-xl overflow-hidden shadow-xl"
-                      data-testid={`card-compare-${car.id}`}
+                      key={variant.id} 
+                      className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl overflow-hidden shadow-xl border border-slate-700"
                     >
                       <div className="p-4 relative">
                         <button
-                          className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                          onClick={() => removeCar(car.id)}
-                          data-testid={`button-remove-${car.id}`}
-                          aria-label="Ukloni automobil"
+                          className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors z-10"
+                          onClick={() => removeVariant(variant.id)}
+                          aria-label="Ukloni"
                         >
                           <X className="w-4 h-4" />
                         </button>
                         
-                        <img
-                          src={car.image}
-                          alt={`${car.brand} ${car.model}`}
-                          className="w-full h-36 object-cover rounded-lg mb-3"
-                          data-testid={`img-car-${car.id}`}
-                        />
+                        {variant.model && (
+                          <img
+                            src={variant.model.image}
+                            alt={`${variant.model.brand} ${variant.model.model}`}
+                            className="w-full h-28 object-cover rounded-lg mb-3"
+                          />
+                        )}
                         
-                        <h3 className="text-lg font-bold text-white mb-1" data-testid={`text-car-name-${car.id}`}>
-                          {car.brand} {car.model}
+                        <h3 className="text-base font-bold text-white mb-1">
+                          {variant.model?.brand} {variant.model?.model}
                         </h3>
-                        
-                        <span 
-                          className="inline-block px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded-full"
-                          data-testid={`badge-category-${car.id}`}
-                        >
-                          {car.category}
+                        <p className="text-sm text-slate-400 mb-2">
+                          {variant.generation?.name}
+                        </p>
+                        <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-sm font-medium rounded-full">
+                          {variant.engineName}
                         </span>
-                      </div>
-                      
-                      <div className="p-4 space-y-3 border-t border-slate-700">
-                        {specs.map((spec) => (
-                          <div key={String(spec.key)} className="flex flex-col">
-                            <span className="text-xs text-slate-400 mb-0.5">{spec.label}</span>
-                            <span 
-                              className="font-medium text-white text-sm" 
-                              data-testid={`text-${String(spec.key)}-${car.id}`}
-                            >
-                              {spec.key === 'year' ? car[spec.key] : car[spec.key] || '-'}
-                            </span>
-                          </div>
-                        ))}
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Specs comparison table */}
+                <div className="bg-slate-800/50 rounded-xl overflow-hidden border border-slate-700">
+                  {specs.map((spec, idx) => {
+                    const bestId = getBestValue(spec.key);
+                    const Icon = spec.icon;
+                    
+                    return (
+                      <div 
+                        key={spec.key}
+                        className={`grid gap-4 ${idx !== specs.length - 1 ? 'border-b border-slate-700' : ''}`}
+                        style={{ gridTemplateColumns: `200px repeat(${selectedVariants.length}, minmax(200px, 1fr))` }}
+                      >
+                        <div className="p-4 flex items-center gap-2 bg-slate-900/50">
+                          <Icon className="w-4 h-4 text-slate-400" />
+                          <span className="text-sm font-medium text-slate-300">{spec.label}</span>
+                        </div>
+                        {selectedVariants.map((variant) => {
+                          const value = variant[spec.key as keyof CarVariant];
+                          const isBest = bestId === variant.id;
+                          
+                          return (
+                            <div 
+                              key={variant.id} 
+                              className={`p-4 flex items-center justify-center ${isBest ? 'bg-green-500/10' : ''}`}
+                            >
+                              <span className={`text-sm font-medium ${isBest ? 'text-green-400' : 'text-white'}`}>
+                                {value || '-'}
+                              </span>
+                              {isBest && (
+                                <Check className="w-4 h-4 text-green-400 ml-2" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="border-t border-slate-800 pt-8">
-          <h2 className="text-2xl font-bold mb-6 text-white" data-testid="text-select-title">
-            Odaberite automobile
-          </h2>
+        {/* Add variant button */}
+        {selectedVariants.length < 3 && (
+          <div className="mb-8">
+            {!showSelector ? (
+              <button
+                onClick={() => setShowSelector(true)}
+                className="w-full p-6 border-2 border-dashed border-slate-700 rounded-xl text-slate-400 hover:text-white hover:border-blue-500 transition-all flex items-center justify-center gap-2"
+              >
+                <span className="text-2xl">+</span>
+                <span>Dodaj automobil za usporedbu</span>
+              </button>
+            ) : (
+              <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-white">Odaberi automobil</h3>
+                  <button
+                    onClick={() => {
+                      setShowSelector(false);
+                      resetSelection();
+                    }}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Pretraži automobile..."
-                value={searchQuery}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 py-2 pr-4 bg-slate-800 border border-slate-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                data-testid="input-search-compare"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    categoryFilter === cat
-                      ? "bg-blue-500 text-white"
-                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                  }`}
-                  data-testid={`button-filter-${cat}`}
-                >
-                  {cat === "all" ? "Sve kategorije" : cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {filteredCars.map((car) => {
-              const isSelected = selectedIds.includes(car.id);
-              const isDisabled = !isSelected && selectedIds.length >= 3;
-              
-              return (
-                <button
-                  key={car.id}
-                  onClick={() => !isDisabled && toggleCar(car.id)}
-                  disabled={isDisabled}
-                  className={`relative text-left rounded-lg overflow-hidden transition-all ${
-                    isSelected 
-                      ? "ring-2 ring-blue-500 bg-slate-800" 
-                      : isDisabled
-                        ? "opacity-50 cursor-not-allowed bg-slate-800/50"
-                        : "bg-slate-800 hover-elevate active-elevate-2 cursor-pointer"
-                  }`}
-                  data-testid={`button-select-car-${car.id}`}
-                >
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 z-10 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                      <Check className="w-3 h-3 text-white" />
-                    </div>
-                  )}
-                  <img
-                    src={car.image}
-                    alt={`${car.brand} ${car.model}`}
-                    className="w-full h-20 object-cover"
-                  />
-                  <div className="p-2">
-                    <p className="font-medium text-white text-xs truncate">
-                      {car.brand} {car.model}
-                    </p>
-                    <p className="text-slate-400 text-xs">{car.year}</p>
+                {/* Step indicators */}
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${searchBrand ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
+                    Marka
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                  <ChevronDown className="w-4 h-4 text-slate-600 rotate-[-90deg]" />
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${selectedModelId ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">2</span>
+                    Model
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-slate-600 rotate-[-90deg]" />
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${selectedGenerationId ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">3</span>
+                    Generacija
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-slate-600 rotate-[-90deg]" />
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-slate-700 text-slate-400`}>
+                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">4</span>
+                    Motor
+                  </div>
+                </div>
 
-          {filteredCars.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-slate-400">Nema automobila koji odgovaraju pretrazi</p>
+                <div className="grid md:grid-cols-4 gap-4">
+                  {/* Brand selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">Marka</label>
+                    <select
+                      value={searchBrand}
+                      onChange={(e) => {
+                        setSearchBrand(e.target.value);
+                        setSelectedModelId("");
+                        setSelectedGenerationId("");
+                      }}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">Odaberi marku</option>
+                      {brands.map(brand => (
+                        <option key={brand} value={brand}>{brand}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Model selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">Model</label>
+                    <select
+                      value={selectedModelId}
+                      onChange={(e) => {
+                        setSelectedModelId(e.target.value);
+                        setSelectedGenerationId("");
+                      }}
+                      disabled={!searchBrand}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                    >
+                      <option value="">Odaberi model</option>
+                      {brandModels.map(model => (
+                        <option key={model.id} value={model.id}>{model.model}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Generation selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-2">Generacija</label>
+                    <select
+                      value={selectedGenerationId}
+                      onChange={(e) => setSelectedGenerationId(e.target.value)}
+                      disabled={!selectedModelId}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                    >
+                      <option value="">Odaberi generaciju</option>
+                      {generations.map(gen => (
+                        <option key={gen.id} value={gen.id}>
+                          {gen.name} ({gen.yearStart}-{gen.yearEnd || 'danas'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Reset button */}
+                  <div className="flex items-end">
+                    <button
+                      onClick={resetSelection}
+                      className="w-full px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                    >
+                      Resetiraj
+                    </button>
+                  </div>
+                </div>
+
+                {/* Variant selection */}
+                {selectedGenerationId && variants.length > 0 && (
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-slate-400 mb-3">
+                      Odaberi motornu varijantu
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {variants.map(variant => {
+                        const isAlreadySelected = selectedVariants.find(v => v.id === variant.id);
+                        
+                        return (
+                          <button
+                            key={variant.id}
+                            onClick={() => !isAlreadySelected && addVariant(variant)}
+                            disabled={!!isAlreadySelected}
+                            className={`p-4 rounded-lg border text-left transition-all ${
+                              isAlreadySelected
+                                ? 'border-green-500 bg-green-500/10 cursor-not-allowed'
+                                : 'border-slate-600 bg-slate-900 hover:border-blue-500 hover:bg-slate-800'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-bold text-white">{variant.engineName}</span>
+                              {isAlreadySelected && <Check className="w-4 h-4 text-green-400" />}
+                            </div>
+                            <div className="space-y-1 text-xs text-slate-400">
+                              <p>{variant.power}</p>
+                              <p>{variant.fuelType}</p>
+                              <p>{variant.transmission}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {selectedGenerationId && variants.length === 0 && (
+                  <div className="mt-6 text-center py-8 text-slate-400">
+                    Nema dostupnih varijanti za ovu generaciju
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quick comparison suggestions */}
+        {selectedVariants.length === 0 && (
+          <div className="text-center py-12">
+            <Car className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2">Započnite usporedbu</h3>
+            <p className="text-slate-400 mb-6">
+              Kliknite na gumb iznad da dodate automobile koje želite usporediti
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 text-sm text-slate-500">
+              <span className="px-3 py-1 bg-slate-800 rounded-full">VW Golf GTI vs BMW 335i</span>
+              <span className="px-3 py-1 bg-slate-800 rounded-full">Audi A4 vs Mercedes C-Class</span>
+              <span className="px-3 py-1 bg-slate-800 rounded-full">Dizel vs Benzin</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

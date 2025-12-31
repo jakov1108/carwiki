@@ -2,41 +2,76 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../lib/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import type { Car, BlogPost, ContactMessage } from "@shared/schema";
-import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye } from "lucide-react";
+import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost, ContactMessage } from "@shared/schema";
+import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Settings } from "lucide-react";
 import { ObjectUploader } from "../components/ObjectUploader";
+
+type Tab = "models" | "generations" | "variants" | "pending" | "blog" | "messages";
 
 export default function Admin() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"cars" | "pending" | "blog" | "messages">("cars");
-  const [showCarForm, setShowCarForm] = useState(false);
-  const [showBlogForm, setShowBlogForm] = useState(false);
-  const [editingCar, setEditingCar] = useState<Car | null>(null);
-  const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
-  const [viewingCar, setViewingCar] = useState<Car | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("models");
   const queryClient = useQueryClient();
 
-  const { data: cars } = useQuery<Car[]>({ queryKey: ["/api/cars/admin/all"] });
-  const { data: pendingCars } = useQuery<Car[]>({ queryKey: ["/api/cars/admin/pending"] });
+  // Modal states
+  const [showModelForm, setShowModelForm] = useState(false);
+  const [showGenerationForm, setShowGenerationForm] = useState(false);
+  const [showVariantForm, setShowVariantForm] = useState(false);
+  const [showBlogForm, setShowBlogForm] = useState(false);
+  
+  const [editingModel, setEditingModel] = useState<CarModel | null>(null);
+  const [editingGeneration, setEditingGeneration] = useState<CarGenerationWithModel | null>(null);
+  const [editingVariant, setEditingVariant] = useState<CarVariantWithDetails | null>(null);
+  const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
+
+  // Data queries
+  const { data: models } = useQuery<CarModel[]>({ queryKey: ["/api/models"] });
+  const { data: generations } = useQuery<CarGenerationWithModel[]>({ queryKey: ["/api/generations"] });
+  const { data: variants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/all"] });
+  const { data: pendingVariants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/pending"] });
   const { data: posts } = useQuery<BlogPost[]>({ queryKey: ["/api/blog"] });
   const { data: messages } = useQuery<ContactMessage[]>({ queryKey: ["/api/contact"] });
 
-  const deleteCar = useMutation({
+  // Delete mutations
+  const deleteModel = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/cars/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/models/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cars/admin/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cars/admin/pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cars"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/models"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
     },
   });
 
-  const updateCarStatus = useMutation({
+  const deleteGeneration = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/generations/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
+    },
+  });
+
+  const deleteVariant = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/variants/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/pending"] });
+    },
+  });
+
+  const updateVariantStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
-      const res = await fetch(`/api/cars/${id}/status`, {
+      const res = await fetch(`/api/variants/${id}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -45,9 +80,9 @@ export default function Admin() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cars/admin/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cars/admin/pending"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cars"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/pending"] });
     },
   });
 
@@ -84,36 +119,60 @@ export default function Admin() {
           Admin Panel
         </h1>
 
+        {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-2 mb-8">
           <button
             onClick={() => setActiveTab("pending")}
-            className={`px-6 py-3 rounded-lg font-semibold transition relative ${
+            className={`px-4 py-2 rounded-lg font-semibold transition relative flex items-center gap-2 ${
               activeTab === "pending"
                 ? "bg-yellow-600 text-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
-            <Clock className="w-4 h-4 inline mr-2" />
-            Na čekanju ({pendingCars?.length || 0})
-            {(pendingCars?.length || 0) > 0 && (
+            <Clock className="w-4 h-4" />
+            Na čekanju ({pendingVariants?.length || 0})
+            {(pendingVariants?.length || 0) > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {pendingCars?.length}
+                {pendingVariants?.length}
               </span>
             )}
           </button>
           <button
-            onClick={() => setActiveTab("cars")}
-            className={`px-6 py-3 rounded-lg font-semibold transition ${
-              activeTab === "cars"
+            onClick={() => setActiveTab("models")}
+            className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 ${
+              activeTab === "models"
                 ? "bg-blue-600 text-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
-            Automobili ({cars?.filter(c => (c as any).status === "approved").length || 0})
+            <Car className="w-4 h-4" />
+            Modeli ({models?.length || 0})
+          </button>
+          <button
+            onClick={() => setActiveTab("generations")}
+            className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 ${
+              activeTab === "generations"
+                ? "bg-blue-600 text-white"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            Generacije ({generations?.length || 0})
+          </button>
+          <button
+            onClick={() => setActiveTab("variants")}
+            className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 ${
+              activeTab === "variants"
+                ? "bg-blue-600 text-white"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            Varijante ({variants?.filter(v => v.status === "approved").length || 0})
           </button>
           <button
             onClick={() => setActiveTab("blog")}
-            className={`px-6 py-3 rounded-lg font-semibold transition ${
+            className={`px-4 py-2 rounded-lg font-semibold transition ${
               activeTab === "blog"
                 ? "bg-blue-600 text-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -123,7 +182,7 @@ export default function Admin() {
           </button>
           <button
             onClick={() => setActiveTab("messages")}
-            className={`px-6 py-3 rounded-lg font-semibold transition ${
+            className={`px-4 py-2 rounded-lg font-semibold transition ${
               activeTab === "messages"
                 ? "bg-blue-600 text-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -133,45 +192,56 @@ export default function Admin() {
           </button>
         </div>
 
+        {/* Pending Variants Tab */}
         {activeTab === "pending" && (
           <div>
-            <h2 className="text-2xl font-bold mb-6 text-yellow-400">Automobili na čekanju</h2>
-            {pendingCars?.length === 0 ? (
+            <h2 className="text-2xl font-bold mb-6 text-yellow-400">Varijante na čekanju</h2>
+            {pendingVariants?.length === 0 ? (
               <div className="bg-slate-800 p-8 rounded-lg text-center border border-slate-700">
                 <Clock className="w-12 h-12 mx-auto mb-4 text-slate-500" />
-                <p className="text-slate-400">Nema automobila na čekanju za odobrenje.</p>
+                <p className="text-slate-400">Nema varijanti na čekanju za odobrenje.</p>
               </div>
             ) : (
               <div className="grid gap-4">
-                {pendingCars?.map((car) => (
-                  <div key={car.id} className="bg-slate-800 p-6 rounded-lg border border-yellow-500/50">
+                {pendingVariants?.map((variant) => (
+                  <div key={variant.id} className="bg-slate-800 p-6 rounded-lg border border-yellow-500/50">
                     <div className="flex justify-between items-start">
-                      <div className="flex space-x-4">
-                        <img src={car.image} alt={car.model} className="w-32 h-32 object-cover rounded" />
-                        <div>
-                          <h3 className="text-xl font-bold">{car.brand} {car.model}</h3>
-                          <p className="text-slate-400">{car.year} - {car.category}</p>
-                          <p className="text-sm text-slate-500 mt-1">{car.engine} - {car.power}</p>
-                          <p className="text-sm text-slate-500">{car.description.substring(0, 100)}...</p>
-                          {(car as any).submittedByName && (
-                            <p className="text-xs text-blue-400 mt-2">
-                              Poslao: {(car as any).submittedByName}
-                            </p>
-                          )}
-                        </div>
+                      <div>
+                        <h3 className="text-xl font-bold">
+                          {variant.model?.brand} {variant.model?.model} {variant.generation?.name}
+                        </h3>
+                        <p className="text-lg text-blue-400">{variant.engineName}</p>
+                        <p className="text-slate-400">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
+                        <p className="text-sm text-slate-500 mt-2">
+                          Pogon: {variant.driveType} • Ubrzanje: {variant.acceleration} • Potrošnja: {variant.consumption}
+                        </p>
+                        {variant.submittedByName && (
+                          <p className="text-xs text-blue-400 mt-2">
+                            Poslao: {variant.submittedByName}
+                          </p>
+                        )}
                       </div>
                       <div className="flex flex-col space-y-2">
                         <button
-                          onClick={() => setViewingCar(car)}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded flex items-center space-x-2"
+                          onClick={() => updateVariantStatus.mutate({ id: variant.id, status: "approved" })}
+                          disabled={updateVariantStatus.isPending}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded flex items-center space-x-2 disabled:opacity-50"
                         >
-                          <Eye className="w-5 h-5" />
-                          <span>Pregledaj</span>
+                          <Check className="w-5 h-5" />
+                          <span>Odobri</span>
+                        </button>
+                        <button
+                          onClick={() => updateVariantStatus.mutate({ id: variant.id, status: "rejected" })}
+                          disabled={updateVariantStatus.isPending}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center space-x-2 disabled:opacity-50"
+                        >
+                          <XCircle className="w-5 h-5" />
+                          <span>Odbij</span>
                         </button>
                         <button
                           onClick={() => {
-                            setEditingCar(car);
-                            setShowCarForm(true);
+                            setEditingVariant(variant);
+                            setShowVariantForm(true);
                           }}
                           className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded flex items-center space-x-2"
                         >
@@ -179,23 +249,7 @@ export default function Admin() {
                           <span>Uredi</span>
                         </button>
                         <button
-                          onClick={() => updateCarStatus.mutate({ id: car.id, status: "approved" })}
-                          disabled={updateCarStatus.isPending}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded flex items-center space-x-2 disabled:opacity-50"
-                        >
-                          <Check className="w-5 h-5" />
-                          <span>Odobri</span>
-                        </button>
-                        <button
-                          onClick={() => updateCarStatus.mutate({ id: car.id, status: "rejected" })}
-                          disabled={updateCarStatus.isPending}
-                          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center space-x-2 disabled:opacity-50"
-                        >
-                          <XCircle className="w-5 h-5" />
-                          <span>Odbij</span>
-                        </button>
-                        <button
-                          onClick={() => confirm("Jeste li sigurni?") && deleteCar.mutate(car.id)}
+                          onClick={() => confirm("Jeste li sigurni?") && deleteVariant.mutate(variant.id)}
                           className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded flex items-center space-x-2"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -210,92 +264,39 @@ export default function Admin() {
           </div>
         )}
 
-        {activeTab === "cars" && (
+        {/* Models Tab */}
+        {activeTab === "models" && (
           <div>
             <div className="mb-6">
               <button
                 onClick={() => {
-                  setEditingCar(null);
-                  setShowCarForm(true);
+                  setEditingModel(null);
+                  setShowModelForm(true);
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2"
               >
                 <Plus className="w-5 h-5" />
-                <span>Dodaj Automobil</span>
+                <span>Dodaj Model</span>
               </button>
             </div>
 
-            {showCarForm && (
-              <CarForm
-                car={editingCar}
-                onClose={() => {
-                  setShowCarForm(false);
-                  setEditingCar(null);
-                }}
-              />
-            )}
-
-            {viewingCar && (
-              <CarViewModal
-                car={viewingCar}
-                onClose={() => setViewingCar(null)}
-                onEdit={() => {
-                  setEditingCar(viewingCar);
-                  setShowCarForm(true);
-                  setViewingCar(null);
-                }}
-                onApprove={() => {
-                  updateCarStatus.mutate({ id: viewingCar.id, status: "approved" });
-                  setViewingCar(null);
-                }}
-                onReject={() => {
-                  updateCarStatus.mutate({ id: viewingCar.id, status: "rejected" });
-                  setViewingCar(null);
-                }}
-              />
-            )}
-
             <div className="grid gap-4">
-              {cars?.map((car) => (
-                <div key={car.id} className={`bg-slate-800 p-6 rounded-lg border ${
-                  (car as any).status === "pending" 
-                    ? "border-yellow-500/50" 
-                    : (car as any).status === "rejected"
-                    ? "border-red-500/50"
-                    : "border-slate-700"
-                }`}>
+              {models?.map((model) => (
+                <div key={model.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700">
                   <div className="flex justify-between items-start">
                     <div className="flex space-x-4">
-                      <img src={car.image} alt={car.model} className="w-24 h-24 object-cover rounded" />
+                      <img src={model.image} alt={model.model} className="w-24 h-24 object-cover rounded" />
                       <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-bold">{car.brand} {car.model}</h3>
-                          {(car as any).status && (car as any).status !== "approved" && (
-                            <span className={`px-2 py-0.5 rounded text-xs ${
-                              (car as any).status === "pending" 
-                                ? "bg-yellow-500/20 text-yellow-400" 
-                                : "bg-red-500/20 text-red-400"
-                            }`}>
-                              {(car as any).status === "pending" ? "Na čekanju" : "Odbijeno"}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-slate-400">{car.year} - {car.category}</p>
-                        <p className="text-sm text-slate-500 mt-2">{car.engine} - {car.power}</p>
+                        <h3 className="text-xl font-bold">{model.brand} {model.model}</h3>
+                        <p className="text-slate-400">{model.category}</p>
+                        <p className="text-sm text-slate-500 mt-2 line-clamp-2">{model.description}</p>
                       </div>
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => setViewingCar(car)}
-                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded"
-                        title="Pregledaj"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button
                         onClick={() => {
-                          setEditingCar(car);
-                          setShowCarForm(true);
+                          setEditingModel(model);
+                          setShowModelForm(true);
                         }}
                         className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
                         title="Uredi"
@@ -303,7 +304,7 @@ export default function Admin() {
                         <Edit className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => confirm("Jeste li sigurni?") && deleteCar.mutate(car.id)}
+                        onClick={() => confirm("Obrisati će se i sve generacije i varijante! Jeste li sigurni?") && deleteModel.mutate(model.id)}
                         className="p-2 bg-red-600 hover:bg-red-700 rounded"
                         title="Obriši"
                       >
@@ -317,6 +318,135 @@ export default function Admin() {
           </div>
         )}
 
+        {/* Generations Tab */}
+        {activeTab === "generations" && (
+          <div>
+            <div className="mb-6">
+              <button
+                onClick={() => {
+                  setEditingGeneration(null);
+                  setShowGenerationForm(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Dodaj Generaciju</span>
+              </button>
+            </div>
+
+            <div className="grid gap-4">
+              {generations?.map((gen) => (
+                <div key={gen.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                  <div className="flex justify-between items-start">
+                    <div className="flex space-x-4">
+                      <img src={gen.image} alt={gen.name} className="w-24 h-24 object-cover rounded" />
+                      <div>
+                        <h3 className="text-xl font-bold">
+                          {gen.model?.brand} {gen.model?.model} - {gen.name}
+                        </h3>
+                        <p className="text-slate-400">
+                          {gen.yearStart} - {gen.yearEnd || "danas"}
+                        </p>
+                        <p className="text-sm text-slate-500 mt-2 line-clamp-2">{gen.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingGeneration(gen);
+                          setShowGenerationForm(true);
+                        }}
+                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
+                        title="Uredi"
+                      >
+                        <Edit className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => confirm("Obrisati će se i sve varijante! Jeste li sigurni?") && deleteGeneration.mutate(gen.id)}
+                        className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                        title="Obriši"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Variants Tab */}
+        {activeTab === "variants" && (
+          <div>
+            <div className="mb-6">
+              <button
+                onClick={() => {
+                  setEditingVariant(null);
+                  setShowVariantForm(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Dodaj Varijantu</span>
+              </button>
+            </div>
+
+            <div className="grid gap-4">
+              {variants?.map((variant) => (
+                <div key={variant.id} className={`bg-slate-800 p-6 rounded-lg border ${
+                  variant.status === "pending" 
+                    ? "border-yellow-500/50" 
+                    : variant.status === "rejected"
+                    ? "border-red-500/50"
+                    : "border-slate-700"
+                }`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold">
+                          {variant.model?.brand} {variant.model?.model} {variant.generation?.name}
+                        </h3>
+                        {variant.status !== "approved" && (
+                          <span className={`px-2 py-0.5 rounded text-xs ${
+                            variant.status === "pending" 
+                              ? "bg-yellow-500/20 text-yellow-400" 
+                              : "bg-red-500/20 text-red-400"
+                          }`}>
+                            {variant.status === "pending" ? "Na čekanju" : "Odbijeno"}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-lg text-blue-400">{variant.engineName}</p>
+                      <p className="text-slate-400">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingVariant(variant);
+                          setShowVariantForm(true);
+                        }}
+                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
+                        title="Uredi"
+                      >
+                        <Edit className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => confirm("Jeste li sigurni?") && deleteVariant.mutate(variant.id)}
+                        className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                        title="Obriši"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Blog Tab */}
         {activeTab === "blog" && (
           <div>
             <div className="mb-6">
@@ -331,16 +461,6 @@ export default function Admin() {
                 <span>Dodaj Blog Post</span>
               </button>
             </div>
-
-            {showBlogForm && (
-              <BlogForm
-                post={editingBlog}
-                onClose={() => {
-                  setShowBlogForm(false);
-                  setEditingBlog(null);
-                }}
-              />
-            )}
 
             <div className="grid gap-4">
               {posts?.map((post) => (
@@ -378,6 +498,7 @@ export default function Admin() {
           </div>
         )}
 
+        {/* Messages Tab */}
         {activeTab === "messages" && (
           <div className="grid gap-4">
             {messages?.map((message) => (
@@ -392,34 +513,71 @@ export default function Admin() {
             ))}
           </div>
         )}
+
+        {/* Forms */}
+        {showModelForm && (
+          <ModelForm
+            model={editingModel}
+            onClose={() => {
+              setShowModelForm(false);
+              setEditingModel(null);
+            }}
+          />
+        )}
+
+        {showGenerationForm && (
+          <GenerationForm
+            generation={editingGeneration}
+            models={models || []}
+            onClose={() => {
+              setShowGenerationForm(false);
+              setEditingGeneration(null);
+            }}
+          />
+        )}
+
+        {showVariantForm && (
+          <VariantForm
+            variant={editingVariant}
+            generations={generations || []}
+            onClose={() => {
+              setShowVariantForm(false);
+              setEditingVariant(null);
+            }}
+          />
+        )}
+
+        {showBlogForm && (
+          <BlogForm
+            post={editingBlog}
+            onClose={() => {
+              setShowBlogForm(false);
+              setEditingBlog(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function CarForm({ car, onClose }: { car: Car | null; onClose: () => void }) {
+// ========== FORMS ==========
+
+function ModelForm({ model, onClose }: { model: CarModel | null; onClose: () => void }) {
   const [formData, setFormData] = useState({
-    brand: car?.brand || "",
-    model: car?.model || "",
-    year: car?.year || new Date().getFullYear(),
-    description: car?.description || "",
-    image: car?.image || "",
-    engine: car?.engine || "",
-    power: car?.power || "",
-    acceleration: car?.acceleration || "",
-    consumption: car?.consumption || "",
-    driveType: car?.driveType || "",
-    category: car?.category || "Compact",
-    videoUrl: car?.videoUrl || "",
-    reliability: car?.reliability || 3,
+    brand: model?.brand || "",
+    model: model?.model || "",
+    category: model?.category || "Compact",
+    image: model?.image || "",
+    description: model?.description || "",
   });
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const saveCar = useMutation({
+  const saveModel = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const url = car ? `/api/cars/${car.id}` : "/api/cars";
-      const method = car ? "PUT" : "POST";
+      const url = model ? `/api/models/${model.id}` : "/api/models";
+      const method = model ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -433,7 +591,7 @@ function CarForm({ car, onClose }: { car: Car | null; onClose: () => void }) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cars"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/models"] });
       onClose();
     },
     onError: (err: Error) => {
@@ -445,111 +603,404 @@ function CarForm({ car, onClose }: { car: Car | null; onClose: () => void }) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">{car ? "Uredi" : "Dodaj"} Automobil</h2>
+          <h2 className="text-2xl font-bold">{model ? "Uredi" : "Dodaj"} Model</h2>
           <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            saveCar.mutate(formData);
-          }}
-          className="space-y-4"
-        >
+        <form onSubmit={(e) => { e.preventDefault(); saveModel.mutate(formData); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Marka</label>
+              <label className="block text-sm font-medium mb-2">Marka *</label>
               <input
                 type="text"
                 value={formData.brand}
                 onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                 required
+                placeholder="npr. Volkswagen, BMW"
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Model</label>
+              <label className="block text-sm font-medium mb-2">Model *</label>
               <input
                 type="text"
                 value={formData.model}
                 onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                 required
+                placeholder="npr. Golf, 3 Series"
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
               />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Godina</label>
-              <input
-                type="number"
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                required
-                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Kategorija</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
-              >
-                <option>Compact</option>
-                <option>Sedan</option>
-                <option>SUV</option>
-                <option>Sports</option>
-                <option>Electric</option>
-              </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Opis</label>
+            <label className="block text-sm font-medium mb-2">Kategorija *</label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+            >
+              <option>Compact</option>
+              <option>Sedan</option>
+              <option>SUV</option>
+              <option>Sports</option>
+              <option>Electric</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Opis *</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               required
               rows={3}
+              placeholder="Kratki opis modela..."
               className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Slika</label>
+            <label className="block text-sm font-medium mb-2">Slika *</label>
             <ObjectUploader
               currentImage={formData.image}
               onUploadComplete={(imagePath) => setFormData({ ...formData, image: imagePath })}
             />
-            {formData.image && (
-              <p className="text-xs text-slate-500 mt-1">
-                Trenutna slika: {formData.image.startsWith("/uploads/") ? "Uploadana slika" : formData.image}
-              </p>
-            )}
+          </div>
+
+          {error && (
+            <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              disabled={saveModel.isPending || !formData.image}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
+            >
+              {saveModel.isPending ? "Spremam..." : "Spremi"}
+            </button>
+            <button type="button" onClick={onClose} className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg">
+              Odustani
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function GenerationForm({ 
+  generation, 
+  models, 
+  onClose 
+}: { 
+  generation: CarGenerationWithModel | null; 
+  models: CarModel[];
+  onClose: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    modelId: generation?.modelId || "",
+    name: generation?.name || "",
+    yearStart: generation?.yearStart || new Date().getFullYear(),
+    yearEnd: generation?.yearEnd || null as number | null,
+    image: generation?.image || "",
+    description: generation?.description || "",
+  });
+  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const saveGeneration = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const url = generation ? `/api/generations/${generation.id}` : "/api/generations";
+      const method = generation ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Greška: ${res.status}`);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
+      onClose();
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">{generation ? "Uredi" : "Dodaj"} Generaciju</h2>
+          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); saveGeneration.mutate(formData); }} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Model *</label>
+            <select
+              value={formData.modelId}
+              onChange={(e) => setFormData({ ...formData, modelId: e.target.value })}
+              required
+              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+            >
+              <option value="">Odaberi model...</option>
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.brand} {m.model}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Naziv generacije *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              placeholder="npr. MK7, E90, B8"
+              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Motor</label>
+              <label className="block text-sm font-medium mb-2">Godina početka *</label>
               <input
-                type="text"
-                value={formData.engine}
-                onChange={(e) => setFormData({ ...formData, engine: e.target.value })}
+                type="number"
+                value={formData.yearStart}
+                onChange={(e) => setFormData({ ...formData, yearStart: parseInt(e.target.value) })}
                 required
+                min="1900"
+                max={new Date().getFullYear() + 2}
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Snaga</label>
+              <label className="block text-sm font-medium mb-2">Godina kraja (prazno ako se proizvodi)</label>
+              <input
+                type="number"
+                value={formData.yearEnd || ""}
+                onChange={(e) => setFormData({ ...formData, yearEnd: e.target.value ? parseInt(e.target.value) : null })}
+                min="1900"
+                max={new Date().getFullYear() + 2}
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Opis *</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              required
+              rows={3}
+              placeholder="Opis ove generacije..."
+              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Slika *</label>
+            <ObjectUploader
+              currentImage={formData.image}
+              onUploadComplete={(imagePath) => setFormData({ ...formData, image: imagePath })}
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              disabled={saveGeneration.isPending || !formData.image || !formData.modelId}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
+            >
+              {saveGeneration.isPending ? "Spremam..." : "Spremi"}
+            </button>
+            <button type="button" onClick={onClose} className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg">
+              Odustani
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function VariantForm({ 
+  variant, 
+  generations, 
+  onClose 
+}: { 
+  variant: CarVariantWithDetails | null; 
+  generations: CarGenerationWithModel[];
+  onClose: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    generationId: variant?.generationId || "",
+    engineName: variant?.engineName || "",
+    engineCode: variant?.engineCode || "",
+    displacement: variant?.displacement || "",
+    fuelType: variant?.fuelType || "Benzin",
+    power: variant?.power || "",
+    torque: variant?.torque || "",
+    acceleration: variant?.acceleration || "",
+    topSpeed: variant?.topSpeed || "",
+    consumption: variant?.consumption || "",
+    transmission: variant?.transmission || "",
+    driveType: variant?.driveType || "FWD",
+    videoUrl: variant?.videoUrl || "",
+    reliability: variant?.reliability || 3,
+  });
+  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const saveVariant = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const url = variant ? `/api/variants/${variant.id}` : "/api/variants";
+      const method = variant ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Greška: ${res.status}`);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/pending"] });
+      onClose();
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">{variant ? "Uredi" : "Dodaj"} Varijantu</h2>
+          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); saveVariant.mutate(formData); }} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Generacija *</label>
+            <select
+              value={formData.generationId}
+              onChange={(e) => setFormData({ ...formData, generationId: e.target.value })}
+              required
+              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+            >
+              <option value="">Odaberi generaciju...</option>
+              {generations.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.model?.brand} {g.model?.model} - {g.name} ({g.yearStart}-{g.yearEnd || "danas"})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Oznaka motora *</label>
+              <input
+                type="text"
+                value={formData.engineName}
+                onChange={(e) => setFormData({ ...formData, engineName: e.target.value })}
+                required
+                placeholder="npr. 2.0 TDI, 1.4 TSI"
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Kod motora</label>
+              <input
+                type="text"
+                value={formData.engineCode}
+                onChange={(e) => setFormData({ ...formData, engineCode: e.target.value })}
+                placeholder="npr. CRLB, CZEA"
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Zapremnina</label>
+              <input
+                type="text"
+                value={formData.displacement}
+                onChange={(e) => setFormData({ ...formData, displacement: e.target.value })}
+                placeholder="npr. 1968 ccm"
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Vrsta goriva *</label>
+              <select
+                value={formData.fuelType}
+                onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              >
+                <option>Benzin</option>
+                <option>Dizel</option>
+                <option>Hibrid</option>
+                <option>Električni</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Snaga *</label>
               <input
                 type="text"
                 value={formData.power}
                 onChange={(e) => setFormData({ ...formData, power: e.target.value })}
                 required
+                placeholder="npr. 150 KS"
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Moment</label>
+              <input
+                type="text"
+                value={formData.torque}
+                onChange={(e) => setFormData({ ...formData, torque: e.target.value })}
+                placeholder="npr. 340 Nm"
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
               />
             </div>
@@ -557,22 +1008,23 @@ function CarForm({ car, onClose }: { car: Car | null; onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Ubrzanje</label>
+              <label className="block text-sm font-medium mb-2">Ubrzanje (0-100) *</label>
               <input
                 type="text"
                 value={formData.acceleration}
                 onChange={(e) => setFormData({ ...formData, acceleration: e.target.value })}
                 required
+                placeholder="npr. 8.6s"
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Potrošnja</label>
+              <label className="block text-sm font-medium mb-2">Max brzina</label>
               <input
                 type="text"
-                value={formData.consumption}
-                onChange={(e) => setFormData({ ...formData, consumption: e.target.value })}
-                required
+                value={formData.topSpeed}
+                onChange={(e) => setFormData({ ...formData, topSpeed: e.target.value })}
+                placeholder="npr. 216 km/h"
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
               />
             </div>
@@ -580,25 +1032,55 @@ function CarForm({ car, onClose }: { car: Car | null; onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Pogon</label>
+              <label className="block text-sm font-medium mb-2">Potrošnja *</label>
               <input
                 type="text"
-                value={formData.driveType}
-                onChange={(e) => setFormData({ ...formData, driveType: e.target.value })}
+                value={formData.consumption}
+                onChange={(e) => setFormData({ ...formData, consumption: e.target.value })}
                 required
+                placeholder="npr. 4.5L/100km"
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Pouzdanost (1-5)</label>
+              <label className="block text-sm font-medium mb-2">Mjenjač *</label>
               <input
-                type="number"
-                min="1"
-                max="5"
+                type="text"
+                value={formData.transmission}
+                onChange={(e) => setFormData({ ...formData, transmission: e.target.value })}
+                required
+                placeholder="npr. 6-brzinski ručni, 7-DSG"
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Pogon *</label>
+              <select
+                value={formData.driveType}
+                onChange={(e) => setFormData({ ...formData, driveType: e.target.value })}
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              >
+                <option>FWD</option>
+                <option>RWD</option>
+                <option>AWD</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Pouzdanost (1-5)</label>
+              <select
                 value={formData.reliability}
                 onChange={(e) => setFormData({ ...formData, reliability: parseInt(e.target.value) })}
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
-              />
+              >
+                <option value={1}>1 - Loše</option>
+                <option value={2}>2 - Ispod prosjeka</option>
+                <option value={3}>3 - Prosječno</option>
+                <option value={4}>4 - Dobro</option>
+                <option value={5}>5 - Odlično</option>
+              </select>
             </div>
           </div>
 
@@ -608,6 +1090,7 @@ function CarForm({ car, onClose }: { car: Car | null; onClose: () => void }) {
               type="url"
               value={formData.videoUrl}
               onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+              placeholder="https://youtube.com/watch?v=..."
               className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
             />
           </div>
@@ -621,16 +1104,12 @@ function CarForm({ car, onClose }: { car: Car | null; onClose: () => void }) {
           <div className="flex space-x-4">
             <button
               type="submit"
-              disabled={saveCar.isPending}
+              disabled={saveVariant.isPending || !formData.generationId}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
             >
-              {saveCar.isPending ? "Spremam..." : "Spremi"}
+              {saveVariant.isPending ? "Spremam..." : "Spremi"}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg"
-            >
+            <button type="button" onClick={onClose} className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg">
               Odustani
             </button>
           </div>
@@ -680,13 +1159,7 @@ function BlogForm({ post, onClose }: { post: BlogPost | null; onClose: () => voi
           </button>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            saveBlog.mutate(formData);
-          }}
-          className="space-y-4"
-        >
+        <form onSubmit={(e) => { e.preventDefault(); saveBlog.mutate(formData); }} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2">Naslov</label>
             <input
@@ -762,163 +1235,11 @@ function BlogForm({ post, onClose }: { post: BlogPost | null; onClose: () => voi
             >
               {saveBlog.isPending ? "Spremam..." : "Spremi"}
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg"
-            >
+            <button type="button" onClick={onClose} className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg">
               Odustani
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-}
-
-function CarViewModal({ 
-  car, 
-  onClose, 
-  onEdit, 
-  onApprove, 
-  onReject 
-}: { 
-  car: Car; 
-  onClose: () => void; 
-  onEdit: () => void;
-  onApprove: () => void;
-  onReject: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold">{car.brand} {car.model}</h2>
-            <p className="text-slate-400">{car.year} • {car.category}</p>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {/* Main Image */}
-          <div className="mb-6">
-            <img 
-              src={car.image} 
-              alt={`${car.brand} ${car.model}`} 
-              className="w-full h-64 md:h-96 object-cover rounded-lg"
-            />
-          </div>
-
-          {/* Status Badge */}
-          {(car as any).status && (
-            <div className="mb-6">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                (car as any).status === "approved" 
-                  ? "bg-green-500/20 text-green-400" 
-                  : (car as any).status === "pending"
-                  ? "bg-yellow-500/20 text-yellow-400"
-                  : "bg-red-500/20 text-red-400"
-              }`}>
-                {(car as any).status === "approved" ? "Odobreno" : 
-                 (car as any).status === "pending" ? "Na čekanju" : "Odbijeno"}
-              </span>
-              {(car as any).submittedByName && (
-                <span className="ml-3 text-sm text-slate-400">
-                  Poslao: <span className="text-blue-400">{(car as any).submittedByName}</span>
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Description */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2 text-slate-300">Opis</h3>
-            <p className="text-slate-400 whitespace-pre-wrap">{car.description}</p>
-          </div>
-
-          {/* Specifications Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-slate-900 p-4 rounded-lg">
-              <p className="text-xs text-slate-500 uppercase">Motor</p>
-              <p className="text-lg font-semibold">{car.engine}</p>
-            </div>
-            <div className="bg-slate-900 p-4 rounded-lg">
-              <p className="text-xs text-slate-500 uppercase">Snaga</p>
-              <p className="text-lg font-semibold">{car.power}</p>
-            </div>
-            <div className="bg-slate-900 p-4 rounded-lg">
-              <p className="text-xs text-slate-500 uppercase">0-100 km/h</p>
-              <p className="text-lg font-semibold">{car.acceleration}</p>
-            </div>
-            <div className="bg-slate-900 p-4 rounded-lg">
-              <p className="text-xs text-slate-500 uppercase">Potrošnja</p>
-              <p className="text-lg font-semibold">{car.consumption}</p>
-            </div>
-            <div className="bg-slate-900 p-4 rounded-lg">
-              <p className="text-xs text-slate-500 uppercase">Pogon</p>
-              <p className="text-lg font-semibold">{car.driveType}</p>
-            </div>
-            <div className="bg-slate-900 p-4 rounded-lg">
-              <p className="text-xs text-slate-500 uppercase">Pouzdanost</p>
-              <p className="text-lg font-semibold">{car.reliability}/5</p>
-            </div>
-          </div>
-
-          {/* Video */}
-          {car.videoUrl && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2 text-slate-300">Video</h3>
-              <a 
-                href={car.videoUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:underline"
-              >
-                {car.videoUrl}
-              </a>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-700">
-            <button
-              onClick={onEdit}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center space-x-2"
-            >
-              <Edit className="w-5 h-5" />
-              <span>Uredi podatke</span>
-            </button>
-            {(car as any).status === "pending" && (
-              <>
-                <button
-                  onClick={onApprove}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg flex items-center space-x-2"
-                >
-                  <Check className="w-5 h-5" />
-                  <span>Odobri</span>
-                </button>
-                <button
-                  onClick={onReject}
-                  className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg flex items-center space-x-2"
-                >
-                  <XCircle className="w-5 h-5" />
-                  <span>Odbij</span>
-                </button>
-              </>
-            )}
-            <button
-              onClick={onClose}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg"
-            >
-              Zatvori
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

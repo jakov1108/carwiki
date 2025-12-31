@@ -6,6 +6,80 @@ import { z } from "zod";
 // Re-export auth schema types
 export { user, session, account, verification, type SafeUser } from "./auth-schema";
 
+// ========== CAR MODELS (Brand + Model Name) ==========
+// npr. VW Golf, BMW 3 Series, Audi A4
+export const carModels = pgTable("car_models", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brand: text("brand").notNull(),
+  model: text("model").notNull(),
+  category: text("category").notNull(), // Compact, Sedan, SUV, Sports, Electric
+  image: text("image").notNull(), // Glavna slika modela
+  description: text("description").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertCarModelSchema = createInsertSchema(carModels).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCarModel = z.infer<typeof insertCarModelSchema>;
+export type CarModel = typeof carModels.$inferSelect;
+
+// ========== CAR GENERATIONS ==========
+// npr. Golf MK7, Golf MK8, BMW E90, BMW F30
+export const carGenerations = pgTable("car_generations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  modelId: varchar("model_id").notNull().references(() => carModels.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // npr. "MK7", "E90", "B8"
+  yearStart: integer("year_start").notNull(),
+  yearEnd: integer("year_end"), // null ako se još proizvodi
+  image: text("image").notNull(),
+  description: text("description").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertCarGenerationSchema = createInsertSchema(carGenerations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCarGeneration = z.infer<typeof insertCarGenerationSchema>;
+export type CarGeneration = typeof carGenerations.$inferSelect;
+
+// ========== CAR VARIANTS (Engine configurations) ==========
+// npr. Golf MK7 2.0 TDI 150 KS, Golf MK7 1.4 TSI 125 KS
+export const carVariants = pgTable("car_variants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  generationId: varchar("generation_id").notNull().references(() => carGenerations.id, { onDelete: "cascade" }),
+  engineName: text("engine_name").notNull(), // npr. "2.0 TDI", "1.4 TSI"
+  engineCode: text("engine_code"), // npr. "CRLB", "CZEA"
+  displacement: text("displacement"), // npr. "1968 ccm"
+  fuelType: text("fuel_type").notNull(), // Benzin, Dizel, Hibrid, Električni
+  power: text("power").notNull(), // npr. "150 KS"
+  torque: text("torque"), // npr. "340 Nm"
+  acceleration: text("acceleration").notNull(), // npr. "8.6s"
+  topSpeed: text("top_speed"), // npr. "216 km/h"
+  consumption: text("consumption").notNull(), // npr. "4.5L/100km"
+  transmission: text("transmission").notNull(), // npr. "6-brzinski ručni", "7-DSG"
+  driveType: text("drive_type").notNull(), // FWD, RWD, AWD
+  videoUrl: text("video_url"),
+  reliability: integer("reliability").notNull().default(3),
+  status: text("status").notNull().default("approved"), // pending, approved, rejected
+  submittedBy: text("submitted_by"),
+  submittedByName: text("submitted_by_name"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertCarVariantSchema = createInsertSchema(carVariants).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCarVariant = z.infer<typeof insertCarVariantSchema>;
+export type CarVariant = typeof carVariants.$inferSelect;
+
+// ========== LEGACY: Keep old cars table for migration compatibility ==========
 export const cars = pgTable("cars", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   brand: text("brand").notNull(),
@@ -21,9 +95,9 @@ export const cars = pgTable("cars", {
   category: text("category").notNull(),
   videoUrl: text("video_url"),
   reliability: integer("reliability").notNull().default(3),
-  status: text("status").notNull().default("approved"), // pending, approved, rejected
-  submittedBy: text("submitted_by"), // user id who submitted
-  submittedByName: text("submitted_by_name"), // user name for display
+  status: text("status").notNull().default("approved"),
+  submittedBy: text("submitted_by"),
+  submittedByName: text("submitted_by_name"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -34,6 +108,16 @@ export const insertCarSchema = createInsertSchema(cars).omit({
 
 export type InsertCar = z.infer<typeof insertCarSchema>;
 export type Car = typeof cars.$inferSelect;
+
+// ========== Extended types for frontend with joined data ==========
+export type CarGenerationWithModel = CarGeneration & {
+  model: CarModel;
+};
+
+export type CarVariantWithDetails = CarVariant & {
+  generation: CarGeneration;
+  model: CarModel;
+};
 
 export const blogPosts = pgTable("blog_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
