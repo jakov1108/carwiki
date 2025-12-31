@@ -485,6 +485,15 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.delete("/api/contact/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteContactMessage(req.params.id);
+      res.json({ message: "Contact message deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete contact message" });
+    }
+  });
+
   app.post("/api/upload-image", isAuthenticated, (req: Request, res: Response) => {
     handleImageUpload(req, res);
   });

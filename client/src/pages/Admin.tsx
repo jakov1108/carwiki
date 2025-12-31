@@ -94,6 +94,14 @@ export default function Admin() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/blog"] }),
   });
 
+  const deleteMessage = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/contact/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/contact"] }),
+  });
+
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
       setLocation("/");
@@ -501,16 +509,31 @@ export default function Admin() {
         {/* Messages Tab */}
         {activeTab === "messages" && (
           <div className="grid gap-4">
-            {messages?.map((message) => (
-              <div key={message.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-                <div className="mb-2">
-                  <h3 className="font-bold">{message.name}</h3>
-                  <p className="text-sm text-slate-400">{message.email}</p>
-                  <p className="text-xs text-slate-500">{new Date(message.date).toLocaleString('hr-HR')}</p>
-                </div>
-                <p className="text-slate-300 mt-4">{message.message}</p>
+            {messages?.length === 0 ? (
+              <div className="bg-slate-800 p-8 rounded-lg text-center border border-slate-700">
+                <p className="text-slate-400">Nema poruka.</p>
               </div>
-            ))}
+            ) : (
+              messages?.map((message) => (
+                <div key={message.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                  <div className="flex justify-between items-start">
+                    <div className="mb-2">
+                      <h3 className="font-bold">{message.name}</h3>
+                      <p className="text-sm text-slate-400">{message.email}</p>
+                      <p className="text-xs text-slate-500">{new Date(message.date).toLocaleString('hr-HR')}</p>
+                    </div>
+                    <button
+                      onClick={() => confirm("Jeste li sigurni da želite obrisati ovu poruku?") && deleteMessage.mutate(message.id)}
+                      className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                      title="Obriši poruku"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <p className="text-slate-300 mt-4">{message.message}</p>
+                </div>
+              ))
+            )}
           </div>
         )}
 

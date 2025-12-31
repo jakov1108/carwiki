@@ -253,4 +253,8 @@ export const storage = {
       .returning();
     return message;
   },
+
+  async deleteContactMessage(id: string) {
+    await db.delete(contactMessages).where(eq(contactMessages.id, id));
+  },
 };
