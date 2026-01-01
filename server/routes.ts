@@ -520,9 +520,13 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.get("/api/blog/:id", async (req: Request, res: Response) => {
+  app.get("/api/blog/:slug", async (req: Request, res: Response) => {
     try {
-      const post = await storage.getBlogPostById(req.params.id);
+      // Try to find by slug first, then by ID for backwards compatibility
+      let post = await storage.getBlogPostBySlug(req.params.slug);
+      if (!post) {
+        post = await storage.getBlogPostById(req.params.slug);
+      }
       if (!post) {
         return res.status(404).json({ message: "Blog post not found" });
       }

@@ -25,7 +25,7 @@ export default function Blog() {
 
         <div className="grid md:grid-cols-2 gap-8">
           {posts?.map((post) => (
-            <Link key={post.id} href={`/blog/${post.id}`} className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition">
+            <Link key={post.id} href={`/blog/${post.slug || post.id}`} className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition">
               <img
                 src={post.image}
                 alt={post.title}

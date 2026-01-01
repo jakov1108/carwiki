@@ -4,13 +4,13 @@ import type { BlogPost } from "@shared/schema";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 
 export default function BlogPostPage() {
-  const [, params] = useRoute("/blog/:id");
-  const postId = params?.id;
+  const [, params] = useRoute("/blog/:slug");
+  const postSlug = params?.slug;
 
   const { data: post, isLoading } = useQuery<BlogPost>({
-    queryKey: ["/api/blog", postId],
+    queryKey: ["/api/blog", postSlug],
     queryFn: async () => {
-      const res = await fetch(`/api/blog/${postId}`);
+      const res = await fetch(`/api/blog/${postSlug}`);
       if (!res.ok) throw new Error("Failed to fetch blog post");
       return res.json();
     },

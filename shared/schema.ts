@@ -126,6 +126,7 @@ export type CarVariantWithDetails = CarVariant & {
 export const blogPosts = pgTable("blog_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
+  slug: text("slug").notNull().default(""),
   content: text("content").notNull(),
   author: text("author").notNull(),
   date: text("date").notNull(),

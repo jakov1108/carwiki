@@ -275,6 +275,15 @@ export const storage = {
     return post;
   },
 
+  async getBlogPostBySlug(slug: string) {
+    const [post] = await db
+      .select()
+      .from(blogPosts)
+      .where(eq(blogPosts.slug, slug))
+      .limit(1);
+    return post;
+  },
+
   async createBlogPost(data: InsertBlogPost) {
     const [post] = await db.insert(blogPosts).values(data).returning();
     return post;
