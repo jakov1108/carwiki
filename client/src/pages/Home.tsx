@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Car, BookOpen, Shield, Search, ChevronRight } from "lucide-react";
-import type { CarModel, CarGenerationWithModel } from "@shared/schema";
+import type { CarModel, CarGenerationWithModel, CarVariantWithDetails } from "@shared/schema";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [searchBrand, setSearchBrand] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
+  const [selectedGenerationId, setSelectedGenerationId] = useState("");
 
   const { data: models } = useQuery<CarModel[]>({
     queryKey: ["/api/models"],
@@ -23,6 +24,16 @@ export default function Home() {
     enabled: !!selectedModelId,
   });
 
+  const { data: variants } = useQuery<CarVariantWithDetails[]>({
+    queryKey: ["/api/generations", selectedGenerationId, "variants"],
+    queryFn: async () => {
+      const res = await fetch(`/api/generations/${selectedGenerationId}/variants`);
+      if (!res.ok) throw new Error("Failed to fetch variants");
+      return res.json();
+    },
+    enabled: !!selectedGenerationId,
+  });
+
   // Get unique brands
   const brands = [...new Set(models?.map(m => m.brand) || [])].sort();
   
@@ -32,10 +43,12 @@ export default function Home() {
     : [];
 
   const selectedModel = models?.find(m => m.id === selectedModelId);
+  const selectedGeneration = generations?.find(g => g.id === selectedGenerationId);
 
   const clearSearch = () => {
     setSearchBrand("");
     setSelectedModelId("");
+    setSelectedGenerationId("");
   };
 
   return (
@@ -69,10 +82,12 @@ export default function Home() {
                 {/* Progress indicator */}
                 <div className="flex items-center justify-center gap-2 mb-6">
                   <div className={`w-3 h-3 rounded-full transition-all duration-300 ${searchBrand ? 'bg-blue-500 shadow-lg shadow-blue-500/50' : 'bg-slate-600'}`}></div>
-                  <div className={`w-8 h-0.5 transition-all duration-300 ${searchBrand ? 'bg-blue-500' : 'bg-slate-600'}`}></div>
+                  <div className={`w-6 h-0.5 transition-all duration-300 ${searchBrand ? 'bg-blue-500' : 'bg-slate-600'}`}></div>
                   <div className={`w-3 h-3 rounded-full transition-all duration-300 ${selectedModelId ? 'bg-blue-500 shadow-lg shadow-blue-500/50' : 'bg-slate-600'}`}></div>
-                  <div className={`w-8 h-0.5 transition-all duration-300 ${selectedModelId ? 'bg-blue-500' : 'bg-slate-600'}`}></div>
-                  <div className={`w-3 h-3 rounded-full transition-all duration-300 ${generations && generations.length > 0 ? 'bg-cyan-500 shadow-lg shadow-cyan-500/50' : 'bg-slate-600'}`}></div>
+                  <div className={`w-6 h-0.5 transition-all duration-300 ${selectedModelId ? 'bg-blue-500' : 'bg-slate-600'}`}></div>
+                  <div className={`w-3 h-3 rounded-full transition-all duration-300 ${selectedGenerationId ? 'bg-blue-500 shadow-lg shadow-blue-500/50' : 'bg-slate-600'}`}></div>
+                  <div className={`w-6 h-0.5 transition-all duration-300 ${selectedGenerationId ? 'bg-cyan-500' : 'bg-slate-600'}`}></div>
+                  <div className={`w-3 h-3 rounded-full transition-all duration-300 ${variants && variants.length > 0 ? 'bg-cyan-500 shadow-lg shadow-cyan-500/50' : 'bg-slate-600'}`}></div>
                 </div>
               
                 <div className="space-y-5">
@@ -109,7 +124,10 @@ export default function Home() {
                     <div className="relative">
                       <select
                         value={selectedModelId}
-                        onChange={(e) => setSelectedModelId(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedModelId(e.target.value);
+                          setSelectedGenerationId("");
+                        }}
                         className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
                       >
                         <option value="">-- Odaberi model --</option>
@@ -121,31 +139,52 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Generation List - show when model is selected */}
+                  {/* Generation Select - show when model is selected */}
                   {selectedModelId && generations && generations.length > 0 && (
                     <div className="transition-all duration-300 ease-out">
                       <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2 text-left">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-bold">3</span>
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">3</span>
                         Odaberi generaciju
                       </label>
+                      <div className="relative">
+                        <select
+                          value={selectedGenerationId}
+                          onChange={(e) => setSelectedGenerationId(e.target.value)}
+                          className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
+                        >
+                          <option value="">-- Odaberi generaciju --</option>
+                          {generations.map(gen => (
+                            <option key={gen.id} value={gen.id}>{gen.name} ({gen.yearStart}-{gen.yearEnd || "danas"})</option>
+                          ))}
+                        </select>
+                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Variants List - show when generation is selected */}
+                  {selectedGenerationId && variants && variants.length > 0 && (
+                    <div className="transition-all duration-300 ease-out">
+                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2 text-left">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-bold">4</span>
+                        Odaberi motor
+                      </label>
                       <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                        {generations.map(gen => (
+                        {variants.map(variant => (
                           <Link
-                            key={gen.id}
-                            href={`/generacija/${gen.id}`}
+                            key={variant.id}
+                            href={selectedModel?.brandSlug && selectedModel?.modelSlug && selectedGeneration?.slug && variant.slug
+                              ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}/${selectedGeneration.slug}/${variant.slug}`
+                              : `/varijanta/${variant.id}`
+                            }
                             className="block bg-slate-900/60 p-3 rounded-xl hover:bg-slate-700/60 transition-all duration-200 text-left border border-transparent hover:border-slate-600/50 group/item"
                           >
                             <div className="flex items-center gap-3">
-                              <img 
-                                src={gen.image} 
-                                alt={gen.name}
-                                className="w-14 h-10 object-cover rounded-lg"
-                              />
                               <div className="flex-1">
-                                <p className="font-semibold text-white">{gen.name}</p>
-                                <p className="text-xs text-slate-400">{gen.yearStart} - {gen.yearEnd || "danas"}</p>
+                                <p className="font-semibold text-white">{variant.engineName}</p>
+                                <p className="text-xs text-slate-400">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
                               </div>
-                              <ChevronRight className="w-4 h-4 text-slate-500 group-hover/item:text-blue-400 group-hover/item:translate-x-0.5 transition-all" />
+                              <ChevronRight className="w-4 h-4 text-slate-500 group-hover/item:text-cyan-400 group-hover/item:translate-x-0.5 transition-all" />
                             </div>
                           </Link>
                         ))}
@@ -153,10 +192,29 @@ export default function Home() {
                     </div>
                   )}
 
+                  {/* Show link to generation page if selected but no variants */}
+                  {selectedGenerationId && selectedGeneration && (!variants || variants.length === 0) && (
+                    <div className="bg-slate-900/60 p-4 rounded-xl text-center">
+                      <p className="text-slate-400 text-sm mb-3">Nema dostupnih motora za ovu generaciju.</p>
+                      <Link
+                        href={selectedModel?.brandSlug && selectedModel?.modelSlug && selectedGeneration?.slug
+                          ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}/${selectedGeneration.slug}`
+                          : `/generacija/${selectedGenerationId}`
+                        }
+                        className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                      >
+                        Pogledaj generaciju →
+                      </Link>
+                    </div>
+                  )}
+
                   {/* Show link to model page if selected */}
-                  {selectedModel && (
+                  {selectedModel && !selectedGenerationId && (
                     <Link
-                      href={`/automobili/${selectedModel.id}`}
+                      href={selectedModel.brandSlug && selectedModel.modelSlug
+                        ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}`
+                        : `/model/${selectedModel.id}`
+                      }
                       className="block bg-gradient-to-r from-blue-600/20 to-cyan-600/20 p-4 rounded-xl hover:from-blue-600/30 hover:to-cyan-600/30 transition-all duration-300 border border-blue-500/30 hover:border-blue-400/50 group/result"
                     >
                       <div className="flex items-center gap-4">

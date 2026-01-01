@@ -1,29 +1,42 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useParams, Link } from "wouter";
 import type { CarGenerationWithModel, CarVariantWithDetails } from "@shared/schema";
-import { ArrowLeft, Calendar, Fuel, Gauge, Zap, Settings } from "lucide-react";
+import { ArrowLeft, Calendar, Fuel, Gauge, Zap, Settings, ChevronRight } from "lucide-react";
 
 export default function GenerationDetail() {
-  const [, params] = useRoute("/generacija/:id");
-  const generationId = params?.id;
+  // Get params from the URL - wouter passes these through Route
+  const params = useParams<{ brandSlug?: string; modelSlug?: string; generationSlug?: string; id?: string }>();
 
+  const brandSlug = params.brandSlug;
+  const modelSlug = params.modelSlug;
+  const generationSlug = params.generationSlug;
+  const generationId = params.id;
+  const isSlugRoute = !!(brandSlug && modelSlug && generationSlug);
+
+  // Fetch generation by slug or ID
   const { data: generation, isLoading: generationLoading } = useQuery<CarGenerationWithModel>({
-    queryKey: ["/api/generations", generationId],
+    queryKey: isSlugRoute 
+      ? ["/api/car", brandSlug, modelSlug, generationSlug] 
+      : ["/api/generations", generationId],
     queryFn: async () => {
-      const res = await fetch(`/api/generations/${generationId}`);
+      const url = isSlugRoute 
+        ? `/api/car/${brandSlug}/${modelSlug}/${generationSlug}`
+        : `/api/generations/${generationId}`;
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch generation");
       return res.json();
     },
+    enabled: isSlugRoute ? !!(brandSlug && modelSlug && generationSlug) : !!generationId,
   });
 
   const { data: variants, isLoading: variantsLoading } = useQuery<CarVariantWithDetails[]>({
-    queryKey: ["/api/generations", generationId, "variants"],
+    queryKey: ["/api/generations", generation?.id, "variants"],
     queryFn: async () => {
-      const res = await fetch(`/api/generations/${generationId}/variants`);
+      const res = await fetch(`/api/generations/${generation?.id}/variants`);
       if (!res.ok) throw new Error("Failed to fetch variants");
       return res.json();
     },
-    enabled: !!generationId,
+    enabled: !!generation?.id,
   });
 
   if (generationLoading || variantsLoading) {
@@ -42,6 +55,20 @@ export default function GenerationDetail() {
     );
   }
 
+  // Helper function to translate fuel type to Croatian
+  const translateFuelType = (fuelType: string): string => {
+    const translations: Record<string, string> = {
+      "Benzin": "Benzin",
+      "Diesel": "Dizel",
+      "Hybrid": "Hibrid",
+      "Electric": "Električni",
+      "Dizel": "Dizel",
+      "Hibrid": "Hibrid",
+      "Električni": "Električni"
+    };
+    return translations[fuelType] || fuelType;
+  };
+
   // Group variants by fuel type
   const variantsByFuel = variants?.reduce((acc, variant) => {
     const fuel = variant.fuelType;
@@ -52,13 +79,38 @@ export default function GenerationDetail() {
     return acc;
   }, {} as Record<string, CarVariantWithDetails[]>);
 
-  const fuelTypeOrder = ["Benzin", "Dizel", "Hibrid", "Električni"];
+  const fuelTypeOrder = ["Benzin", "Diesel", "Dizel", "Hybrid", "Hibrid", "Electric", "Električni"];
+
+  // Build breadcrumb URLs
+  const brandUrl = generation?.model?.brandSlug 
+    ? `/automobili/${generation.model.brandSlug}` 
+    : "/automobili";
+  const modelUrl = generation?.model?.brandSlug && generation?.model?.modelSlug
+    ? `/automobili/${generation.model.brandSlug}/${generation.model.modelSlug}`
+    : generation?.model?.id ? `/model/${generation.model.id}` : "/automobili";
 
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-6xl">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-6 text-sm flex-wrap">
+          <Link href="/automobili" className="text-slate-400 hover:text-blue-400 transition">
+            Sve marke
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <Link href={brandUrl} className="text-slate-400 hover:text-blue-400 transition">
+            {generation.model?.brand}
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <Link href={modelUrl} className="text-slate-400 hover:text-blue-400 transition">
+            {generation.model?.model}
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <span className="text-blue-400 font-medium">{generation.name}</span>
+        </div>
+
         <Link
-          href={`/automobili/${generation.model?.id}`}
+          href={modelUrl}
           className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-8"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -112,53 +164,59 @@ export default function GenerationDetail() {
                 <div key={fuelType}>
                   <h3 className="text-lg font-semibold mb-4 text-slate-300 flex items-center gap-2">
                     <Fuel className="w-5 h-5 text-blue-400" />
-                    {fuelType}
+                    {translateFuelType(fuelType)}
                   </h3>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {variantsByFuel?.[fuelType]?.map((variant) => (
-                      <Link
-                        key={variant.id}
-                        href={`/varijanta/${variant.id}`}
-                        className="block bg-slate-800 rounded-lg p-5 border border-slate-700 hover:border-blue-500 transition group"
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition">
-                            {variant.engineName}
-                          </h4>
-                          <span className="bg-slate-700 px-2 py-1 rounded text-sm text-slate-300">
-                            {variant.transmission}
-                          </span>
-                        </div>
+                    {variantsByFuel?.[fuelType]?.map((variant) => {
+                      const variantUrl = generation.model?.brandSlug && generation.model?.modelSlug && generation.slug && variant.slug
+                        ? `/automobili/${generation.model.brandSlug}/${generation.model.modelSlug}/${generation.slug}/${variant.slug}`
+                        : `/varijanta/${variant.id}`;
+                      
+                      return (
+                        <Link
+                          key={variant.id}
+                          href={variantUrl}
+                          className="block bg-slate-800 rounded-lg p-5 border border-slate-700 hover:border-blue-500 transition group"
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <h4 className="text-lg font-bold text-white group-hover:text-blue-400 transition">
+                              {variant.engineName}
+                            </h4>
+                            <span className="bg-slate-700 px-2 py-1 rounded text-sm text-slate-300">
+                              {variant.transmission}
+                            </span>
+                          </div>
 
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Zap className="w-4 h-4 text-yellow-500" />
-                            <span>{variant.power}</span>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="flex items-center gap-2 text-slate-400">
+                              <Zap className="w-4 h-4 text-yellow-500" />
+                              <span>{variant.power}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-400">
+                              <Gauge className="w-4 h-4 text-green-500" />
+                              <span>{variant.acceleration}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-400">
+                              <Fuel className="w-4 h-4 text-blue-500" />
+                              <span>{variant.consumption}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-400">
+                              <Settings className="w-4 h-4 text-purple-500" />
+                              <span>{variant.driveType}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Gauge className="w-4 h-4 text-green-500" />
-                            <span>{variant.acceleration}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Fuel className="w-4 h-4 text-blue-500" />
-                            <span>{variant.consumption}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Settings className="w-4 h-4 text-purple-500" />
-                            <span>{variant.driveType}</span>
-                          </div>
-                        </div>
 
-                        <div className="mt-3 flex justify-between items-center">
-                          <div className="text-sm text-slate-500">
-                            Pouzdanost: {variant.reliability}/5 ⭐
+                          <div className="mt-3 flex justify-between items-center">
+                            <div className="text-sm text-slate-500">
+                              Pouzdanost: {variant.reliability}/5 ⭐
+                            </div>
+                            <div className="text-blue-400 text-sm font-medium group-hover:text-blue-300 flex items-center gap-1">
+                              Detalji <ChevronRight className="w-4 h-4" />
+                            </div>
                           </div>
-                          <div className="text-blue-400 text-sm font-medium group-hover:text-blue-300">
-                            Detalji →
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

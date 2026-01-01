@@ -1,19 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useParams, Link } from "wouter";
 import type { CarVariantWithDetails } from "@shared/schema";
-import { ArrowLeft, Gauge, Zap, Fuel, Settings, Calendar, Play } from "lucide-react";
+import { ArrowLeft, Gauge, Zap, Fuel, Settings, Calendar, Play, ChevronRight } from "lucide-react";
 
 export default function VariantDetail() {
-  const [, params] = useRoute("/varijanta/:id");
-  const variantId = params?.id;
+  // Get params from URL
+  const params = useParams<{ brandSlug?: string; modelSlug?: string; generationSlug?: string; variantSlug?: string; id?: string }>();
+
+  const brandSlug = params.brandSlug;
+  const modelSlug = params.modelSlug;
+  const generationSlug = params.generationSlug;
+  const variantSlug = params.variantSlug;
+  const variantId = params.id;
+  const isSlugRoute = !!(brandSlug && modelSlug && generationSlug && variantSlug);
 
   const { data: variant, isLoading } = useQuery<CarVariantWithDetails>({
-    queryKey: ["/api/variants", variantId],
+    queryKey: isSlugRoute 
+      ? ["/api/car", brandSlug, modelSlug, generationSlug, variantSlug] 
+      : ["/api/variants", variantId],
     queryFn: async () => {
-      const res = await fetch(`/api/variants/${variantId}`);
+      const url = isSlugRoute 
+        ? `/api/car/${brandSlug}/${modelSlug}/${generationSlug}/${variantSlug}`
+        : `/api/variants/${variantId}`;
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch variant");
       return res.json();
     },
+    enabled: isSlugRoute ? !!(brandSlug && modelSlug && generationSlug && variantSlug) : !!variantId,
   });
 
   if (isLoading) {
@@ -34,11 +47,43 @@ export default function VariantDetail() {
 
   const fullName = `${variant.model?.brand} ${variant.model?.model} ${variant.generation?.name} ${variant.engineName}`;
 
+  // Build breadcrumb URLs
+  const brandUrl = variant.model?.brandSlug 
+    ? `/automobili/${variant.model.brandSlug}` 
+    : "/automobili";
+  const modelUrl = variant.model?.brandSlug && variant.model?.modelSlug
+    ? `/automobili/${variant.model.brandSlug}/${variant.model.modelSlug}`
+    : variant.model?.id ? `/model/${variant.model.id}` : "/automobili";
+  const generationUrl = variant.model?.brandSlug && variant.model?.modelSlug && variant.generation?.slug
+    ? `/automobili/${variant.model.brandSlug}/${variant.model.modelSlug}/${variant.generation.slug}`
+    : variant.generation?.id ? `/generacija/${variant.generation.id}` : modelUrl;
+
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-6xl">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-6 text-sm flex-wrap">
+          <Link href="/automobili" className="text-slate-400 hover:text-blue-400 transition">
+            Sve marke
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <Link href={brandUrl} className="text-slate-400 hover:text-blue-400 transition">
+            {variant.model?.brand}
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <Link href={modelUrl} className="text-slate-400 hover:text-blue-400 transition">
+            {variant.model?.model}
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <Link href={generationUrl} className="text-slate-400 hover:text-blue-400 transition">
+            {variant.generation?.name}
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <span className="text-blue-400 font-medium">{variant.engineName}</span>
+        </div>
+
         <Link
-          href={`/generacija/${variant.generation?.id}`}
+          href={generationUrl}
           className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-8"
         >
           <ArrowLeft className="w-5 h-5" />

@@ -3,16 +3,21 @@ import { useAuth } from "../lib/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost, ContactMessage } from "@shared/schema";
-import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Settings } from "lucide-react";
+import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Settings, ChevronRight, ArrowLeft } from "lucide-react";
 import { ObjectUploader } from "../components/ObjectUploader";
 
-type Tab = "models" | "generations" | "variants" | "pending" | "blog" | "messages";
+type Tab = "cars" | "pending" | "blog" | "messages";
 
 export default function Admin() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<Tab>("models");
+  const [activeTab, setActiveTab] = useState<Tab>("cars");
   const queryClient = useQueryClient();
+
+  // Hierarchical navigation state
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [selectedGenerationId, setSelectedGenerationId] = useState<string | null>(null);
 
   // Modal states
   const [showModelForm, setShowModelForm] = useState(false);
@@ -146,37 +151,20 @@ export default function Admin() {
             )}
           </button>
           <button
-            onClick={() => setActiveTab("models")}
+            onClick={() => {
+              setActiveTab("cars");
+              setSelectedBrand(null);
+              setSelectedModelId(null);
+              setSelectedGenerationId(null);
+            }}
             className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 ${
-              activeTab === "models"
+              activeTab === "cars"
                 ? "bg-blue-600 text-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
             <Car className="w-4 h-4" />
-            Modeli ({models?.length || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab("generations")}
-            className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 ${
-              activeTab === "generations"
-                ? "bg-blue-600 text-white"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            Generacije ({generations?.length || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab("variants")}
-            className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 ${
-              activeTab === "variants"
-                ? "bg-blue-600 text-white"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            Varijante ({variants?.filter(v => v.status === "approved").length || 0})
+            Automobili
           </button>
           <button
             onClick={() => setActiveTab("blog")}
@@ -272,185 +260,237 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Models Tab */}
-        {activeTab === "models" && (
+        {/* Cars Tab - Hierarchical Navigation */}
+        {activeTab === "cars" && (
           <div>
-            <div className="mb-6">
-              <button
-                onClick={() => {
-                  setEditingModel(null);
-                  setShowModelForm(true);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2"
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 mb-6 text-sm">
+              <button 
+                onClick={() => { setSelectedBrand(null); setSelectedModelId(null); setSelectedGenerationId(null); }}
+                className={`hover:text-blue-400 ${!selectedBrand ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
               >
-                <Plus className="w-5 h-5" />
-                <span>Dodaj Model</span>
+                Marke
               </button>
+              {selectedBrand && (
+                <>
+                  <ChevronRight className="w-4 h-4 text-slate-600" />
+                  <button 
+                    onClick={() => { setSelectedModelId(null); setSelectedGenerationId(null); }}
+                    className={`hover:text-blue-400 ${selectedBrand && !selectedModelId ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
+                  >
+                    {selectedBrand}
+                  </button>
+                </>
+              )}
+              {selectedModelId && (
+                <>
+                  <ChevronRight className="w-4 h-4 text-slate-600" />
+                  <button 
+                    onClick={() => { setSelectedGenerationId(null); }}
+                    className={`hover:text-blue-400 ${selectedModelId && !selectedGenerationId ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
+                  >
+                    {models?.find(m => m.id === selectedModelId)?.model}
+                  </button>
+                </>
+              )}
+              {selectedGenerationId && (
+                <>
+                  <ChevronRight className="w-4 h-4 text-slate-600" />
+                  <span className="text-blue-400 font-bold">
+                    {generations?.find(g => g.id === selectedGenerationId)?.name}
+                  </span>
+                </>
+              )}
             </div>
 
-            <div className="grid gap-4">
-              {models?.map((model) => (
-                <div key={model.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-                  <div className="flex justify-between items-start">
-                    <div className="flex space-x-4">
-                      <img src={model.image} alt={model.model} className="w-24 h-24 object-cover rounded" />
-                      <div>
-                        <h3 className="text-xl font-bold">{model.brand} {model.model}</h3>
-                        <p className="text-slate-400">{model.category}</p>
-                        <p className="text-sm text-slate-500 mt-2 line-clamp-2">{model.description}</p>
+            {/* Level 1: Brands */}
+            {!selectedBrand && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">Odaberi marku</h2>
+                  <button
+                    onClick={() => { setEditingModel(null); setShowModelForm(true); }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Dodaj novi model
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {[...new Set(models?.map(m => m.brand))].sort().map(brand => (
+                    <button
+                      key={brand}
+                      onClick={() => setSelectedBrand(brand)}
+                      className="bg-slate-800 hover:bg-slate-700 p-6 rounded-lg border border-slate-700 text-left transition"
+                    >
+                      <h3 className="text-xl font-bold">{brand}</h3>
+                      <p className="text-slate-400 text-sm mt-1">
+                        {models?.filter(m => m.brand === brand).length} modela
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Level 2: Models for selected brand */}
+            {selectedBrand && !selectedModelId && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-4">
+                    <button onClick={() => setSelectedBrand(null)} className="p-2 hover:bg-slate-800 rounded">
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h2 className="text-2xl font-bold">{selectedBrand} - Modeli</h2>
+                  </div>
+                  <button
+                    onClick={() => { setEditingModel(null); setShowModelForm(true); }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Dodaj model
+                  </button>
+                </div>
+                <div className="grid gap-4">
+                  {models?.filter(m => m.brand === selectedBrand).map(model => (
+                    <div key={model.id} className="bg-slate-800 p-4 rounded-lg border border-slate-700 flex justify-between items-center">
+                      <button
+                        onClick={() => setSelectedModelId(model.id)}
+                        className="flex items-center gap-4 flex-1 text-left hover:bg-slate-700 p-2 rounded transition"
+                      >
+                        <img src={model.image} alt={model.model} className="w-16 h-16 object-cover rounded" />
+                        <div>
+                          <h3 className="text-lg font-bold">{model.model}</h3>
+                          <p className="text-slate-400 text-sm">{model.category}</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-slate-500 ml-auto" />
+                      </button>
+                      <div className="flex gap-2 ml-4">
+                        <button onClick={() => { setEditingModel(model); setShowModelForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => confirm("Obrisati model i sve generacije/varijante?") && deleteModel.mutate(model.id)} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingModel(model);
-                          setShowModelForm(true);
-                        }}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
-                        title="Uredi"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => confirm("Obrisati će se i sve generacije i varijante! Jeste li sigurni?") && deleteModel.mutate(model.id)}
-                        className="p-2 bg-red-600 hover:bg-red-700 rounded"
-                        title="Obriši"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Generations Tab */}
-        {activeTab === "generations" && (
-          <div>
-            <div className="mb-6">
-              <button
-                onClick={() => {
-                  setEditingGeneration(null);
-                  setShowGenerationForm(true);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Dodaj Generaciju</span>
-              </button>
-            </div>
-
-            <div className="grid gap-4">
-              {generations?.map((gen) => (
-                <div key={gen.id} className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-                  <div className="flex justify-between items-start">
-                    <div className="flex space-x-4">
-                      <img src={gen.image} alt={gen.name} className="w-24 h-24 object-cover rounded" />
-                      <div>
-                        <h3 className="text-xl font-bold">
-                          {gen.model?.brand} {gen.model?.model} - {gen.name}
-                        </h3>
-                        <p className="text-slate-400">
-                          {gen.yearStart} - {gen.yearEnd || "danas"}
-                        </p>
-                        <p className="text-sm text-slate-500 mt-2 line-clamp-2">{gen.description}</p>
+            {/* Level 3: Generations for selected model */}
+            {selectedModelId && !selectedGenerationId && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-4">
+                    <button onClick={() => setSelectedModelId(null)} className="p-2 hover:bg-slate-800 rounded">
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h2 className="text-2xl font-bold">
+                      {models?.find(m => m.id === selectedModelId)?.brand} {models?.find(m => m.id === selectedModelId)?.model} - Generacije
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => { setEditingGeneration(null); setShowGenerationForm(true); }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Dodaj generaciju
+                  </button>
+                </div>
+                <div className="grid gap-4">
+                  {generations?.filter(g => g.modelId === selectedModelId).map(gen => (
+                    <div key={gen.id} className="bg-slate-800 p-4 rounded-lg border border-slate-700 flex justify-between items-center">
+                      <button
+                        onClick={() => setSelectedGenerationId(gen.id)}
+                        className="flex items-center gap-4 flex-1 text-left hover:bg-slate-700 p-2 rounded transition"
+                      >
+                        <img src={gen.image} alt={gen.name} className="w-16 h-16 object-cover rounded" />
+                        <div>
+                          <h3 className="text-lg font-bold">{gen.name}</h3>
+                          <p className="text-slate-400 text-sm">{gen.yearStart} - {gen.yearEnd || "danas"}</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-slate-500 ml-auto" />
+                      </button>
+                      <div className="flex gap-2 ml-4">
+                        <button onClick={() => { setEditingGeneration(gen); setShowGenerationForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => confirm("Obrisati generaciju i sve varijante?") && deleteGeneration.mutate(gen.id)} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingGeneration(gen);
-                          setShowGenerationForm(true);
-                        }}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
-                        title="Uredi"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => confirm("Obrisati će se i sve varijante! Jeste li sigurni?") && deleteGeneration.mutate(gen.id)}
-                        className="p-2 bg-red-600 hover:bg-red-700 rounded"
-                        title="Obriši"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                  ))}
+                  {generations?.filter(g => g.modelId === selectedModelId).length === 0 && (
+                    <div className="bg-slate-800 p-8 rounded-lg text-center border border-slate-700">
+                      <p className="text-slate-400">Nema generacija. Dodajte prvu generaciju.</p>
                     </div>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Variants Tab */}
-        {activeTab === "variants" && (
-          <div>
-            <div className="mb-6">
-              <button
-                onClick={() => {
-                  setEditingVariant(null);
-                  setShowVariantForm(true);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Dodaj Varijantu</span>
-              </button>
-            </div>
-
-            <div className="grid gap-4">
-              {variants?.map((variant) => (
-                <div key={variant.id} className={`bg-slate-800 p-6 rounded-lg border ${
-                  variant.status === "pending" 
-                    ? "border-yellow-500/50" 
-                    : variant.status === "rejected"
-                    ? "border-red-500/50"
-                    : "border-slate-700"
-                }`}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-bold">
-                          {variant.model?.brand} {variant.model?.model} {variant.generation?.name}
-                        </h3>
-                        {variant.status !== "approved" && (
-                          <span className={`px-2 py-0.5 rounded text-xs ${
-                            variant.status === "pending" 
-                              ? "bg-yellow-500/20 text-yellow-400" 
-                              : "bg-red-500/20 text-red-400"
-                          }`}>
-                            {variant.status === "pending" ? "Na čekanju" : "Odbijeno"}
-                          </span>
-                        )}
+            {/* Level 4: Variants for selected generation */}
+            {selectedGenerationId && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-4">
+                    <button onClick={() => setSelectedGenerationId(null)} className="p-2 hover:bg-slate-800 rounded">
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h2 className="text-2xl font-bold">
+                      {generations?.find(g => g.id === selectedGenerationId)?.model?.brand}{" "}
+                      {generations?.find(g => g.id === selectedGenerationId)?.model?.model}{" "}
+                      {generations?.find(g => g.id === selectedGenerationId)?.name} - Motori
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => { setEditingVariant(null); setShowVariantForm(true); }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Dodaj motor
+                  </button>
+                </div>
+                <div className="grid gap-4">
+                  {variants?.filter(v => v.generationId === selectedGenerationId).map(variant => (
+                    <div key={variant.id} className={`bg-slate-800 p-4 rounded-lg border ${
+                      variant.status === "pending" ? "border-yellow-500/50" : 
+                      variant.status === "rejected" ? "border-red-500/50" : "border-slate-700"
+                    } flex justify-between items-center`}>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold">{variant.engineName}</h3>
+                          {variant.status !== "approved" && (
+                            <span className={`px-2 py-0.5 rounded text-xs ${
+                              variant.status === "pending" ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400"
+                            }`}>
+                              {variant.status === "pending" ? "Na čekanju" : "Odbijeno"}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-slate-400 text-sm">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
                       </div>
-                      <p className="text-lg text-blue-400">{variant.engineName}</p>
-                      <p className="text-slate-400">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setEditingVariant(variant); setShowVariantForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => confirm("Obrisati varijantu?") && deleteVariant.mutate(variant.id)} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingVariant(variant);
-                          setShowVariantForm(true);
-                        }}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
-                        title="Uredi"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => confirm("Jeste li sigurni?") && deleteVariant.mutate(variant.id)}
-                        className="p-2 bg-red-600 hover:bg-red-700 rounded"
-                        title="Obriši"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                  ))}
+                  {variants?.filter(v => v.generationId === selectedGenerationId).length === 0 && (
+                    <div className="bg-slate-800 p-8 rounded-lg text-center border border-slate-700">
+                      <p className="text-slate-400">Nema motora. Dodajte prvi motor.</p>
                     </div>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -541,6 +581,8 @@ export default function Admin() {
         {showModelForm && (
           <ModelForm
             model={editingModel}
+            models={models}
+            preselectedBrand={selectedBrand}
             onClose={() => {
               setShowModelForm(false);
               setEditingModel(null);
@@ -552,6 +594,7 @@ export default function Admin() {
           <GenerationForm
             generation={editingGeneration}
             models={models || []}
+            preselectedModelId={selectedModelId}
             onClose={() => {
               setShowGenerationForm(false);
               setEditingGeneration(null);
@@ -562,7 +605,9 @@ export default function Admin() {
         {showVariantForm && (
           <VariantForm
             variant={editingVariant}
+            models={models || []}
             generations={generations || []}
+            preselectedGenerationId={selectedGenerationId}
             onClose={() => {
               setShowVariantForm(false);
               setEditingVariant(null);
@@ -586,9 +631,16 @@ export default function Admin() {
 
 // ========== FORMS ==========
 
-function ModelForm({ model, onClose }: { model: CarModel | null; onClose: () => void }) {
+function ModelForm({ model, models, preselectedBrand, onClose }: { model: CarModel | null; models?: CarModel[]; preselectedBrand?: string | null; onClose: () => void }) {
+  // Get unique brands from existing models
+  const existingBrands = models 
+    ? [...new Set(models.map(m => m.brand))].sort()
+    : [];
+  
+  // If we have a preselected brand, don't show "new brand" mode
+  const [useNewBrand, setUseNewBrand] = useState(!model && !preselectedBrand && existingBrands.length === 0);
   const [formData, setFormData] = useState({
-    brand: model?.brand || "",
+    brand: model?.brand || preselectedBrand || "",
     model: model?.model || "",
     category: model?.category || "Compact",
     image: model?.image || "",
@@ -633,17 +685,52 @@ function ModelForm({ model, onClose }: { model: CarModel | null; onClose: () => 
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); saveModel.mutate(formData); }} className="space-y-4">
+          {/* Brand/Model toggle - outside grid for proper alignment */}
+          {!model && existingBrands.length > 0 && (
+            <div className="flex gap-2">
+              <span className="text-sm text-slate-400 mr-2">Marka:</span>
+              <button
+                type="button"
+                onClick={() => { setUseNewBrand(false); setFormData({ ...formData, brand: "" }); }}
+                className={`px-3 py-1 rounded text-sm ${!useNewBrand ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+              >
+                Postojeća
+              </button>
+              <button
+                type="button"
+                onClick={() => { setUseNewBrand(true); setFormData({ ...formData, brand: "" }); }}
+                className={`px-3 py-1 rounded text-sm ${useNewBrand ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+              >
+                Nova marka
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Marka *</label>
-              <input
-                type="text"
-                value={formData.brand}
-                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                required
-                placeholder="npr. Volkswagen, BMW"
-                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
-              />
+              {useNewBrand || existingBrands.length === 0 ? (
+                <input
+                  type="text"
+                  value={formData.brand}
+                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                  required
+                  placeholder="npr. Volkswagen, BMW"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              ) : (
+                <select
+                  value={formData.brand}
+                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                  required
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                >
+                  <option value="">Odaberi marku...</option>
+                  {existingBrands.map((brand) => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Model *</label>
@@ -720,14 +807,26 @@ function ModelForm({ model, onClose }: { model: CarModel | null; onClose: () => 
 function GenerationForm({ 
   generation, 
   models, 
+  preselectedModelId,
   onClose 
 }: { 
   generation: CarGenerationWithModel | null; 
   models: CarModel[];
+  preselectedModelId?: string | null;
   onClose: () => void;
 }) {
+  // Get preselected model's brand for editing
+  const preselectedModel = preselectedModelId 
+    ? models.find(m => m.id === preselectedModelId) 
+    : generation?.model 
+      ? models.find(m => m.id === generation.modelId)
+      : null;
+
+  // Hierarchical selection state
+  const [selectedBrand, setSelectedBrand] = useState<string>(preselectedModel?.brand || "");
+  
   const [formData, setFormData] = useState({
-    modelId: generation?.modelId || "",
+    modelId: generation?.modelId || preselectedModelId || "",
     name: generation?.name || "",
     yearStart: generation?.yearStart || new Date().getFullYear(),
     yearEnd: generation?.yearEnd || null as number | null,
@@ -736,6 +835,14 @@ function GenerationForm({
   });
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Get unique brands
+  const brands = [...new Set(models.map(m => m.brand))].sort();
+  
+  // Get models for selected brand
+  const brandModels = selectedBrand 
+    ? models.filter(m => m.brand === selectedBrand).sort((a, b) => a.model.localeCompare(b.model))
+    : [];
 
   const saveGeneration = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -773,21 +880,40 @@ function GenerationForm({
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); saveGeneration.mutate(formData); }} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Model *</label>
-            <select
-              value={formData.modelId}
-              onChange={(e) => setFormData({ ...formData, modelId: e.target.value })}
-              required
-              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
-            >
-              <option value="">Odaberi model...</option>
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.brand} {m.model}
-                </option>
-              ))}
-            </select>
+          {/* Hierarchical selection: Brand -> Model */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Marka *</label>
+              <select
+                value={selectedBrand}
+                onChange={(e) => {
+                  setSelectedBrand(e.target.value);
+                  setFormData({ ...formData, modelId: "" });
+                }}
+                required
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              >
+                <option value="">Odaberi marku...</option>
+                {brands.map((brand) => (
+                  <option key={brand} value={brand}>{brand}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Model *</label>
+              <select
+                value={formData.modelId}
+                onChange={(e) => setFormData({ ...formData, modelId: e.target.value })}
+                required
+                disabled={!selectedBrand}
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2 disabled:opacity-50"
+              >
+                <option value="">Odaberi model...</option>
+                {brandModels.map((m) => (
+                  <option key={m.id} value={m.id}>{m.model}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -874,15 +1000,31 @@ function GenerationForm({
 
 function VariantForm({ 
   variant, 
+  models,
   generations, 
+  preselectedGenerationId,
   onClose 
 }: { 
   variant: CarVariantWithDetails | null; 
+  models: CarModel[];
   generations: CarGenerationWithModel[];
+  preselectedGenerationId?: string | null;
   onClose: () => void;
 }) {
+  // Get preselected generation's model and brand for editing
+  const preselectedGeneration = preselectedGenerationId 
+    ? generations.find(g => g.id === preselectedGenerationId) 
+    : variant?.generation 
+      ? generations.find(g => g.id === variant.generationId)
+      : null;
+  const preselectedModel = preselectedGeneration?.model;
+  
+  // Hierarchical selection state
+  const [selectedBrand, setSelectedBrand] = useState<string>(preselectedModel?.brand || "");
+  const [selectedModelId, setSelectedModelId] = useState<string>(preselectedModel?.id || "");
+  
   const [formData, setFormData] = useState({
-    generationId: variant?.generationId || "",
+    generationId: variant?.generationId || preselectedGenerationId || "",
     engineName: variant?.engineName || "",
     engineCode: variant?.engineCode || "",
     displacement: variant?.displacement || "",
@@ -899,6 +1041,19 @@ function VariantForm({
   });
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Get unique brands
+  const brands = [...new Set(models.map(m => m.brand))].sort();
+  
+  // Get models for selected brand
+  const brandModels = selectedBrand 
+    ? models.filter(m => m.brand === selectedBrand).sort((a, b) => a.model.localeCompare(b.model))
+    : [];
+  
+  // Get generations for selected model
+  const modelGenerations = selectedModelId
+    ? generations.filter(g => g.modelId === selectedModelId).sort((a, b) => b.yearStart - a.yearStart)
+    : [];
 
   const saveVariant = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -938,21 +1093,59 @@ function VariantForm({
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); saveVariant.mutate(formData); }} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Generacija *</label>
-            <select
-              value={formData.generationId}
-              onChange={(e) => setFormData({ ...formData, generationId: e.target.value })}
-              required
-              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
-            >
-              <option value="">Odaberi generaciju...</option>
-              {generations.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.model?.brand} {g.model?.model} - {g.name} ({g.yearStart}-{g.yearEnd || "danas"})
-                </option>
-              ))}
-            </select>
+          {/* Hierarchical selection: Brand -> Model -> Generation */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Marka *</label>
+              <select
+                value={selectedBrand}
+                onChange={(e) => {
+                  setSelectedBrand(e.target.value);
+                  setSelectedModelId("");
+                  setFormData({ ...formData, generationId: "" });
+                }}
+                required
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              >
+                <option value="">Odaberi...</option>
+                {brands.map((brand) => (
+                  <option key={brand} value={brand}>{brand}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Model *</label>
+              <select
+                value={selectedModelId}
+                onChange={(e) => {
+                  setSelectedModelId(e.target.value);
+                  setFormData({ ...formData, generationId: "" });
+                }}
+                required
+                disabled={!selectedBrand}
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2 disabled:opacity-50"
+              >
+                <option value="">Odaberi...</option>
+                {brandModels.map((m) => (
+                  <option key={m.id} value={m.id}>{m.model}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Generacija *</label>
+              <select
+                value={formData.generationId}
+                onChange={(e) => setFormData({ ...formData, generationId: e.target.value })}
+                required
+                disabled={!selectedModelId}
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2 disabled:opacity-50"
+              >
+                <option value="">Odaberi...</option>
+                {modelGenerations.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name} ({g.yearStart}-{g.yearEnd || "danas"})</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -997,10 +1190,10 @@ function VariantForm({
                 onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
                 className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
               >
-                <option>Benzin</option>
-                <option>Dizel</option>
-                <option>Hibrid</option>
-                <option>Električni</option>
+                <option value="Benzin">Benzin</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Hybrid">Hibrid</option>
+                <option value="Electric">Električni</option>
               </select>
             </div>
           </div>

@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useParams } from "wouter";
 import type { CarModel } from "@shared/schema";
-import { Search } from "lucide-react";
+import { Search, ChevronRight, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 export default function Models() {
+  const params = useParams<{ brandSlug?: string }>();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -14,31 +15,41 @@ export default function Models() {
 
   const categories = ["all", "Compact", "Sedan", "SUV", "Sports", "Electric"];
 
-  // Group models by brand
-  const groupedModels = models?.reduce((acc, model) => {
-    if (!acc[model.brand]) {
-      acc[model.brand] = [];
-    }
-    acc[model.brand].push(model);
-    return acc;
-  }, {} as Record<string, CarModel[]>);
+  // Get unique brands with type definition
+  type BrandInfo = { brand: string; brandSlug: string };
+  
+  const brands: BrandInfo[] = models 
+    ? Array.from(
+        models.reduce((map, m) => {
+          const brandSlug = m.brandSlug || m.brand.toLowerCase().replace(/\s+/g, '-');
+          if (!map.has(brandSlug)) {
+            map.set(brandSlug, { brand: m.brand, brandSlug });
+          }
+          return map;
+        }, new Map<string, BrandInfo>()).values()
+      ).sort((a, b) => a.brand.localeCompare(b.brand))
+    : [];
 
-  const filteredGroupedModels = groupedModels
-    ? Object.entries(groupedModels).reduce((acc, [brand, brandModels]) => {
-        const filtered = brandModels.filter((model) => {
-          const matchesSearch =
-            model.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            model.model.toLowerCase().includes(searchTerm.toLowerCase());
-          const matchesCategory =
-            selectedCategory === "all" || model.category === selectedCategory;
+  // Find selected brand info
+  const selectedBrandInfo = params.brandSlug 
+    ? brands.find((b: BrandInfo) => b.brandSlug === params.brandSlug) 
+    : null;
+
+  // Get models for selected brand
+  const brandModels = params.brandSlug
+    ? models?.filter(m => (m.brandSlug || m.brand.toLowerCase().replace(/\s+/g, '-')) === params.brandSlug)
+        .filter(m => {
+          const matchesSearch = m.model.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesCategory = selectedCategory === "all" || m.category === selectedCategory;
           return matchesSearch && matchesCategory;
-        });
-        if (filtered.length > 0) {
-          acc[brand] = filtered;
-        }
-        return acc;
-      }, {} as Record<string, CarModel[]>)
-    : {};
+        })
+        .sort((a, b) => a.model.localeCompare(b.model)) || []
+    : [];
+
+  // Filter brands by search term when no brand selected
+  const filteredBrands: BrandInfo[] = !params.brandSlug
+    ? brands.filter((b: BrandInfo) => b.brand.toLowerCase().includes(searchTerm.toLowerCase()))
+    : brands;
 
   if (isLoading) {
     return (
@@ -55,80 +66,142 @@ export default function Models() {
           Baza Automobila
         </h1>
 
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-6 text-sm justify-center">
+          <Link 
+            href="/automobili"
+            className={`hover:text-blue-400 transition ${!params.brandSlug ? 'text-blue-400 font-bold' : 'text-slate-400'}`}
+          >
+            Sve marke
+          </Link>
+          {selectedBrandInfo && (
+            <>
+              <ChevronRight className="w-4 h-4 text-slate-600" />
+              <span className="text-blue-400 font-bold">{selectedBrandInfo.brand}</span>
+            </>
+          )}
+        </div>
+
+        {/* Search */}
         <div className="mb-8 space-y-4">
           <div className="relative max-w-xl mx-auto">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Pretraži po marki ili modelu..."
+              placeholder={params.brandSlug ? "Pretraži modele..." : "Pretraži marke..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:border-blue-500"
             />
           </div>
 
-          <div className="flex flex-wrap justify-center gap-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  selectedCategory === category
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                {category === "all" ? "Sve kategorije" : category}
-              </button>
-            ))}
-          </div>
+          {/* Category filter - only show when viewing models */}
+          {params.brandSlug && (
+            <div className="flex flex-wrap justify-center gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-lg font-medium transition ${
+                    selectedCategory === category
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  {category === "all" ? "Sve kategorije" : category}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {Object.keys(filteredGroupedModels).length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
-            Nema automobila koji odgovaraju vašim kriterijima pretrage.
-          </div>
-        ) : (
-          Object.entries(filteredGroupedModels)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([brand, brandModels]) => (
-              <div key={brand} className="mb-12">
-                <h2 className="text-2xl font-bold mb-6 text-slate-200 border-b border-slate-700 pb-2">
-                  {brand}
-                </h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {brandModels.map((model) => (
-                    <Link
-                      key={model.id}
-                      href={`/automobili/${model.id}`}
-                      className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition group"
-                    >
-                      <div className="relative overflow-hidden">
-                        <img
-                          src={model.image}
-                          alt={`${model.brand} ${model.model}`}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <span className="absolute top-3 right-3 bg-blue-600 px-2 py-1 rounded text-xs font-medium">
-                          {model.category}
-                        </span>
-                      </div>
-                      <div className="p-4">
-                        <h3 className="text-lg font-bold text-white">
-                          {model.model}
-                        </h3>
-                        <p className="text-slate-400 text-sm line-clamp-2 mt-1">
-                          {model.description}
-                        </p>
-                        <div className="mt-3 text-blue-400 text-sm font-medium group-hover:text-blue-300">
-                          Pregledaj generacije →
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+        {/* Brand List - when no brand selected */}
+        {!params.brandSlug && (
+          <>
+            {filteredBrands.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                Nema marki koje odgovaraju vašoj pretrazi.
               </div>
-            ))
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredBrands.map((brandInfo) => {
+                  const brandModelCount = models?.filter(m => 
+                    (m.brandSlug || m.brand.toLowerCase().replace(/\s+/g, '-')) === brandInfo.brandSlug
+                  ).length || 0;
+                  
+                  return (
+                    <Link
+                      key={brandInfo.brandSlug}
+                      href={`/automobili/${brandInfo.brandSlug}`}
+                      className="bg-slate-800 p-6 rounded-lg border border-slate-700 hover:border-blue-500 transition group text-center"
+                    >
+                      <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition">
+                        {brandInfo.brand}
+                      </h3>
+                      <p className="text-slate-400 text-sm mt-2">
+                        {brandModelCount} {brandModelCount === 1 ? 'model' : 'modela'}
+                      </p>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Models List - when brand is selected */}
+        {params.brandSlug && (
+          <>
+            <div className="flex items-center gap-4 mb-6">
+              <Link href="/automobili" className="p-2 hover:bg-slate-800 rounded transition">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h2 className="text-2xl font-bold text-slate-200">
+                {selectedBrandInfo?.brand || params.brandSlug} - Modeli
+              </h2>
+            </div>
+
+            {brandModels.length === 0 ? (
+              <div className="text-center py-12 text-slate-400">
+                Nema modela koji odgovaraju vašim kriterijima pretrage.
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {brandModels.map((model) => (
+                  <Link
+                    key={model.id}
+                    href={model.brandSlug && model.modelSlug 
+                      ? `/automobili/${model.brandSlug}/${model.modelSlug}`
+                      : `/model/${model.id}`
+                    }
+                    className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition group"
+                  >
+                    <div className="relative overflow-hidden">
+                      <img
+                        src={model.image}
+                        alt={`${model.brand} ${model.model}`}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <span className="absolute top-3 right-3 bg-blue-600 px-2 py-1 rounded text-xs font-medium">
+                        {model.category}
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-bold text-white">
+                        {model.model}
+                      </h3>
+                      <p className="text-slate-400 text-sm line-clamp-2 mt-1">
+                        {model.description}
+                      </p>
+                      <div className="mt-3 text-blue-400 text-sm font-medium group-hover:text-blue-300 flex items-center gap-1">
+                        Pregledaj generacije <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

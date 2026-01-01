@@ -1,29 +1,41 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useParams, Link } from "wouter";
 import type { CarModel, CarGenerationWithModel } from "@shared/schema";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar, ChevronRight } from "lucide-react";
 
 export default function ModelDetail() {
-  const [, params] = useRoute("/automobili/:id");
-  const modelId = params?.id;
+  // Get params from URL
+  const params = useParams<{ brandSlug?: string; modelSlug?: string; id?: string }>();
 
+  const brandSlug = params.brandSlug;
+  const modelSlug = params.modelSlug;
+  const modelId = params.id;
+  const isSlugRoute = !!(brandSlug && modelSlug);
+
+  // Fetch model by slug or ID
   const { data: model, isLoading: modelLoading } = useQuery<CarModel>({
-    queryKey: ["/api/models", modelId],
+    queryKey: isSlugRoute 
+      ? ["/api/car", brandSlug, modelSlug] 
+      : ["/api/models", modelId],
     queryFn: async () => {
-      const res = await fetch(`/api/models/${modelId}`);
+      const url = isSlugRoute 
+        ? `/api/car/${brandSlug}/${modelSlug}`
+        : `/api/models/${modelId}`;
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch model");
       return res.json();
     },
+    enabled: isSlugRoute ? !!(brandSlug && modelSlug) : !!modelId,
   });
 
   const { data: generations, isLoading: generationsLoading } = useQuery<CarGenerationWithModel[]>({
-    queryKey: ["/api/models", modelId, "generations"],
+    queryKey: ["/api/models", model?.id, "generations"],
     queryFn: async () => {
-      const res = await fetch(`/api/models/${modelId}/generations`);
+      const res = await fetch(`/api/models/${model?.id}/generations`);
       if (!res.ok) throw new Error("Failed to fetch generations");
       return res.json();
     },
-    enabled: !!modelId,
+    enabled: !!model?.id,
   });
 
   if (modelLoading || generationsLoading) {
@@ -45,12 +57,28 @@ export default function ModelDetail() {
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-6xl">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-6 text-sm">
+          <Link href="/automobili" className="text-slate-400 hover:text-blue-400 transition">
+            Sve marke
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <Link 
+            href={model.brandSlug ? `/automobili/${model.brandSlug}` : "/automobili"} 
+            className="text-slate-400 hover:text-blue-400 transition"
+          >
+            {model.brand}
+          </Link>
+          <ChevronRight className="w-4 h-4 text-slate-600" />
+          <span className="text-blue-400 font-medium">{model.model}</span>
+        </div>
+
         <Link
-          href="/automobili"
+          href={model.brandSlug ? `/automobili/${model.brandSlug}` : "/automobili"}
           className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-8"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span>Povratak na listu</span>
+          <span>Povratak na {model.brand}</span>
         </Link>
 
         {/* Model Header */}
@@ -87,41 +115,47 @@ export default function ModelDetail() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {generations?.map((generation) => (
-              <Link
-                key={generation.id}
-                href={`/generacija/${generation.id}`}
-                className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition group"
-              >
-                <div className="relative overflow-hidden">
-                  <img
-                    src={generation.image}
-                    alt={`${model.brand} ${model.model} ${generation.name}`}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <div className="flex items-center gap-1 text-sm text-slate-200">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {generation.yearStart}
-                        {generation.yearEnd ? ` - ${generation.yearEnd}` : " - danas"}
-                      </span>
+            {generations?.map((generation) => {
+              const generationUrl = model.brandSlug && model.modelSlug && generation.slug
+                ? `/automobili/${model.brandSlug}/${model.modelSlug}/${generation.slug}`
+                : `/generacija/${generation.id}`;
+              
+              return (
+                <Link
+                  key={generation.id}
+                  href={generationUrl}
+                  className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition group"
+                >
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={generation.image}
+                      alt={`${model.brand} ${model.model} ${generation.name}`}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <div className="flex items-center gap-1 text-sm text-slate-200">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          {generation.yearStart}
+                          {generation.yearEnd ? ` - ${generation.yearEnd}` : " - danas"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="p-4">
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    {generation.name}
-                  </h3>
-                  <p className="text-slate-400 text-sm line-clamp-2">
-                    {generation.description}
-                  </p>
-                  <div className="mt-3 text-blue-400 text-sm font-medium group-hover:text-blue-300">
-                    Pregledaj motore →
+                  <div className="p-4">
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      {generation.name}
+                    </h3>
+                    <p className="text-slate-400 text-sm line-clamp-2">
+                      {generation.description}
+                    </p>
+                    <div className="mt-3 text-blue-400 text-sm font-medium group-hover:text-blue-300 flex items-center gap-1">
+                      Pregledaj motore <ChevronRight className="w-4 h-4" />
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

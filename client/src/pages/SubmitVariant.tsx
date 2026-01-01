@@ -370,10 +370,10 @@ export default function SubmitCar() {
                       onChange={(e) => setVariantData({ ...variantData, fuelType: e.target.value })}
                       className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2 focus:border-blue-500 focus:outline-none"
                     >
-                      <option>Benzin</option>
-                      <option>Dizel</option>
-                      <option>Hibrid</option>
-                      <option>Električni</option>
+                      <option value="Benzin">Benzin</option>
+                      <option value="Diesel">Diesel</option>
+                      <option value="Hybrid">Hibrid</option>
+                      <option value="Electric">Električni</option>
                     </select>
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
-import { storage } from "./storage";
+import { storage, generateSlug } from "./storage";
 import { auth } from "./auth";
 import { fromNodeHeaders } from "better-auth/node";
 import {
@@ -70,6 +70,26 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Get all unique brands
+  app.get("/api/brands", async (_req: Request, res: Response) => {
+    try {
+      const brands = await storage.getBrands();
+      res.json(brands);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch brands" });
+    }
+  });
+
+  // Get models by brand slug
+  app.get("/api/brands/:brandSlug/models", async (req: Request, res: Response) => {
+    try {
+      const models = await storage.getModelsByBrand(req.params.brandSlug);
+      res.json(models);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch models" });
+    }
+  });
+
   app.get("/api/models/:id", async (req: Request, res: Response) => {
     try {
       const model = await storage.getCarModelById(req.params.id);
@@ -82,10 +102,67 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Get model by slug (for dynamic routing)
+  app.get("/api/car/:brandSlug/:modelSlug", async (req: Request, res: Response) => {
+    try {
+      const model = await storage.getCarModelBySlug(req.params.brandSlug, req.params.modelSlug);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+      res.json(model);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car model" });
+    }
+  });
+
+  // Get generation by slug
+  app.get("/api/car/:brandSlug/:modelSlug/:generationSlug", async (req: Request, res: Response) => {
+    try {
+      const model = await storage.getCarModelBySlug(req.params.brandSlug, req.params.modelSlug);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+      const generation = await storage.getCarGenerationBySlug(model.id, req.params.generationSlug);
+      if (!generation) {
+        return res.status(404).json({ message: "Car generation not found" });
+      }
+      res.json(generation);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car generation" });
+    }
+  });
+
+  // Get variant by slug
+  app.get("/api/car/:brandSlug/:modelSlug/:generationSlug/:variantSlug", async (req: Request, res: Response) => {
+    try {
+      const model = await storage.getCarModelBySlug(req.params.brandSlug, req.params.modelSlug);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+      const generation = await storage.getCarGenerationBySlug(model.id, req.params.generationSlug);
+      if (!generation) {
+        return res.status(404).json({ message: "Car generation not found" });
+      }
+      const variant = await storage.getCarVariantBySlug(generation.id, req.params.variantSlug);
+      if (!variant) {
+        return res.status(404).json({ message: "Car variant not found" });
+      }
+      res.json(variant);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch car variant" });
+    }
+  });
+
   app.post("/api/models", isAdmin, async (req: Request, res: Response) => {
     try {
       const modelData = insertCarModelSchema.parse(req.body);
-      const model = await storage.createCarModel(modelData);
+      // Auto-generate slugs if not provided
+      const dataWithSlugs = {
+        ...modelData,
+        brandSlug: modelData.brandSlug || generateSlug(modelData.brand),
+        modelSlug: modelData.modelSlug || generateSlug(modelData.model),
+      };
+      const model = await storage.createCarModel(dataWithSlugs);
       res.json(model);
     } catch (error: any) {
       const validationError = fromError(error);
@@ -96,7 +173,11 @@ export function registerRoutes(app: Express) {
   app.put("/api/models/:id", isAdmin, async (req: Request, res: Response) => {
     try {
       const modelData = insertCarModelSchema.partial().parse(req.body);
-      const model = await storage.updateCarModel(req.params.id, modelData);
+      // Auto-generate slugs if brand/model changed
+      const dataWithSlugs: any = { ...modelData };
+      if (modelData.brand) dataWithSlugs.brandSlug = generateSlug(modelData.brand);
+      if (modelData.model) dataWithSlugs.modelSlug = generateSlug(modelData.model);
+      const model = await storage.updateCarModel(req.params.id, dataWithSlugs);
       if (!model) {
         return res.status(404).json({ message: "Car model not found" });
       }
@@ -150,7 +231,12 @@ export function registerRoutes(app: Express) {
   app.post("/api/generations", isAdmin, async (req: Request, res: Response) => {
     try {
       const generationData = insertCarGenerationSchema.parse(req.body);
-      const generation = await storage.createCarGeneration(generationData);
+      // Auto-generate slug if not provided
+      const dataWithSlug = {
+        ...generationData,
+        slug: generationData.slug || generateSlug(generationData.name),
+      };
+      const generation = await storage.createCarGeneration(dataWithSlug);
       res.json(generation);
     } catch (error: any) {
       const validationError = fromError(error);
@@ -161,7 +247,10 @@ export function registerRoutes(app: Express) {
   app.put("/api/generations/:id", isAdmin, async (req: Request, res: Response) => {
     try {
       const generationData = insertCarGenerationSchema.partial().parse(req.body);
-      const generation = await storage.updateCarGeneration(req.params.id, generationData);
+      // Auto-generate slug if name changed
+      const dataWithSlug: any = { ...generationData };
+      if (generationData.name) dataWithSlug.slug = generateSlug(generationData.name);
+      const generation = await storage.updateCarGeneration(req.params.id, dataWithSlug);
       if (!generation) {
         return res.status(404).json({ message: "Car generation not found" });
       }
@@ -233,7 +322,13 @@ export function registerRoutes(app: Express) {
   app.post("/api/variants", isAdmin, async (req: Request, res: Response) => {
     try {
       const variantData = insertCarVariantSchema.parse(req.body);
-      const variant = await storage.createCarVariant({ ...variantData, status: "approved" });
+      // Auto-generate slug if not provided
+      const dataWithSlug = {
+        ...variantData,
+        slug: variantData.slug || generateSlug(variantData.engineName),
+        status: "approved",
+      };
+      const variant = await storage.createCarVariant(dataWithSlug);
       res.json(variant);
     } catch (error: any) {
       const validationError = fromError(error);
@@ -245,12 +340,15 @@ export function registerRoutes(app: Express) {
     try {
       const session = (req as any).session;
       const variantData = insertCarVariantSchema.parse(req.body);
-      const variant = await storage.createCarVariant({
+      // Auto-generate slug if not provided
+      const dataWithSlug = {
         ...variantData,
+        slug: variantData.slug || generateSlug(variantData.engineName),
         status: "pending",
         submittedBy: session.user.id,
         submittedByName: session.user.name || session.user.email,
-      });
+      };
+      const variant = await storage.createCarVariant(dataWithSlug);
       res.json(variant);
     } catch (error: any) {
       const validationError = fromError(error);
@@ -277,7 +375,10 @@ export function registerRoutes(app: Express) {
   app.put("/api/variants/:id", isAdmin, async (req: Request, res: Response) => {
     try {
       const variantData = insertCarVariantSchema.partial().parse(req.body);
-      const variant = await storage.updateCarVariant(req.params.id, variantData);
+      // Auto-generate slug if engineName changed
+      const dataWithSlug: any = { ...variantData };
+      if (variantData.engineName) dataWithSlug.slug = generateSlug(variantData.engineName);
+      const variant = await storage.updateCarVariant(req.params.id, dataWithSlug);
       if (!variant) {
         return res.status(404).json({ message: "Car variant not found" });
       }

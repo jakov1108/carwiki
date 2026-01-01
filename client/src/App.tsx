@@ -1,4 +1,4 @@
-import { Route, Router } from "wouter";
+import { Route, Router, Switch } from "wouter";
 import { AuthProvider } from "./lib/auth";
 import Home from "./pages/Home";
 import Models from "./pages/Models";
@@ -24,20 +24,28 @@ function App() {
         <Navbar />
         <main className="flex-1">
           <Router>
-            <Route path="/" component={Home} />
-            <Route path="/automobili" component={Models} />
-            <Route path="/automobili/:id" component={ModelDetail} />
-            <Route path="/generacija/:id" component={GenerationDetail} />
-            <Route path="/varijanta/:id" component={VariantDetail} />
-            <Route path="/usporedi" component={Compare} />
-            <Route path="/blog" component={Blog} />
-            <Route path="/blog/:id" component={BlogPost} />
-            <Route path="/prijava" component={Login} />
-            <Route path="/registracija" component={Register} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/kontakt" component={Contact} />
-            <Route path="/o-nama" component={About} />
-            <Route path="/predlozi-auto" component={SubmitVariant} />
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/automobili" component={Models} />
+              {/* Dynamic routing: /brand/model/generation/variant */}
+              <Route path="/automobili/:brandSlug/:modelSlug/:generationSlug/:variantSlug" component={VariantDetail} />
+              <Route path="/automobili/:brandSlug/:modelSlug/:generationSlug" component={GenerationDetail} />
+              <Route path="/automobili/:brandSlug/:modelSlug" component={ModelDetail} />
+              <Route path="/automobili/:brandSlug" component={Models} />
+              {/* Legacy routes (keep for backward compatibility) */}
+              <Route path="/model/:id" component={ModelDetail} />
+              <Route path="/generacija/:id" component={GenerationDetail} />
+              <Route path="/varijanta/:id" component={VariantDetail} />
+              <Route path="/usporedi" component={Compare} />
+              <Route path="/blog" component={Blog} />
+              <Route path="/blog/:id" component={BlogPost} />
+              <Route path="/prijava" component={Login} />
+              <Route path="/registracija" component={Register} />
+              <Route path="/admin" component={Admin} />
+              <Route path="/kontakt" component={Contact} />
+              <Route path="/o-nama" component={About} />
+              <Route path="/predlozi-auto" component={SubmitVariant} />
+            </Switch>
           </Router>
         </main>
         <Footer />

@@ -11,7 +11,9 @@ export { user, session, account, verification, type SafeUser } from "./auth-sche
 export const carModels = pgTable("car_models", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   brand: text("brand").notNull(),
+  brandSlug: text("brand_slug").notNull().default(""), // url-friendly: volkswagen, bmw
   model: text("model").notNull(),
+  modelSlug: text("model_slug").notNull().default(""), // url-friendly: golf, 3-series
   category: text("category").notNull(), // Compact, Sedan, SUV, Sports, Electric
   image: text("image").notNull(), // Glavna slika modela
   description: text("description").notNull(),
@@ -32,6 +34,7 @@ export const carGenerations = pgTable("car_generations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   modelId: varchar("model_id").notNull().references(() => carModels.id, { onDelete: "cascade" }),
   name: text("name").notNull(), // npr. "MK7", "E90", "B8"
+  slug: text("slug").notNull().default(""), // url-friendly: mk7, e90, b8
   yearStart: integer("year_start").notNull(),
   yearEnd: integer("year_end"), // null ako se još proizvodi
   image: text("image").notNull(),
@@ -53,6 +56,7 @@ export const carVariants = pgTable("car_variants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   generationId: varchar("generation_id").notNull().references(() => carGenerations.id, { onDelete: "cascade" }),
   engineName: text("engine_name").notNull(), // npr. "2.0 TDI", "1.4 TSI"
+  slug: text("slug").notNull().default(""), // url-friendly: 20tdi, 14tsi
   engineCode: text("engine_code"), // npr. "CRLB", "CZEA"
   displacement: text("displacement"), // npr. "1968 ccm"
   fuelType: text("fuel_type").notNull(), // Benzin, Dizel, Hibrid, Električni

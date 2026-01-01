@@ -17,15 +17,49 @@ import {
 } from "../shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 
+// Helper function to generate URL-friendly slugs
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[čć]/g, 'c')
+    .replace(/[đ]/g, 'd')
+    .replace(/[š]/g, 's')
+    .replace(/[ž]/g, 'z')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/--+/g, '-');
+}
+
 export const storage = {
   // ========== CAR MODELS ==========
   async getCarModels() {
     return await db.select().from(carModels).orderBy(carModels.brand, carModels.model);
   },
 
+  async getBrands() {
+    const models = await db.select().from(carModels).orderBy(carModels.brand);
+    const brandsMap = new Map<string, { brand: string; brandSlug: string }>();
+    models.forEach(m => {
+      if (!brandsMap.has(m.brandSlug)) {
+        brandsMap.set(m.brandSlug, { brand: m.brand, brandSlug: m.brandSlug });
+      }
+    });
+    return Array.from(brandsMap.values());
+  },
+
+  async getModelsByBrand(brandSlug: string) {
+    const allModels = await db.select().from(carModels).orderBy(carModels.model);
+    return allModels.filter(m => m.brandSlug === brandSlug);
+  },
+
   async getCarModelById(id: string) {
     const [model] = await db.select().from(carModels).where(eq(carModels.id, id)).limit(1);
     return model;
+  },
+
+  async getCarModelBySlug(brandSlug: string, modelSlug: string) {
+    const allModels = await db.select().from(carModels);
+    return allModels.find(m => m.brandSlug === brandSlug && m.modelSlug === modelSlug) || null;
   },
 
   async createCarModel(data: InsertCarModel) {
@@ -68,6 +102,15 @@ export const storage = {
 
   async getCarGenerationById(id: string) {
     const [generation] = await db.select().from(carGenerations).where(eq(carGenerations.id, id)).limit(1);
+    if (!generation) return null;
+    
+    const [model] = await db.select().from(carModels).where(eq(carModels.id, generation.modelId)).limit(1);
+    return { ...generation, model } as CarGenerationWithModel;
+  },
+
+  async getCarGenerationBySlug(modelId: string, generationSlug: string) {
+    const generations = await db.select().from(carGenerations).where(eq(carGenerations.modelId, modelId));
+    const generation = generations.find(g => g.slug === generationSlug);
     if (!generation) return null;
     
     const [model] = await db.select().from(carModels).where(eq(carModels.id, generation.modelId)).limit(1);
@@ -123,6 +166,18 @@ export const storage = {
 
   async getCarVariantById(id: string) {
     const [variant] = await db.select().from(carVariants).where(eq(carVariants.id, id)).limit(1);
+    if (!variant) return null;
+    
+    const [generation] = await db.select().from(carGenerations).where(eq(carGenerations.id, variant.generationId)).limit(1);
+    const [model] = await db.select().from(carModels).where(eq(carModels.id, generation?.modelId || '')).limit(1);
+    
+    return { ...variant, generation, model } as CarVariantWithDetails;
+  },
+
+  async getCarVariantBySlug(generationId: string, variantSlug: string) {
+    const variants = await db.select().from(carVariants)
+      .where(and(eq(carVariants.generationId, generationId), eq(carVariants.status, "approved")));
+    const variant = variants.find(v => v.slug === variantSlug);
     if (!variant) return null;
     
     const [generation] = await db.select().from(carGenerations).where(eq(carGenerations.id, variant.generationId)).limit(1);
