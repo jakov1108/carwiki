@@ -5,6 +5,13 @@ import { useLocation } from "wouter";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost, ContactMessage } from "@shared/schema";
 import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Settings, ChevronRight, ArrowLeft } from "lucide-react";
 import { ObjectUploader } from "../components/ObjectUploader";
+import MultiImageUploader from "../components/MultiImageUploader";
+
+interface ImageItem {
+  id?: string;
+  url: string;
+  isNew?: boolean;
+}
 
 type Tab = "cars" | "pending" | "blog" | "messages";
 
@@ -646,27 +653,73 @@ function ModelForm({ model, models, preselectedBrand, onClose }: { model: CarMod
     image: model?.image || "",
     description: model?.description || "",
   });
+  
+  // Multi-image state
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  // Load existing images when editing
+  useEffect(() => {
+    if (model?.id && !imagesLoaded) {
+      fetch(`/api/images/model/${model.id}`)
+        .then(res => res.json())
+        .then((data: { id: string; url: string }[]) => {
+          setImages(data.map(img => ({ id: img.id, url: img.url })));
+          setImagesLoaded(true);
+        })
+        .catch(() => {
+          // If no images endpoint or error, use legacy single image
+          if (model.image) {
+            setImages([{ url: model.image }]);
+          }
+          setImagesLoaded(true);
+        });
+    } else if (!model && !imagesLoaded) {
+      setImagesLoaded(true);
+    }
+  }, [model, imagesLoaded]);
+
   const saveModel = useMutation({
     mutationFn: async (data: typeof formData) => {
+      // Use first image as main image for backward compatibility
+      const dataWithImage = { ...data, image: images[0]?.url || "" };
+      
       const url = model ? `/api/models/${model.id}` : "/api/models";
       const method = model ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(dataWithImage),
         credentials: "include",
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || `Greška: ${res.status}`);
       }
-      return res.json();
+      const savedModel = await res.json();
+      
+      // Save images to the images table
+      if (images.length > 0) {
+        await fetch("/api/images/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entityType: "model",
+            entityId: savedModel.id,
+            images: images.map((img, index) => ({ url: img.url, order: index }))
+          }),
+          credentials: "include",
+        });
+      }
+      
+      return savedModel;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/models"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/images"] });
       onClose();
     },
     onError: (err: Error) => {
@@ -772,13 +825,11 @@ function ModelForm({ model, models, preselectedBrand, onClose }: { model: CarMod
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Slika *</label>
-            <ObjectUploader
-              currentImage={formData.image}
-              onUploadComplete={(imagePath) => setFormData({ ...formData, image: imagePath })}
-            />
-          </div>
+          <MultiImageUploader
+            images={images}
+            onChange={setImages}
+            maxImages={10}
+          />
 
           {error && (
             <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
@@ -789,7 +840,7 @@ function ModelForm({ model, models, preselectedBrand, onClose }: { model: CarMod
           <div className="flex space-x-4">
             <button
               type="submit"
-              disabled={saveModel.isPending || !formData.image}
+              disabled={saveModel.isPending || images.length === 0}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
             >
               {saveModel.isPending ? "Spremam..." : "Spremi"}
@@ -833,8 +884,34 @@ function GenerationForm({
     image: generation?.image || "",
     description: generation?.description || "",
   });
+  
+  // Multi-image state
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Load existing images when editing
+  useEffect(() => {
+    if (generation?.id && !imagesLoaded) {
+      fetch(`/api/images/generation/${generation.id}`)
+        .then(res => res.json())
+        .then((data: { id: string; url: string }[]) => {
+          setImages(data.map(img => ({ id: img.id, url: img.url })));
+          setImagesLoaded(true);
+        })
+        .catch(() => {
+          // If no images endpoint or error, use legacy single image
+          if (generation.image) {
+            setImages([{ url: generation.image }]);
+          }
+          setImagesLoaded(true);
+        });
+    } else if (!generation && !imagesLoaded) {
+      setImagesLoaded(true);
+    }
+  }, [generation, imagesLoaded]);
 
   // Get unique brands
   const brands = [...new Set(models.map(m => m.brand))].sort();
@@ -846,22 +923,42 @@ function GenerationForm({
 
   const saveGeneration = useMutation({
     mutationFn: async (data: typeof formData) => {
+      // Use first image as main image for backward compatibility
+      const dataWithImage = { ...data, image: images[0]?.url || "" };
+      
       const url = generation ? `/api/generations/${generation.id}` : "/api/generations";
       const method = generation ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(dataWithImage),
         credentials: "include",
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || `Greška: ${res.status}`);
       }
-      return res.json();
+      const savedGeneration = await res.json();
+      
+      // Save images to the images table
+      if (images.length > 0) {
+        await fetch("/api/images/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entityType: "generation",
+            entityId: savedGeneration.id,
+            images: images.map((img, index) => ({ url: img.url, order: index }))
+          }),
+          credentials: "include",
+        });
+      }
+      
+      return savedGeneration;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/images"] });
       onClose();
     },
     onError: (err: Error) => {
@@ -966,13 +1063,11 @@ function GenerationForm({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Slika *</label>
-            <ObjectUploader
-              currentImage={formData.image}
-              onUploadComplete={(imagePath) => setFormData({ ...formData, image: imagePath })}
-            />
-          </div>
+          <MultiImageUploader
+            images={images}
+            onChange={setImages}
+            maxImages={10}
+          />
 
           {error && (
             <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
@@ -983,7 +1078,7 @@ function GenerationForm({
           <div className="flex space-x-4">
             <button
               type="submit"
-              disabled={saveGeneration.isPending || !formData.image || !formData.modelId}
+              disabled={saveGeneration.isPending || images.length === 0 || !formData.modelId}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
             >
               {saveGeneration.isPending ? "Spremam..." : "Spremi"}
@@ -1345,22 +1440,68 @@ function BlogForm({ post, onClose }: { post: BlogPost | null; onClose: () => voi
     excerpt: post?.excerpt || "",
     date: post?.date || new Date().toISOString(),
   });
+  
+  // Multi-image state
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  
   const queryClient = useQueryClient();
+
+  // Load existing images when editing
+  useEffect(() => {
+    if (post?.id && !imagesLoaded) {
+      fetch(`/api/images/blog/${post.id}`)
+        .then(res => res.json())
+        .then((data: { id: string; url: string }[]) => {
+          setImages(data.map(img => ({ id: img.id, url: img.url })));
+          setImagesLoaded(true);
+        })
+        .catch(() => {
+          // If no images endpoint or error, use legacy single image
+          if (post.image) {
+            setImages([{ url: post.image }]);
+          }
+          setImagesLoaded(true);
+        });
+    } else if (!post && !imagesLoaded) {
+      setImagesLoaded(true);
+    }
+  }, [post, imagesLoaded]);
 
   const saveBlog = useMutation({
     mutationFn: async (data: typeof formData) => {
+      // Use first image as main image for backward compatibility
+      const dataWithImage = { ...data, image: images[0]?.url || "" };
+      
       const url = post ? `/api/blog/${post.id}` : "/api/blog";
       const method = post ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(dataWithImage),
       });
       if (!res.ok) throw new Error("Failed to save");
-      return res.json();
+      const savedPost = await res.json();
+      
+      // Save images to the images table
+      if (images.length > 0) {
+        await fetch("/api/images/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entityType: "blog",
+            entityId: savedPost.id,
+            images: images.map((img, index) => ({ url: img.url, order: index }))
+          }),
+          credentials: "include",
+        });
+      }
+      
+      return savedPost;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/images"] });
       onClose();
     },
   });
@@ -1432,21 +1573,16 @@ function BlogForm({ post, onClose }: { post: BlogPost | null; onClose: () => voi
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">URL Slike</label>
-            <input
-              type="url"
-              value={formData.image}
-              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-              required
-              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
-            />
-          </div>
+          <MultiImageUploader
+            images={images}
+            onChange={setImages}
+            maxImages={10}
+          />
 
           <div className="flex space-x-4">
             <button
               type="submit"
-              disabled={saveBlog.isPending}
+              disabled={saveBlog.isPending || images.length === 0}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
             >
               {saveBlog.isPending ? "Spremam..." : "Spremi"}

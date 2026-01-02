@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import type { CarVariantWithDetails } from "@shared/schema";
+import type { CarVariantWithDetails, Image } from "@shared/schema";
 import { ArrowLeft, Gauge, Zap, Fuel, Settings, Calendar, Play, ChevronRight } from "lucide-react";
+import ImageCarousel from "../components/ImageCarousel";
 
 export default function VariantDetail() {
   // Get params from URL
@@ -28,6 +29,21 @@ export default function VariantDetail() {
     },
     enabled: isSlugRoute ? !!(brandSlug && modelSlug && generationSlug && variantSlug) : !!variantId,
   });
+
+  const { data: variantImages } = useQuery<Image[]>({
+    queryKey: ["/api/images/variant", variant?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/images/variant/${variant?.id}`);
+      if (!res.ok) throw new Error("Failed to fetch images");
+      return res.json();
+    },
+    enabled: !!variant?.id,
+  });
+
+  // Combine generation image with variant-specific images
+  const allImages = variant?.generation?.image 
+    ? [variant.generation.image, ...(variantImages?.map(img => img.url) || [])] 
+    : (variantImages?.map(img => img.url) || []);
 
   if (isLoading) {
     return (
@@ -95,13 +111,14 @@ export default function VariantDetail() {
         <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
           {/* Header with generation image */}
           <div className="relative">
-            <img
-              src={variant.generation?.image}
-              alt={fullName}
-              className="w-full h-64 md:h-80 object-cover"
+            <ImageCarousel
+              images={allImages}
+              autoPlay={true}
+              autoPlayInterval={5000}
+              className="h-64 md:h-80"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6">
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
               <div className="flex flex-wrap items-center gap-3 mb-3">
                 <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium">
                   {variant.generation?.name}

@@ -9,6 +9,7 @@ import {
   insertCarVariantSchema,
   insertBlogPostSchema,
   insertContactMessageSchema,
+  insertImageSchema,
 } from "../shared/schema";
 import { fromError } from "zod-validation-error";
 import { handleImageUpload, serveUploadedImage } from "./imageUpload";
@@ -596,6 +597,78 @@ export function registerRoutes(app: Express) {
       res.json({ message: "Contact message deleted successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete contact message" });
+    }
+  });
+
+  // ========== IMAGES API ==========
+  app.get("/api/images/:entityType/:entityId", async (req: Request, res: Response) => {
+    try {
+      const { entityType, entityId } = req.params;
+      const imageList = await storage.getImagesByEntity(entityType, entityId);
+      res.json(imageList);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch images" });
+    }
+  });
+
+  app.post("/api/images", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const imageData = insertImageSchema.parse(req.body);
+      const image = await storage.addImage(imageData);
+      res.json(image);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.post("/api/images/bulk", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { entityType, entityId, images: imageList } = req.body;
+      
+      if (!entityType || !entityId) {
+        return res.status(400).json({ message: "entityType and entityId are required" });
+      }
+      
+      if (!Array.isArray(imageList)) {
+        return res.status(400).json({ message: "Images must be an array" });
+      }
+      
+      // First, delete existing images for this entity
+      await storage.deleteImagesByEntity(entityType, entityId);
+      
+      // Then add the new images
+      const imagesToAdd = imageList.map((img: any, index: number) => ({
+        entityType,
+        entityId,
+        url: img.url,
+        sortOrder: img.order ?? index,
+      }));
+      
+      const result = await storage.addImages(imagesToAdd);
+      res.json(result);
+    } catch (error: any) {
+      const validationError = fromError(error);
+      res.status(400).json({ message: validationError.toString() });
+    }
+  });
+
+  app.delete("/api/images/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteImage(req.params.id);
+      res.json({ message: "Image deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete image" });
+    }
+  });
+
+  app.delete("/api/images/:entityType/:entityId", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { entityType, entityId } = req.params;
+      await storage.deleteImagesByEntity(entityType, entityId);
+      res.json({ message: "Images deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete images" });
     }
   });
 

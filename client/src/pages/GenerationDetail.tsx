@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import type { CarGenerationWithModel, CarVariantWithDetails } from "@shared/schema";
+import type { CarGenerationWithModel, CarVariantWithDetails, Image } from "@shared/schema";
 import { ArrowLeft, Calendar, Fuel, Gauge, Zap, Settings, ChevronRight } from "lucide-react";
+import ImageCarousel from "../components/ImageCarousel";
 
 export default function GenerationDetail() {
   // Get params from the URL - wouter passes these through Route
@@ -38,6 +39,19 @@ export default function GenerationDetail() {
     },
     enabled: !!generation?.id,
   });
+
+  const { data: generationImages } = useQuery<Image[]>({
+    queryKey: ["/api/images/generation", generation?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/images/generation/${generation?.id}`);
+      if (!res.ok) throw new Error("Failed to fetch images");
+      return res.json();
+    },
+    enabled: !!generation?.id,
+  });
+
+  // Combine main image with additional images
+  const allImages = generation ? [generation.image, ...(generationImages?.map(img => img.url) || [])] : [];
 
   if (generationLoading || variantsLoading) {
     return (
@@ -120,13 +134,14 @@ export default function GenerationDetail() {
         {/* Generation Header */}
         <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 mb-8">
           <div className="relative">
-            <img
-              src={generation.image}
-              alt={`${generation.model?.brand} ${generation.model?.model} ${generation.name}`}
-              className="w-full h-64 md:h-80 object-cover"
+            <ImageCarousel
+              images={allImages}
+              autoPlay={true}
+              autoPlayInterval={5000}
+              className="h-64 md:h-80"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6">
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
               <div className="flex items-center gap-3 mb-2">
                 <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium">
                   {generation.name}

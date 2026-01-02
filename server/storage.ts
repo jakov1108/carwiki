@@ -6,12 +6,14 @@ import {
   carVariants,
   blogPosts,
   contactMessages,
+  images,
   type InsertCar,
   type InsertCarModel,
   type InsertCarGeneration,
   type InsertCarVariant,
   type InsertBlogPost,
   type InsertContactMessage,
+  type InsertImage,
   type CarVariantWithDetails,
   type CarGenerationWithModel,
 } from "../shared/schema";
@@ -320,5 +322,44 @@ export const storage = {
 
   async deleteContactMessage(id: string) {
     await db.delete(contactMessages).where(eq(contactMessages.id, id));
+  },
+
+  // ========== IMAGES ==========
+  async getImagesByEntity(entityType: string, entityId: string) {
+    return await db
+      .select()
+      .from(images)
+      .where(and(eq(images.entityType, entityType), eq(images.entityId, entityId)))
+      .orderBy(images.sortOrder);
+  },
+
+  async addImage(data: InsertImage) {
+    const [image] = await db.insert(images).values(data).returning();
+    return image;
+  },
+
+  async addImages(imageList: InsertImage[]) {
+    if (imageList.length === 0) return [];
+    const result = await db.insert(images).values(imageList).returning();
+    return result;
+  },
+
+  async deleteImage(id: string) {
+    await db.delete(images).where(eq(images.id, id));
+  },
+
+  async deleteImagesByEntity(entityType: string, entityId: string) {
+    await db.delete(images).where(
+      and(eq(images.entityType, entityType), eq(images.entityId, entityId))
+    );
+  },
+
+  async updateImageOrder(imageId: string, sortOrder: number) {
+    const [image] = await db
+      .update(images)
+      .set({ sortOrder })
+      .where(eq(images.id, imageId))
+      .returning();
+    return image;
   },
 };

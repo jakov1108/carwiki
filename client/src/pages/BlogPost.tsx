@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
-import type { BlogPost } from "@shared/schema";
+import type { BlogPost, Image } from "@shared/schema";
 import { ArrowLeft, Calendar, User } from "lucide-react";
+import ImageCarousel from "../components/ImageCarousel";
 
 export default function BlogPostPage() {
   const [, params] = useRoute("/blog/:slug");
@@ -15,6 +16,19 @@ export default function BlogPostPage() {
       return res.json();
     },
   });
+
+  const { data: images } = useQuery<Image[]>({
+    queryKey: ["/api/images/blog", post?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/images/blog/${post?.id}`);
+      if (!res.ok) throw new Error("Failed to fetch images");
+      return res.json();
+    },
+    enabled: !!post?.id,
+  });
+
+  // Combine main image with additional images
+  const allImages = post ? [post.image, ...(images?.map(img => img.url) || [])] : [];
 
   if (isLoading) {
     return (
@@ -41,10 +55,12 @@ export default function BlogPostPage() {
         </Link>
 
         <article className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
-          <img
-            src={post.image}
-            alt={post.title}
-            className="w-full h-96 object-cover"
+          <ImageCarousel
+            images={allImages}
+            autoPlay={true}
+            autoPlayInterval={6000}
+            className="h-96"
+            aspectRatio="wide"
           />
 
           <div className="p-8">
