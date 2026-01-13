@@ -6,7 +6,7 @@ interface ImageCarouselProps {
   autoPlay?: boolean;
   autoPlayInterval?: number;
   className?: string;
-  aspectRatio?: "video" | "square" | "wide";
+  aspectRatio?: "video" | "square" | "wide" | "none";
 }
 
 export default function ImageCarousel({
@@ -23,6 +23,7 @@ export default function ImageCarousel({
     video: "aspect-video",
     square: "aspect-square",
     wide: "aspect-[21/9]",
+    none: "",
   };
 
   const goToNext = useCallback(() => {

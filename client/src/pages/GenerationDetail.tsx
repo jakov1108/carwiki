@@ -50,8 +50,9 @@ export default function GenerationDetail() {
     enabled: !!generation?.id,
   });
 
-  // Combine main image with additional images
-  const allImages = generation ? [generation.image, ...(generationImages?.map(img => img.url) || [])] : [];
+  // Combine main image with additional images, filtering out duplicates
+  const additionalGenImages = generationImages?.map(img => img.url).filter(url => url !== generation?.image) || [];
+  const allImages = generation ? [generation.image, ...additionalGenImages] : [];
 
   if (generationLoading || variantsLoading) {
     return (
@@ -139,6 +140,7 @@ export default function GenerationDetail() {
               autoPlay={true}
               autoPlayInterval={5000}
               className="h-64 md:h-80"
+              aspectRatio="none"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">

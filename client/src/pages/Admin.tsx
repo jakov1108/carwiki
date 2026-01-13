@@ -6,6 +6,7 @@ import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost,
 import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Settings, ChevronRight, ArrowLeft } from "lucide-react";
 import { ObjectUploader } from "../components/ObjectUploader";
 import MultiImageUploader from "../components/MultiImageUploader";
+import RichTextEditor from "../components/RichTextEditor";
 
 interface ImageItem {
   id?: string;
@@ -1564,12 +1565,12 @@ function BlogForm({ post, onClose }: { post: BlogPost | null; onClose: () => voi
 
           <div>
             <label className="block text-sm font-medium mb-2">Sadržaj</label>
-            <textarea
+            <RichTextEditor
               value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              onChange={(content) => setFormData({ ...formData, content })}
               required
-              rows={10}
-              className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              rows={12}
+              placeholder="Unesite sadržaj članka..."
             />
           </div>
 

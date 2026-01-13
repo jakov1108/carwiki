@@ -3,6 +3,7 @@ import { useRoute, Link } from "wouter";
 import type { BlogPost, Image } from "@shared/schema";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
+import { renderFormattedContent } from "../components/RichTextEditor";
 
 export default function BlogPostPage() {
   const [, params] = useRoute("/blog/:slug");
@@ -27,8 +28,9 @@ export default function BlogPostPage() {
     enabled: !!post?.id,
   });
 
-  // Combine main image with additional images
-  const allImages = post ? [post.image, ...(images?.map(img => img.url) || [])] : [];
+  // Combine main image with additional images, filtering out duplicates
+  const additionalImages = images?.map(img => img.url).filter(url => url !== post?.image) || [];
+  const allImages = post ? [post.image, ...additionalImages] : [];
 
   if (isLoading) {
     return (
@@ -84,9 +86,7 @@ export default function BlogPostPage() {
             </div>
 
             <div className="prose prose-invert max-w-none">
-              <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">
-                {post.content}
-              </p>
+              {renderFormattedContent(post.content)}
             </div>
           </div>
         </article>

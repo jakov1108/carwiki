@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Car, BookOpen, Shield, Search, ChevronRight } from "lucide-react";
-import type { CarModel, CarGenerationWithModel, CarVariantWithDetails } from "@shared/schema";
+import { Car, BookOpen, Shield, Search, ChevronRight, ChevronLeft } from "lucide-react";
+import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost } from "@shared/schema";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -33,6 +33,74 @@ export default function Home() {
     },
     enabled: !!selectedGenerationId,
   });
+
+  // Blog posts query
+  const { data: blogPosts } = useQuery<BlogPost[]>({
+    queryKey: ["/api/blog"],
+  });
+
+  // Blog carousel state
+  const [currentBlogIndex, setCurrentBlogIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+
+  const visibleBlogPosts = blogPosts?.slice(0, 10) || []; // Limit to 10 posts
+
+  const nextBlogSlide = useCallback(() => {
+    if (visibleBlogPosts.length === 0) return;
+    setCurrentBlogIndex((prev) => (prev + 1) % visibleBlogPosts.length);
+  }, [visibleBlogPosts.length]);
+
+  const prevBlogSlide = useCallback(() => {
+    if (visibleBlogPosts.length === 0) return;
+    setCurrentBlogIndex((prev) => (prev - 1 + visibleBlogPosts.length) % visibleBlogPosts.length);
+  }, [visibleBlogPosts.length]);
+
+  // Touch handlers for swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const swipeThreshold = 50;
+    const diff = touchStartX.current - touchEndX.current;
+    
+    if (Math.abs(diff) > swipeThreshold) {
+      handleCarouselInteraction();
+      if (diff > 0) {
+        nextBlogSlide(); // Swipe left -> next
+      } else {
+        prevBlogSlide(); // Swipe right -> prev
+      }
+    }
+  };
+
+  // Auto-play effect
+  useEffect(() => {
+    if (isAutoPlaying && visibleBlogPosts.length > 1) {
+      autoPlayRef.current = setInterval(() => {
+        nextBlogSlide();
+      }, 4000); // Change slide every 4 seconds
+    }
+    return () => {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current);
+      }
+    };
+  }, [isAutoPlaying, nextBlogSlide, visibleBlogPosts.length]);
+
+  const handleCarouselInteraction = () => {
+    setIsAutoPlaying(false);
+    // Resume auto-play after 10 seconds of inactivity
+    setTimeout(() => setIsAutoPlaying(true), 10000);
+  };
 
   // Get unique brands
   const brands = [...new Set(models?.map(m => m.brand) || [])].sort();
@@ -264,6 +332,118 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Blog Carousel Section */}
+      {visibleBlogPosts.length > 0 && (
+        <section className="py-12 bg-slate-950">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                Najnoviji članci
+              </h2>
+              <Link href="/blog" className="text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center gap-1 transition">
+                Svi članci
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Carousel Container */}
+            <div className="relative">
+              {/* Left Arrow - visible on all screens */}
+              <button
+                onClick={() => {
+                  handleCarouselInteraction();
+                  prevBlogSlide();
+                }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 -translate-x-1/2 border border-slate-600 hover:border-blue-500"
+                aria-label="Prethodni članak"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              {/* Right Arrow - visible on all screens */}
+              <button
+                onClick={() => {
+                  handleCarouselInteraction();
+                  nextBlogSlide();
+                }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 translate-x-1/2 border border-slate-600 hover:border-blue-500"
+                aria-label="Sljedeći članak"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              {/* Carousel Track */}
+              <div 
+                ref={carouselRef}
+                className="overflow-hidden rounded-xl mx-4"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div 
+                  className="flex transition-transform duration-500 ease-out"
+                  style={{ transform: `translateX(-${currentBlogIndex * 100}%)` }}
+                >
+                  {visibleBlogPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="w-full flex-shrink-0 flex-grow-0"
+                      style={{ minWidth: '100%', maxWidth: '100%' }}
+                    >
+                      <Link
+                        href={`/blog/${post.slug || post.id}`}
+                        className="block px-1"
+                      >
+                        <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500/50 transition-all duration-300 group/card">
+                          <div className="relative w-full overflow-hidden" style={{ paddingBottom: '45%' }}>
+                            <img
+                              src={post.image}
+                              alt={post.title}
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+                            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+                              <span className="inline-block bg-blue-600/90 px-3 py-1 rounded text-xs md:text-sm font-medium backdrop-blur-sm mb-2 md:mb-3">
+                                {post.category}
+                              </span>
+                              <h3 className="font-bold text-white group-hover/card:text-blue-400 transition-colors text-lg md:text-2xl lg:text-3xl line-clamp-2">
+                                {post.title}
+                              </h3>
+                              <p className="text-slate-300 text-sm md:text-base mt-2 line-clamp-2 hidden md:block">
+                                {post.excerpt}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dots Indicator */}
+              <div className="flex justify-center gap-2 mt-4">
+                {visibleBlogPosts.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      handleCarouselInteraction();
+                      setCurrentBlogIndex(index);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentBlogIndex 
+                        ? 'bg-blue-500 w-6' 
+                        : 'bg-slate-600 hover:bg-slate-500 w-2'
+                    }`}
+                    aria-label={`Idi na članak ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-16 bg-slate-900">
         <div className="container mx-auto px-4">

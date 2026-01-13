@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import type { CarModel, CarGenerationWithModel } from "@shared/schema";
+import type { CarModel, CarGenerationWithModel, Image } from "@shared/schema";
 import { ArrowLeft, Calendar, ChevronRight } from "lucide-react";
+import ImageCarousel from "../components/ImageCarousel";
 
 export default function ModelDetail() {
   // Get params from URL
@@ -37,6 +38,20 @@ export default function ModelDetail() {
     },
     enabled: !!model?.id,
   });
+
+  const { data: modelImages } = useQuery<Image[]>({
+    queryKey: ["/api/images/model", model?.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/images/model/${model?.id}`);
+      if (!res.ok) throw new Error("Failed to fetch images");
+      return res.json();
+    },
+    enabled: !!model?.id,
+  });
+
+  // Combine main image with additional images, filtering out duplicates
+  const additionalModelImages = modelImages?.map(img => img.url).filter(url => url !== model?.image) || [];
+  const allImages = model ? [model.image, ...additionalModelImages] : [];
 
   if (modelLoading || generationsLoading) {
     return (
@@ -84,13 +99,15 @@ export default function ModelDetail() {
         {/* Model Header */}
         <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700 mb-8">
           <div className="relative">
-            <img
-              src={model.image}
-              alt={`${model.brand} ${model.model}`}
-              className="w-full h-64 md:h-80 object-cover"
+            <ImageCarousel
+              images={allImages}
+              autoPlay={allImages.length > 1}
+              autoPlayInterval={5000}
+              className="h-64 md:h-80"
+              aspectRatio="none"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-6">
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
               <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium mb-2 inline-block">
                 {model.category}
               </span>

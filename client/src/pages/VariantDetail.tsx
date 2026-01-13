@@ -40,10 +40,11 @@ export default function VariantDetail() {
     enabled: !!variant?.id,
   });
 
-  // Combine generation image with variant-specific images
+  // Combine generation image with variant-specific images, filtering out duplicates
+  const additionalVarImages = variantImages?.map(img => img.url).filter(url => url !== variant?.generation?.image) || [];
   const allImages = variant?.generation?.image 
-    ? [variant.generation.image, ...(variantImages?.map(img => img.url) || [])] 
-    : (variantImages?.map(img => img.url) || []);
+    ? [variant.generation.image, ...additionalVarImages] 
+    : additionalVarImages;
 
   if (isLoading) {
     return (
@@ -116,6 +117,7 @@ export default function VariantDetail() {
               autoPlay={true}
               autoPlayInterval={5000}
               className="h-64 md:h-80"
+              aspectRatio="none"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">

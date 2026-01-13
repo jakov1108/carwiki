@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../lib/auth";
-import { Car, Menu, X, LogOut, UserCircle, Scale, PlusCircle } from "lucide-react";
+import { useTheme } from "../lib/theme";
+import { Car, Menu, X, LogOut, UserCircle, Scale, PlusCircle, Sun, Moon } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-slate-900 border-b border-slate-800">
+    <nav className="sticky top-0 z-50 bg-slate-900 dark:bg-slate-900 light:bg-white border-b border-slate-800 dark:border-slate-800 light:border-slate-200">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -25,22 +27,31 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/automobili" className="text-slate-300 hover:text-white transition" data-testid="link-cars">
+            <Link href="/automobili" className="text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-cars">
               Automobili
             </Link>
-            <Link href="/usporedi" className="flex items-center gap-1 text-slate-300 hover:text-white transition" data-testid="link-compare">
+            <Link href="/usporedi" className="flex items-center gap-1 text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-compare">
               <Scale className="w-4 h-4" />
               <span>Usporedi</span>
             </Link>
-            <Link href="/blog" className="text-slate-300 hover:text-white transition" data-testid="link-blog">
+            <Link href="/blog" className="text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-blog">
               Blog
             </Link>
-            <Link href="/kontakt" className="text-slate-300 hover:text-white transition" data-testid="link-contact">
+            <Link href="/kontakt" className="text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-contact">
               Kontakt
             </Link>
-            <Link href="/o-nama" className="text-slate-300 hover:text-white transition" data-testid="link-about">
+            <Link href="/o-nama" className="text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-about">
               O nama
             </Link>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-slate-300 dark:text-slate-300 light:text-slate-600 hover:bg-slate-800 dark:hover:bg-slate-800 light:hover:bg-slate-100 transition"
+              aria-label={theme === 'dark' ? 'Uključi svijetli način' : 'Uključi tamni način'}
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
 
             {user ? (
               <>
@@ -134,6 +145,24 @@ export default function Navbar() {
               >
                 O nama
               </Link>
+
+              {/* Mobile Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-2 text-slate-300 hover:text-white transition py-2"
+              >
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="w-5 h-5" />
+                    <span>Svijetli način</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-5 h-5" />
+                    <span>Tamni način</span>
+                  </>
+                )}
+              </button>
 
               {user ? (
                 <>
