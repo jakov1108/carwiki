@@ -679,4 +679,159 @@ export function registerRoutes(app: Express) {
   app.get("/uploads/:filename", (req: Request, res: Response) => {
     serveUploadedImage(req, res);
   });
+
+  // ========== CAR SUBMISSIONS API ==========
+  
+  // User submits a new car/variant
+  app.post("/api/submissions", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const session = (req as any).session;
+      const { mode, model, modelId, generation, generationId, variant } = req.body;
+
+      if (!mode || !variant) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const submission = await storage.createCarSubmission({
+        submittedBy: session.user.id,
+        submittedByName: session.user.name || session.user.email,
+        mode,
+        modelId: modelId || null,
+        generationId: generationId || null,
+        modelData: model ? JSON.stringify(model) : null,
+        generationData: generation ? JSON.stringify(generation) : null,
+        variantData: JSON.stringify(variant),
+        status: "pending",
+      });
+
+      res.json(submission);
+    } catch (error: any) {
+      console.error("Error creating submission:", error);
+      res.status(500).json({ message: "Failed to create submission" });
+    }
+  });
+
+  // Admin: Get all submissions
+  app.get("/api/submissions", isAdmin, async (_req: Request, res: Response) => {
+    try {
+      const submissions = await storage.getCarSubmissions();
+      res.json(submissions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch submissions" });
+    }
+  });
+
+  // Admin: Get pending submissions count
+  app.get("/api/submissions/pending/count", isAdmin, async (_req: Request, res: Response) => {
+    try {
+      const submissions = await storage.getPendingCarSubmissions();
+      res.json({ count: submissions.length });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pending count" });
+    }
+  });
+
+  // Admin: Get single submission
+  app.get("/api/submissions/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const submission = await storage.getCarSubmissionById(req.params.id);
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+      res.json(submission);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch submission" });
+    }
+  });
+
+  // Admin: Approve submission (creates model/generation/variant)
+  app.post("/api/submissions/:id/approve", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const submission = await storage.getCarSubmissionById(req.params.id);
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+
+      if (submission.status !== "pending") {
+        return res.status(400).json({ message: "Submission already processed" });
+      }
+
+      let modelId = submission.modelId;
+      let generationId = submission.generationId;
+
+      // If new model, create it
+      if (submission.mode === "new" && submission.modelData) {
+        const modelData = JSON.parse(submission.modelData);
+        const newModel = await storage.createCarModel({
+          brand: modelData.brand,
+          model: modelData.model,
+          category: modelData.category,
+          description: modelData.description,
+          image: modelData.image || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800",
+        });
+        modelId = newModel.id;
+      }
+
+      // If new generation, create it
+      if (submission.generationData && modelId) {
+        const genData = JSON.parse(submission.generationData);
+        const newGeneration = await storage.createCarGeneration({
+          modelId: modelId,
+          name: genData.name,
+          yearStart: genData.yearStart,
+          yearEnd: genData.yearEnd || null,
+          description: genData.description,
+          image: genData.image || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800",
+        });
+        generationId = newGeneration.id;
+      }
+
+      // Create variant
+      if (generationId) {
+        const variantData = JSON.parse(submission.variantData);
+        await storage.createCarVariant({
+          generationId: generationId,
+          ...variantData,
+          status: "approved",
+          submittedBy: submission.submittedBy,
+          submittedByName: submission.submittedByName,
+        });
+      }
+
+      // Update submission status
+      await storage.updateCarSubmissionStatus(submission.id, "approved");
+
+      res.json({ message: "Submission approved successfully" });
+    } catch (error: any) {
+      console.error("Error approving submission:", error);
+      res.status(500).json({ message: "Failed to approve submission" });
+    }
+  });
+
+  // Admin: Reject submission
+  app.post("/api/submissions/:id/reject", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { notes } = req.body;
+      const submission = await storage.getCarSubmissionById(req.params.id);
+      
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+
+      await storage.updateCarSubmissionStatus(submission.id, "rejected", notes);
+      res.json({ message: "Submission rejected" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to reject submission" });
+    }
+  });
+
+  // Admin: Delete submission
+  app.delete("/api/submissions/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      await storage.deleteCarSubmission(req.params.id);
+      res.json({ message: "Submission deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete submission" });
+    }
+  });
 }

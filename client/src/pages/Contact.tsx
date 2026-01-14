@@ -83,7 +83,7 @@ export default function Contact() {
             <button
               type="submit"
               disabled={sendMessage.isPending}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white keep-white px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-2"
             >
               <Send className="w-5 h-5" />
               <span>{sendMessage.isPending ? "Šaljem..." : "Pošalji Poruku"}</span>

@@ -33,7 +33,7 @@ export default function Blog() {
               />
               <div className="p-6">
                 <div className="flex items-center space-x-2 mb-3">
-                  <span className="bg-blue-600 px-3 py-1 rounded text-sm font-medium">
+                  <span className="bg-blue-600 px-3 py-1 rounded text-sm font-medium keep-white">
                     {post.category}
                   </span>
                 </div>

@@ -7,6 +7,7 @@ import {
   blogPosts,
   contactMessages,
   images,
+  carSubmissions,
   type InsertCar,
   type InsertCarModel,
   type InsertCarGeneration,
@@ -14,6 +15,7 @@ import {
   type InsertBlogPost,
   type InsertContactMessage,
   type InsertImage,
+  type InsertCarSubmission,
   type CarVariantWithDetails,
   type CarGenerationWithModel,
 } from "../shared/schema";
@@ -361,5 +363,44 @@ export const storage = {
       .where(eq(images.id, imageId))
       .returning();
     return image;
+  },
+
+  // ========== CAR SUBMISSIONS ==========
+  async getCarSubmissions() {
+    return await db.select().from(carSubmissions).orderBy(desc(carSubmissions.createdAt));
+  },
+
+  async getPendingCarSubmissions() {
+    return await db.select().from(carSubmissions)
+      .where(eq(carSubmissions.status, "pending"))
+      .orderBy(desc(carSubmissions.createdAt));
+  },
+
+  async getCarSubmissionById(id: string) {
+    const [submission] = await db.select().from(carSubmissions)
+      .where(eq(carSubmissions.id, id))
+      .limit(1);
+    return submission;
+  },
+
+  async createCarSubmission(data: InsertCarSubmission) {
+    const [submission] = await db.insert(carSubmissions).values(data).returning();
+    return submission;
+  },
+
+  async updateCarSubmissionStatus(id: string, status: string, adminNotes?: string) {
+    const updateData: any = { status };
+    if (adminNotes !== undefined) {
+      updateData.adminNotes = adminNotes;
+    }
+    const [submission] = await db.update(carSubmissions)
+      .set(updateData)
+      .where(eq(carSubmissions.id, id))
+      .returning();
+    return submission;
+  },
+
+  async deleteCarSubmission(id: string) {
+    await db.delete(carSubmissions).where(eq(carSubmissions.id, id));
   },
 };

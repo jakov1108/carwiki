@@ -67,6 +67,21 @@ export const carVariants = pgTable("car_variants", {
   consumption: text("consumption").notNull(), // npr. "4.5L/100km"
   transmission: text("transmission").notNull(), // npr. "6-brzinski ručni", "7-DSG"
   driveType: text("drive_type").notNull(), // FWD, RWD, AWD
+  
+  // Novi atributi - težina i dimenzije
+  weight: text("weight"), // npr. "1350 kg"
+  length: text("length"), // npr. "4258 mm"
+  width: text("width"), // npr. "1799 mm"
+  height: text("height"), // npr. "1442 mm"
+  wheelbase: text("wheelbase"), // npr. "2631 mm"
+  trunkCapacity: text("trunk_capacity"), // npr. "380 L"
+  fuelTankCapacity: text("fuel_tank_capacity"), // npr. "50 L"
+  
+  // Dodatni opis - za detaljniji tekst o varijantidetaljniji tekst o varijanti
+  detailedDescription: text("detailed_description"), // Duži tekst o karakteru motora, iskustvu vožnje itd.
+  pros: text("pros"), // Prednosti (JSON array kao string ili bullet points)
+  cons: text("cons"), // Nedostaci
+  
   videoUrl: text("video_url"),
   reliability: integer("reliability").notNull().default(3),
   status: text("status").notNull().default("approved"), // pending, approved, rejected
@@ -175,3 +190,36 @@ export const insertImageSchema = createInsertSchema(images).omit({
 
 export type InsertImage = z.infer<typeof insertImageSchema>;
 export type Image = typeof images.$inferSelect;
+
+// ========== CAR SUBMISSIONS (User submissions awaiting approval) ==========
+export const carSubmissions = pgTable("car_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  submittedBy: text("submitted_by").notNull(),
+  submittedByName: text("submitted_by_name").notNull(),
+  status: text("status").notNull().default("pending"), // pending, approved, rejected
+  mode: text("mode").notNull(), // "new" or "existing"
+  
+  // Za existing mode
+  modelId: varchar("model_id"),
+  generationId: varchar("generation_id"),
+  
+  // Za new mode - podaci o novom modelu (JSON)
+  modelData: text("model_data"), // JSON string: { brand, model, category, description, image }
+  
+  // Podaci o generaciji (ako je nova)
+  generationData: text("generation_data"), // JSON string: { name, yearStart, yearEnd, description, image }
+  
+  // Podaci o varijanti (uvijek prisutni)
+  variantData: text("variant_data").notNull(), // JSON string sa svim podacima o varijanti
+  
+  adminNotes: text("admin_notes"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertCarSubmissionSchema = createInsertSchema(carSubmissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCarSubmission = z.infer<typeof insertCarSubmissionSchema>;
+export type CarSubmission = typeof carSubmissions.$inferSelect;

@@ -3,7 +3,7 @@ import { useAuth } from "../lib/auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost, ContactMessage } from "@shared/schema";
-import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Settings, ChevronRight, ArrowLeft } from "lucide-react";
+import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Settings, ChevronRight, ArrowLeft, FileText, Upload } from "lucide-react";
 import { ObjectUploader } from "../components/ObjectUploader";
 import MultiImageUploader from "../components/MultiImageUploader";
 import RichTextEditor from "../components/RichTextEditor";
@@ -14,7 +14,22 @@ interface ImageItem {
   isNew?: boolean;
 }
 
-type Tab = "cars" | "pending" | "blog" | "messages";
+interface CarSubmission {
+  id: string;
+  submittedBy: string;
+  submittedByName: string;
+  status: string;
+  mode: string;
+  modelId: string | null;
+  generationId: string | null;
+  modelData: string | null;
+  generationData: string | null;
+  variantData: string;
+  adminNotes: string | null;
+  createdAt: string;
+}
+
+type Tab = "cars" | "pending" | "submissions" | "blog" | "messages";
 
 export default function Admin() {
   const { user, isLoading } = useAuth();
@@ -45,6 +60,10 @@ export default function Admin() {
   const { data: pendingVariants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/pending"] });
   const { data: posts } = useQuery<BlogPost[]>({ queryKey: ["/api/blog"] });
   const { data: messages } = useQuery<ContactMessage[]>({ queryKey: ["/api/contact"] });
+  const { data: submissions } = useQuery<CarSubmission[]>({ queryKey: ["/api/submissions"] });
+  
+  // Filter pending submissions
+  const pendingSubmissions = submissions?.filter(s => s.status === "pending") || [];
 
   // Delete mutations
   const deleteModel = useMutation({
@@ -115,6 +134,48 @@ export default function Admin() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/contact"] }),
   });
 
+  // Submission mutations
+  const approveSubmission = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/submissions/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to approve");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/models"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
+    },
+  });
+
+  const rejectSubmission = useMutation({
+    mutationFn: async ({ id, notes }: { id: string; notes?: string }) => {
+      const res = await fetch(`/api/submissions/${id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
+      if (!res.ok) throw new Error("Failed to reject");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/submissions"] });
+    },
+  });
+
+  const deleteSubmission = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/submissions/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/submissions"] }),
+  });
+
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
       setLocation("/");
@@ -146,14 +207,14 @@ export default function Admin() {
             onClick={() => setActiveTab("pending")}
             className={`px-4 py-2 rounded-lg font-semibold transition relative flex items-center gap-2 ${
               activeTab === "pending"
-                ? "bg-yellow-600 text-white"
+                ? "bg-yellow-600 text-white keep-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
             <Clock className="w-4 h-4" />
             Na čekanju ({pendingVariants?.length || 0})
             {(pendingVariants?.length || 0) > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white keep-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                 {pendingVariants?.length}
               </span>
             )}
@@ -167,7 +228,7 @@ export default function Admin() {
             }}
             className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 ${
               activeTab === "cars"
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white keep-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
@@ -178,17 +239,33 @@ export default function Admin() {
             onClick={() => setActiveTab("blog")}
             className={`px-4 py-2 rounded-lg font-semibold transition ${
               activeTab === "blog"
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white keep-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
             Blog ({posts?.length || 0})
           </button>
           <button
+            onClick={() => setActiveTab("submissions")}
+            className={`px-4 py-2 rounded-lg font-semibold transition relative flex items-center gap-2 ${
+              activeTab === "submissions"
+                ? "bg-green-600 text-white keep-white"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <Upload className="w-4 h-4" />
+            Prijedlozi ({pendingSubmissions.length})
+            {pendingSubmissions.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white keep-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                {pendingSubmissions.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab("messages")}
             className={`px-4 py-2 rounded-lg font-semibold transition ${
               activeTab === "messages"
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white keep-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
@@ -268,6 +345,120 @@ export default function Admin() {
           </div>
         )}
 
+        {/* Submissions Tab */}
+        {activeTab === "submissions" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6 text-green-400">Prijedlozi korisnika</h2>
+            {pendingSubmissions.length === 0 ? (
+              <div className="bg-slate-800 p-8 rounded-lg text-center border border-slate-700">
+                <Upload className="w-12 h-12 mx-auto mb-4 text-slate-500" />
+                <p className="text-slate-400">Nema novih prijedloga za pregled.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {pendingSubmissions.map((submission) => {
+                  const modelData = submission.modelData ? JSON.parse(submission.modelData) : null;
+                  const generationData = submission.generationData ? JSON.parse(submission.generationData) : null;
+                  const variantData = JSON.parse(submission.variantData);
+                  
+                  // Get existing model/generation names if extending
+                  const existingModel = submission.modelId ? models?.find(m => m.id === submission.modelId) : null;
+                  const existingGeneration = submission.generationId ? generations?.find(g => g.id === submission.generationId) : null;
+                  
+                  return (
+                    <div key={submission.id} className="bg-slate-800 p-6 rounded-lg border border-green-500/50">
+                      <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                              submission.mode === "new" 
+                                ? "bg-blue-600 text-white" 
+                                : "bg-purple-600 text-white"
+                            }`}>
+                              {submission.mode === "new" ? "Novi auto" : "Nadogradnja"}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              {new Date(submission.createdAt).toLocaleDateString('hr-HR')}
+                            </span>
+                          </div>
+                          
+                          {/* Model info */}
+                          <h3 className="text-xl font-bold text-white">
+                            {submission.mode === "new" && modelData 
+                              ? `${modelData.brand} ${modelData.model}` 
+                              : existingModel 
+                                ? `${existingModel.brand} ${existingModel.model}`
+                                : "Model nije pronađen"}
+                          </h3>
+                          
+                          {/* Generation info */}
+                          <p className="text-lg text-blue-400">
+                            {submission.mode === "new" && generationData 
+                              ? generationData.name 
+                              : existingGeneration 
+                                ? existingGeneration.name
+                                : generationData?.name || ""}
+                            {generationData && ` (${generationData.yearStart}${generationData.yearEnd ? '-' + generationData.yearEnd : '-danas'})`}
+                          </p>
+                          
+                          {/* Variant info */}
+                          <div className="mt-3 p-3 bg-slate-900 rounded">
+                            <p className="font-semibold text-cyan-400">{variantData.engineName}</p>
+                            <p className="text-slate-300">{variantData.power} • {variantData.fuelType} • {variantData.transmission}</p>
+                            <p className="text-sm text-slate-400">
+                              Pogon: {variantData.driveType} • Ubrzanje: {variantData.acceleration} • Potrošnja: {variantData.consumption}
+                            </p>
+                            {variantData.description && (
+                              <p className="text-xs text-slate-500 mt-2 line-clamp-2">{variantData.description}</p>
+                            )}
+                          </div>
+                          
+                          <p className="text-xs text-blue-400 mt-3">
+                            Poslao: {submission.submittedByName}
+                          </p>
+                        </div>
+                        
+                        <div className="flex flex-col gap-2 min-w-[120px]">
+                          <button
+                            onClick={() => {
+                              if (confirm("Odobri ovaj prijedlog? Kreirat će se novi model/generacija/varijanta.")) {
+                                approveSubmission.mutate(submission.id);
+                              }
+                            }}
+                            disabled={approveSubmission.isPending}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            <Check className="w-5 h-5" />
+                            <span>Odobri</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const notes = prompt("Razlog odbijanja (opcionalno):");
+                              rejectSubmission.mutate({ id: submission.id, notes: notes || undefined });
+                            }}
+                            disabled={rejectSubmission.isPending}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            <XCircle className="w-5 h-5" />
+                            <span>Odbij</span>
+                          </button>
+                          <button
+                            onClick={() => confirm("Jeste li sigurni da želite obrisati?") && deleteSubmission.mutate(submission.id)}
+                            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center gap-2"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                            <span>Obriši</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Cars Tab - Hierarchical Navigation */}
         {activeTab === "cars" && (
           <div>
@@ -318,7 +509,7 @@ export default function Admin() {
                   <h2 className="text-2xl font-bold">Odaberi marku</h2>
                   <button
                     onClick={() => { setEditingModel(null); setShowModelForm(true); }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Dodaj novi model
@@ -353,7 +544,7 @@ export default function Admin() {
                   </div>
                   <button
                     onClick={() => { setEditingModel(null); setShowModelForm(true); }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Dodaj model
@@ -401,7 +592,7 @@ export default function Admin() {
                   </div>
                   <button
                     onClick={() => { setEditingGeneration(null); setShowGenerationForm(true); }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Dodaj generaciju
@@ -456,7 +647,7 @@ export default function Admin() {
                   </div>
                   <button
                     onClick={() => { setEditingVariant(null); setShowVariantForm(true); }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Dodaj motor
@@ -511,7 +702,7 @@ export default function Admin() {
                   setEditingBlog(null);
                   setShowBlogForm(true);
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-6 py-3 rounded-lg font-semibold flex items-center space-x-2"
               >
                 <Plus className="w-5 h-5" />
                 <span>Dodaj Blog Post</span>
@@ -842,7 +1033,7 @@ function ModelForm({ model, models, preselectedBrand, onClose }: { model: CarMod
             <button
               type="submit"
               disabled={saveModel.isPending || images.length === 0}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white keep-white px-6 py-3 rounded-lg font-semibold"
             >
               {saveModel.isPending ? "Spremam..." : "Spremi"}
             </button>
@@ -1080,7 +1271,7 @@ function GenerationForm({
             <button
               type="submit"
               disabled={saveGeneration.isPending || images.length === 0 || !formData.modelId}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white keep-white px-6 py-3 rounded-lg font-semibold"
             >
               {saveGeneration.isPending ? "Spremam..." : "Spremi"}
             </button>
@@ -1134,6 +1325,17 @@ function VariantForm({
     driveType: variant?.driveType || "FWD",
     videoUrl: variant?.videoUrl || "",
     reliability: variant?.reliability || 3,
+    // Novi atributi
+    weight: variant?.weight || "",
+    length: variant?.length || "",
+    width: variant?.width || "",
+    height: variant?.height || "",
+    wheelbase: variant?.wheelbase || "",
+    trunkCapacity: variant?.trunkCapacity || "",
+    fuelTankCapacity: variant?.fuelTankCapacity || "",
+    detailedDescription: variant?.detailedDescription || "",
+    pros: variant?.pros || "",
+    cons: variant?.cons || "",
   });
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -1407,6 +1609,120 @@ function VariantForm({
             />
           </div>
 
+          {/* Težina i dimenzije */}
+          <div className="border-t border-slate-700 pt-6 mt-6">
+            <h4 className="text-lg font-semibold mb-4 text-blue-400">Težina i Dimenzije (opciono)</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Masa</label>
+                <input
+                  type="text"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  placeholder="1350 kg"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Dužina</label>
+                <input
+                  type="text"
+                  value={formData.length}
+                  onChange={(e) => setFormData({ ...formData, length: e.target.value })}
+                  placeholder="4258 mm"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Širina</label>
+                <input
+                  type="text"
+                  value={formData.width}
+                  onChange={(e) => setFormData({ ...formData, width: e.target.value })}
+                  placeholder="1799 mm"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Visina</label>
+                <input
+                  type="text"
+                  value={formData.height}
+                  onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                  placeholder="1442 mm"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Međuosovinski razmak</label>
+                <input
+                  type="text"
+                  value={formData.wheelbase}
+                  onChange={(e) => setFormData({ ...formData, wheelbase: e.target.value })}
+                  placeholder="2631 mm"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Prtljažnik</label>
+                <input
+                  type="text"
+                  value={formData.trunkCapacity}
+                  onChange={(e) => setFormData({ ...formData, trunkCapacity: e.target.value })}
+                  placeholder="380 L"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Spremnik goriva</label>
+                <input
+                  type="text"
+                  value={formData.fuelTankCapacity}
+                  onChange={(e) => setFormData({ ...formData, fuelTankCapacity: e.target.value })}
+                  placeholder="50 L"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Detaljni opis i prednosti/nedostaci */}
+          <div className="border-t border-slate-700 pt-6 mt-6">
+            <h4 className="text-lg font-semibold mb-4 text-blue-400">Detaljni Opis (opciono)</h4>
+            <div>
+              <label className="block text-sm font-medium mb-2">O ovoj varijanti</label>
+              <textarea
+                value={formData.detailedDescription}
+                onChange={(e) => setFormData({ ...formData, detailedDescription: e.target.value })}
+                placeholder="Detaljniji tekst o karakteru motora, iskustvu vožnje, za koga je namijenjen..."
+                rows={4}
+                className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+              />
+            </div>
+            <div className="grid md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-green-400">Prednosti (svaka u novom redu)</label>
+                <textarea
+                  value={formData.pros}
+                  onChange={(e) => setFormData({ ...formData, pros: e.target.value })}
+                  placeholder="Niska potrošnja&#10;Pouzdani motor&#10;Odlična vozna dinamika"
+                  rows={4}
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-red-400">Nedostaci (svaka u novom redu)</label>
+                <textarea
+                  value={formData.cons}
+                  onChange={(e) => setFormData({ ...formData, cons: e.target.value })}
+                  placeholder="Skupa održavanje&#10;Mali prtljažnik&#10;Bučan motor"
+                  rows={4}
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                />
+              </div>
+            </div>
+          </div>
+
           {error && (
             <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded">
               {error}
@@ -1417,7 +1733,7 @@ function VariantForm({
             <button
               type="submit"
               disabled={saveVariant.isPending || !formData.generationId}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white keep-white px-6 py-3 rounded-lg font-semibold"
             >
               {saveVariant.isPending ? "Spremam..." : "Spremi"}
             </button>
@@ -1584,7 +1900,7 @@ function BlogForm({ post, onClose }: { post: BlogPost | null; onClose: () => voi
             <button
               type="submit"
               disabled={saveBlog.isPending || images.length === 0}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white keep-white px-6 py-3 rounded-lg font-semibold"
             >
               {saveBlog.isPending ? "Spremam..." : "Spremi"}
             </button>

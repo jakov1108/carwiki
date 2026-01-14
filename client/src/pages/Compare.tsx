@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Check, ChevronDown, Fuel, Gauge, Zap, Settings, Car } from "lucide-react";
+import { X, Check, ChevronRight, Fuel, Gauge, Zap, Settings, Car, Scale, Package } from "lucide-react";
 import type { CarModel, CarGeneration, CarVariant } from "@shared/schema";
 
 interface VariantWithDetails extends CarVariant {
@@ -89,6 +89,8 @@ export default function Compare() {
     { label: "Mjenjač", key: "transmission", icon: Settings },
     { label: "Pogon", key: "driveType", icon: Car },
     { label: "Obujam", key: "displacement", icon: Settings },
+    { label: "Masa", key: "weight", icon: Scale },
+    { label: "Prtljažnik", key: "trunkCapacity", icon: Package },
   ];
 
   // Helper to get best value for comparison
@@ -143,12 +145,79 @@ export default function Compare() {
               Usporedba specifikacija
             </h2>
             
-            <div className="overflow-x-auto">
+            {/* Mobile: Stack vertically */}
+            <div className="md:hidden space-y-6">
+              {selectedVariants.map((variant) => (
+                <div 
+                  key={variant.id} 
+                  className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl overflow-hidden shadow-xl border border-slate-700"
+                >
+                  <div className="p-4 relative">
+                    <button
+                      className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors z-10"
+                      onClick={() => removeVariant(variant.id)}
+                      aria-label="Ukloni"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    
+                    {(variant.generation?.image || variant.model?.image) && (
+                      <img
+                        src={variant.generation?.image || variant.model?.image}
+                        alt={`${variant.model?.brand} ${variant.model?.model}`}
+                        className="w-full h-40 object-cover rounded-lg mb-3"
+                      />
+                    )}
+                    
+                    <h3 className="text-lg font-bold text-white mb-1">
+                      {variant.model?.brand} {variant.model?.model}
+                    </h3>
+                    <p className="text-sm text-slate-400 mb-2">
+                      {variant.generation?.name}
+                    </p>
+                    <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-sm font-medium rounded-full">
+                      {variant.engineName}
+                    </span>
+                  </div>
+                  
+                  {/* Specs for this variant */}
+                  <div className="border-t border-slate-700">
+                    {specs.map((spec, idx) => {
+                      const Icon = spec.icon;
+                      const value = variant[spec.key as keyof CarVariant];
+                      const bestId = getBestValue(spec.key);
+                      const isBest = bestId === variant.id;
+                      
+                      return (
+                        <div 
+                          key={spec.key}
+                          className={`flex items-center justify-between px-4 py-3 ${idx !== specs.length - 1 ? 'border-b border-slate-700/50' : ''} ${isBest ? 'bg-green-500/10' : ''}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-4 h-4 text-slate-400" />
+                            <span className="text-sm text-slate-400">{spec.label}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-medium ${isBest ? 'text-green-400' : 'text-white'}`}>
+                              {value || '-'}
+                            </span>
+                            {isBest && <Check className="w-4 h-4 text-green-400" />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Side by side table */}
+            <div className="hidden md:block overflow-x-auto">
               <div className="inline-block min-w-full align-middle">
                 {/* Header cards */}
                 <div 
                   className="grid gap-4 mb-6" 
-                  style={{ gridTemplateColumns: `200px repeat(${selectedVariants.length}, minmax(200px, 1fr))` }}
+                  style={{ gridTemplateColumns: `200px repeat(3, minmax(200px, 1fr))` }}
                 >
                   <div></div>
                   {selectedVariants.map((variant) => (
@@ -165,10 +234,10 @@ export default function Compare() {
                           <X className="w-4 h-4" />
                         </button>
                         
-                        {variant.model && (
+                        {(variant.generation?.image || variant.model?.image) && (
                           <img
-                            src={variant.model.image}
-                            alt={`${variant.model.brand} ${variant.model.model}`}
+                            src={variant.generation?.image || variant.model?.image}
+                            alt={`${variant.model?.brand} ${variant.model?.model}`}
                             className="w-full h-28 object-cover rounded-lg mb-3"
                           />
                         )}
@@ -185,6 +254,10 @@ export default function Compare() {
                       </div>
                     </div>
                   ))}
+                  {/* Empty placeholders to maintain grid */}
+                  {Array.from({ length: 3 - selectedVariants.length }).map((_, i) => (
+                    <div key={`empty-${i}`}></div>
+                  ))}
                 </div>
 
                 {/* Specs comparison table */}
@@ -197,7 +270,7 @@ export default function Compare() {
                       <div 
                         key={spec.key}
                         className={`grid gap-4 ${idx !== specs.length - 1 ? 'border-b border-slate-700' : ''}`}
-                        style={{ gridTemplateColumns: `200px repeat(${selectedVariants.length}, minmax(200px, 1fr))` }}
+                        style={{ gridTemplateColumns: `200px repeat(3, minmax(200px, 1fr))` }}
                       >
                         <div className="p-4 flex items-center gap-2 bg-slate-900/50">
                           <Icon className="w-4 h-4 text-slate-400" />
@@ -221,6 +294,10 @@ export default function Compare() {
                             </div>
                           );
                         })}
+                        {/* Empty cells to maintain grid */}
+                        {Array.from({ length: 3 - selectedVariants.length }).map((_, i) => (
+                          <div key={`empty-cell-${i}`} className="p-4"></div>
+                        ))}
                       </div>
                     );
                   })}
@@ -257,25 +334,28 @@ export default function Compare() {
                 </div>
 
                 {/* Step indicators */}
-                <div className="flex items-center justify-center gap-2 mb-6">
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${searchBrand ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
-                    Marka
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${searchBrand ? 'bg-green-600 text-white keep-white' : 'bg-slate-700 text-slate-300'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${searchBrand ? 'bg-white/20' : 'bg-slate-600'}`}>1</span>
+                    <span>Marka</span>
+                    {searchBrand && <Check className="w-3.5 h-3.5" />}
                   </div>
-                  <ChevronDown className="w-4 h-4 text-slate-600 rotate-[-90deg]" />
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${selectedModelId ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">2</span>
-                    Model
+                  <ChevronRight className="w-4 h-4 text-slate-600 hidden sm:block" />
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${selectedModelId ? 'bg-green-600 text-white keep-white' : searchBrand ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedModelId || searchBrand ? 'bg-white/20' : 'bg-slate-600'}`}>2</span>
+                    <span>Model</span>
+                    {selectedModelId && <Check className="w-3.5 h-3.5" />}
                   </div>
-                  <ChevronDown className="w-4 h-4 text-slate-600 rotate-[-90deg]" />
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${selectedGenerationId ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">3</span>
-                    Generacija
+                  <ChevronRight className="w-4 h-4 text-slate-600 hidden sm:block" />
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${selectedGenerationId ? 'bg-green-600 text-white keep-white' : selectedModelId ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedGenerationId || selectedModelId ? 'bg-white/20' : 'bg-slate-600'}`}>3</span>
+                    <span>Generacija</span>
+                    {selectedGenerationId && <Check className="w-3.5 h-3.5" />}
                   </div>
-                  <ChevronDown className="w-4 h-4 text-slate-600 rotate-[-90deg]" />
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-slate-700 text-slate-400`}>
-                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">4</span>
-                    Motor
+                  <ChevronRight className="w-4 h-4 text-slate-600 hidden sm:block" />
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${selectedGenerationId ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${selectedGenerationId ? 'bg-white/20' : 'bg-slate-600'}`}>4</span>
+                    <span>Motor</span>
                   </div>
                 </div>
 
@@ -290,7 +370,7 @@ export default function Compare() {
                         setSelectedModelId("");
                         setSelectedGenerationId("");
                       }}
-                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 input-text focus:outline-none focus:border-blue-500"
                     >
                       <option value="">Odaberi marku</option>
                       {brands.map(brand => (
@@ -309,7 +389,7 @@ export default function Compare() {
                         setSelectedGenerationId("");
                       }}
                       disabled={!searchBrand}
-                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 input-text focus:outline-none focus:border-blue-500 disabled:opacity-50"
                     >
                       <option value="">Odaberi model</option>
                       {brandModels.map(model => (
@@ -325,7 +405,7 @@ export default function Compare() {
                       value={selectedGenerationId}
                       onChange={(e) => setSelectedGenerationId(e.target.value)}
                       disabled={!selectedModelId}
-                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 input-text focus:outline-none focus:border-blue-500 disabled:opacity-50"
                     >
                       <option value="">Odaberi generaciju</option>
                       {generations.map(gen => (
@@ -340,7 +420,7 @@ export default function Compare() {
                   <div className="flex items-end">
                     <button
                       onClick={resetSelection}
-                      className="w-full px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                      className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded-lg transition-colors"
                     >
                       Resetiraj
                     </button>

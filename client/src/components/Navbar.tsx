@@ -12,13 +12,13 @@ export default function Navbar() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-slate-900 dark:bg-slate-900 light:bg-white border-b border-slate-800 dark:border-slate-800 light:border-slate-200">
+    <nav className="sticky top-0 z-50 bg-slate-900 border-b border-slate-800">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link 
             href="/" 
-            className="flex items-center gap-2 text-xl font-bold text-blue-400 hover:text-blue-300 transition"
+            className="flex items-center gap-2 text-xl font-bold text-blue-500 hover:text-blue-400 transition"
             data-testid="link-home"
           >
             <Car className="w-6 h-6" />
@@ -27,27 +27,27 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/automobili" className="text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-cars">
+            <Link href="/automobili" className="text-slate-300 hover:text-white transition" data-testid="link-cars">
               Automobili
             </Link>
-            <Link href="/usporedi" className="flex items-center gap-1 text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-compare">
+            <Link href="/usporedi" className="flex items-center gap-1 text-slate-300 hover:text-white transition" data-testid="link-compare">
               <Scale className="w-4 h-4" />
               <span>Usporedi</span>
             </Link>
-            <Link href="/blog" className="text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-blog">
+            <Link href="/blog" className="text-slate-300 hover:text-white transition" data-testid="link-blog">
               Blog
             </Link>
-            <Link href="/kontakt" className="text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-contact">
+            <Link href="/kontakt" className="text-slate-300 hover:text-white transition" data-testid="link-contact">
               Kontakt
             </Link>
-            <Link href="/o-nama" className="text-slate-300 dark:text-slate-300 light:text-slate-600 hover:text-white dark:hover:text-white light:hover:text-slate-900 transition" data-testid="link-about">
+            <Link href="/o-nama" className="text-slate-300 hover:text-white transition" data-testid="link-about">
               O nama
             </Link>
 
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-slate-300 dark:text-slate-300 light:text-slate-600 hover:bg-slate-800 dark:hover:bg-slate-800 light:hover:bg-slate-100 transition"
+              className="p-2 rounded-lg text-slate-300 hover:bg-slate-800 transition"
               aria-label={theme === 'dark' ? 'Uključi svijetli način' : 'Uključi tamni način'}
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -55,10 +55,12 @@ export default function Navbar() {
 
             {user ? (
               <>
-                <Link href="/predlozi-auto" className="flex items-center gap-1 text-green-400 hover:text-green-300 transition" data-testid="link-submit-car">
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Dodaj auto</span>
-                </Link>
+                {user.role !== "admin" && (
+                  <Link href="/predlozi-auto" className="flex items-center gap-1 text-green-400 hover:text-green-300 transition" data-testid="link-submit-car">
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Dodaj auto</span>
+                  </Link>
+                )}
                 {user.role === "admin" && (
                   <Link href="/admin" className="text-blue-400 hover:text-blue-300 transition font-medium" data-testid="link-admin">
                     Admin
@@ -166,15 +168,17 @@ export default function Navbar() {
 
               {user ? (
                 <>
-                  <Link 
-                    href="/predlozi-auto" 
-                    className="flex items-center gap-2 text-green-400 hover:text-green-300 transition py-2"
-                    data-testid="link-submit-car-mobile"
-                    onClick={closeMobileMenu}
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Dodaj auto</span>
-                  </Link>
+                  {user.role !== "admin" && (
+                    <Link 
+                      href="/predlozi-auto" 
+                      className="flex items-center gap-2 text-green-400 hover:text-green-300 transition py-2"
+                      data-testid="link-submit-car-mobile"
+                      onClick={closeMobileMenu}
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      <span>Dodaj auto</span>
+                    </Link>
+                  )}
                   {user.role === "admin" && (
                     <Link 
                       href="/admin" 

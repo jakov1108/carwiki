@@ -145,16 +145,16 @@ export default function GenerationDetail() {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
               <div className="flex items-center gap-3 mb-2">
-                <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+                <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium keep-white">
                   {generation.name}
                 </span>
-                <span className="bg-slate-700 px-3 py-1 rounded-full text-sm text-slate-200 flex items-center gap-1">
+                <span className="bg-slate-700 px-3 py-1 rounded-full text-sm text-slate-200 keep-white flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   {generation.yearStart}
                   {generation.yearEnd ? ` - ${generation.yearEnd}` : " - danas"}
                 </span>
               </div>
-              <h1 className="text-4xl font-bold text-white">
+              <h1 className="text-4xl font-bold text-white keep-white">
                 {generation.model?.brand} {generation.model?.model}
               </h1>
             </div>

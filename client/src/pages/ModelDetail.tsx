@@ -108,10 +108,10 @@ export default function ModelDetail() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
-              <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium mb-2 inline-block">
+              <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium mb-2 inline-block keep-white">
                 {model.category}
               </span>
-              <h1 className="text-4xl font-bold text-white">
+              <h1 className="text-4xl font-bold text-white keep-white">
                 {model.brand} {model.model}
               </h1>
             </div>

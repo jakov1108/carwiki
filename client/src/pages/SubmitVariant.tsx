@@ -118,7 +118,7 @@ export default function SubmitCar() {
             </p>
             <button
               onClick={() => setLocation("/prijava")}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold keep-white"
             >
               Prijavi se
             </button>
@@ -141,13 +141,13 @@ export default function SubmitCar() {
             <div className="flex justify-center space-x-4">
               <button
                 onClick={() => setSuccess(false)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold keep-white"
               >
                 Dodaj još jednu
               </button>
               <button
                 onClick={() => setLocation("/automobili")}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold"
+                className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold keep-white"
               >
                 Pregledaj automobile
               </button>
@@ -494,7 +494,7 @@ export default function SubmitCar() {
                 <button
                   type="submit"
                   disabled={submitVariant.isPending}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition"
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition keep-white"
                 >
                   {submitVariant.isPending ? "Slanje..." : "Pošalji na pregled"}
                 </button>

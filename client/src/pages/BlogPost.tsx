@@ -67,7 +67,7 @@ export default function BlogPostPage() {
 
           <div className="p-8">
             <div className="mb-6">
-              <span className="bg-blue-600 px-3 py-1 rounded text-sm font-medium">
+              <span className="bg-blue-600 px-3 py-1 rounded text-sm font-medium keep-white">
                 {post.category}
               </span>
             </div>

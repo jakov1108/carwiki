@@ -13,7 +13,7 @@ import Register from "./pages/Register";
 import Admin from "./pages/Admin";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
-import SubmitVariant from "./pages/SubmitVariant";
+import SubmitCar from "./pages/SubmitCar";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -44,7 +44,7 @@ function App() {
               <Route path="/admin" component={Admin} />
               <Route path="/kontakt" component={Contact} />
               <Route path="/o-nama" component={About} />
-              <Route path="/predlozi-auto" component={SubmitVariant} />
+              <Route path="/predlozi-auto" component={SubmitCar} />
             </Switch>
           </Router>
         </main>

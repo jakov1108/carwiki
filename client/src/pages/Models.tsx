@@ -104,7 +104,7 @@ export default function Models() {
                   onClick={() => setSelectedCategory(category)}
                   className={`px-4 py-2 rounded-lg font-medium transition ${
                     selectedCategory === category
-                      ? "bg-blue-600 text-white"
+                      ? "bg-blue-600 text-white keep-white"
                       : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                   }`}
                 >

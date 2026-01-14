@@ -136,13 +136,13 @@ export default function Home() {
               {/* Animated gradient border */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-500 animate-pulse"></div>
               
-              <div className="relative bg-gradient-to-br from-slate-800/95 via-slate-800/90 to-slate-900/95 backdrop-blur-xl p-8 rounded-2xl border border-slate-600/50 shadow-2xl">
+              <div className="car-selector-box relative backdrop-blur-xl p-8 rounded-2xl border border-slate-600/50 shadow-2xl">
                 {/* Header with icon */}
                 <div className="flex items-center justify-center gap-3 mb-6">
                   <div className="p-2.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg shadow-blue-500/25">
-                    <Search className="w-5 h-5 text-white" />
+                    <Search className="w-5 h-5 text-white keep-white" />
                   </div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                     Pronađi automobil
                   </h2>
                 </div>
@@ -161,7 +161,7 @@ export default function Home() {
                 <div className="space-y-5">
                   {/* Brand Select */}
                   <div className="group/select">
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2 text-left">
+                    <label className="flex items-center gap-2 text-sm font-medium selector-text mb-2 text-left">
                       <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">1</span>
                       Odaberi marku
                     </label>
@@ -172,7 +172,7 @@ export default function Home() {
                           setSearchBrand(e.target.value);
                           setSelectedModelId("");
                         }}
-                        className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
+                        className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
                       >
                         <option value="">-- Odaberi marku --</option>
                         {brands.map(brand => (
@@ -185,7 +185,7 @@ export default function Home() {
 
                   {/* Model Select - only show when brand is selected */}
                   <div className={`transition-all duration-300 ease-out ${searchBrand ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 h-0 overflow-hidden'}`}>
-                    <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2 text-left">
+                    <label className="flex items-center gap-2 text-sm font-medium selector-text mb-2 text-left">
                       <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">2</span>
                       Odaberi model
                     </label>
@@ -196,7 +196,7 @@ export default function Home() {
                           setSelectedModelId(e.target.value);
                           setSelectedGenerationId("");
                         }}
-                        className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
+                        className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
                       >
                         <option value="">-- Odaberi model --</option>
                         {brandModels.map(model => (
@@ -210,7 +210,7 @@ export default function Home() {
                   {/* Generation Select - show when model is selected */}
                   {selectedModelId && generations && generations.length > 0 && (
                     <div className="transition-all duration-300 ease-out">
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2 text-left">
+                      <label className="flex items-center gap-2 text-sm font-medium selector-text mb-2 text-left">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">3</span>
                         Odaberi generaciju
                       </label>
@@ -218,7 +218,7 @@ export default function Home() {
                         <select
                           value={selectedGenerationId}
                           onChange={(e) => setSelectedGenerationId(e.target.value)}
-                          className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-white transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
+                          className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
                         >
                           <option value="">-- Odaberi generaciju --</option>
                           {generations.map(gen => (
@@ -233,7 +233,7 @@ export default function Home() {
                   {/* Variants List - show when generation is selected */}
                   {selectedGenerationId && variants && variants.length > 0 && (
                     <div className="transition-all duration-300 ease-out">
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2 text-left">
+                      <label className="flex items-center gap-2 text-sm font-medium selector-text mb-2 text-left">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-bold">4</span>
                         Odaberi motor
                       </label>
@@ -249,7 +249,7 @@ export default function Home() {
                           >
                             <div className="flex items-center gap-3">
                               <div className="flex-1">
-                                <p className="font-semibold text-white">{variant.engineName}</p>
+                                <p className="font-semibold selector-text">{variant.engineName}</p>
                                 <p className="text-xs text-slate-400">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
                               </div>
                               <ChevronRight className="w-4 h-4 text-slate-500 group-hover/item:text-cyan-400 group-hover/item:translate-x-0.5 transition-all" />
@@ -295,7 +295,7 @@ export default function Home() {
                           />
                         </div>
                         <div className="flex-1 text-left">
-                          <p className="font-bold text-white">{selectedModel.brand} {selectedModel.model}</p>
+                          <p className="font-bold selector-text">{selectedModel.brand} {selectedModel.model}</p>
                           <p className="text-sm text-slate-400">Pregledaj sve generacije</p>
                         </div>
                         <div className="p-2 bg-blue-500/20 rounded-lg group-hover/result:bg-blue-500/30 transition">
@@ -309,7 +309,7 @@ export default function Home() {
                   {searchBrand && (
                     <button
                       onClick={clearSearch}
-                      className="w-full text-sm text-slate-400 hover:text-white transition-all duration-200 py-2.5 rounded-lg hover:bg-slate-700/50 flex items-center justify-center gap-2 group/clear"
+                      className="w-full text-sm selector-text transition-all duration-200 py-2.5 rounded-lg hover:bg-slate-700/50 flex items-center justify-center gap-2 group/clear"
                     >
                       <span className="w-4 h-4 rounded-full border border-current flex items-center justify-center group-hover/clear:border-red-400 group-hover/clear:text-red-400 transition-colors">
                         <span className="text-xs">×</span>
@@ -323,10 +323,10 @@ export default function Home() {
           </div>
 
           <div className="flex justify-center gap-4 flex-wrap">
-            <Link href="/automobili" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition" data-testid="button-browse-cars">
+            <Link href="/automobili" className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-8 py-3 rounded-lg font-semibold transition" data-testid="button-browse-cars">
               Pregledaj Automobile
             </Link>
-            <Link href="/blog" className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-lg font-semibold transition" data-testid="button-read-blog">
+            <Link href="/blog" className="bg-blue-500 hover:bg-blue-600 text-white keep-white px-8 py-3 rounded-lg font-semibold transition" data-testid="button-read-blog">
               Pročitaj Blog
             </Link>
           </div>
@@ -402,15 +402,15 @@ export default function Home() {
                               alt={post.title}
                               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                              <span className="inline-block bg-blue-600/90 px-3 py-1 rounded text-xs md:text-sm font-medium backdrop-blur-sm mb-2 md:mb-3">
+                              <span className="keep-white inline-block bg-blue-600/90 px-3 py-1 rounded text-xs md:text-sm font-medium backdrop-blur-sm mb-2 md:mb-3 text-white">
                                 {post.category}
                               </span>
-                              <h3 className="font-bold text-white group-hover/card:text-blue-400 transition-colors text-lg md:text-2xl lg:text-3xl line-clamp-2">
+                              <h3 className="keep-white font-bold text-white group-hover/card:text-blue-300 transition-colors text-lg md:text-2xl lg:text-3xl line-clamp-2">
                                 {post.title}
                               </h3>
-                              <p className="text-slate-300 text-sm md:text-base mt-2 line-clamp-2 hidden md:block">
+                              <p className="keep-white text-slate-300 text-sm md:text-base mt-2 line-clamp-2 hidden md:block">
                                 {post.excerpt}
                               </p>
                             </div>

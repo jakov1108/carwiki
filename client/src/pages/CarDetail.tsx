@@ -55,7 +55,7 @@ export default function CarDetail() {
                 </h1>
                 <p className="text-slate-400 text-lg">{car.year}. godina</p>
               </div>
-              <span className="bg-blue-600 px-4 py-2 rounded-lg font-semibold">
+              <span className="bg-blue-600 px-4 py-2 rounded-lg font-semibold keep-white">
                 {car.category}
               </span>
             </div>
