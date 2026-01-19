@@ -10,9 +10,9 @@ export default function About() {
           <section>
             <h2 className="text-2xl font-bold mb-4 text-blue-400">Projekt</h2>
             <p className="text-slate-300 leading-relaxed">
-              Auto Wiki je HCI (Human-Computer Interaction) projekt razvijen za Fakultet elektrotehnike, strojarstva i brodogradnje (FESB). 
-              Cilj projekta je stvoriti modernu i pristupačnu platformu za ljubitelje automobila koja kombinira opsežnu bazu podataka 
-              o automobilima s obrazovnim sadržajem u obliku blog članaka.
+              Auto Wiki je HCI (Human-Computer Interaction) projekt razvijen za Fakultet elektrotehnike, strojarstva i brodogradnje (FESB).
+              Cilj projekta je izraditi modernu i pristupačnu platformu za ljubitelje automobila koja kombinira bazu podataka
+              o automobilima (modeli, generacije i varijante) s blog sadržajem.
             </p>
           </section>
 
@@ -24,7 +24,7 @@ export default function About() {
                 <ul className="text-slate-300 space-y-1">
                   <li>• React 18 s TypeScript</li>
                   <li>• Tailwind CSS</li>
-                  <li>• Shadcn UI komponente</li>
+                  <li>• Radix UI komponente</li>
                   <li>• TanStack Query</li>
                   <li>• Wouter routing</li>
                 </ul>
@@ -33,10 +33,11 @@ export default function About() {
                 <h3 className="font-semibold text-cyan-400 mb-2">Backend</h3>
                 <ul className="text-slate-300 space-y-1">
                   <li>• Express.js</li>
-                  <li>• PostgreSQL (Neon)</li>
+                  <li>• PostgreSQL (Supabase)</li>
                   <li>• Drizzle ORM</li>
-                  <li>• Passport.js autentifikacija</li>
+                  <li>• Better Auth (email/password autentifikacija)</li>
                   <li>• Zod validacija</li>
+                  <li>• Supabase Storage (upload slika)</li>
                 </ul>
               </div>
             </div>
@@ -45,20 +46,22 @@ export default function About() {
           <section>
             <h2 className="text-2xl font-bold mb-4 text-blue-400">Značajke</h2>
             <ul className="text-slate-300 space-y-2">
-              <li>• Opsežna baza automobila s tehničkim specifikacijama</li>
-              <li>• Blog platforma s kategoriziranim člancima</li>
-              <li>• Sustav autentifikacije korisnika</li>
+              <li>• Katalog automobila s tehničkim specifikacijama (modeli → generacije → varijante)</li>
+              <li>• Usporedba varijanti automobila</li>
+              <li>• Blog sustav</li>
+              <li>• Autentikacija korisnika + role-based pristup (user/admin)</li>
               <li>• Admin panel za upravljanje sadržajem</li>
-              <li>• Responzivni dizajn za sve uređaje</li>
-              <li>• Brza pretraživanje i filtriranje</li>
+              <li>• Upload slika za modele/generacije/varijante</li>
+              <li>• Responzivni dizajn (mobile-first)</li>
+              <li>• Pretraga i filtriranje</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-2xl font-bold mb-4 text-blue-400">Tim</h2>
             <p className="text-slate-300 leading-relaxed">
-              Projekt je razvijen kao dio akademskog programa na FESB-u, s fokusom na moderan pristup 
-              dizajnu korisničkog sučelja i primjenu naprednih web tehnologija.
+              Projekt je razvijen kao dio akademskog programa na FESB-u, s fokusom na moderan pristup
+              dizajnu korisničkog sučelja i primjenu suvremenih web tehnologija.
             </p>
           </section>
         </div>

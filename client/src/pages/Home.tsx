@@ -134,7 +134,7 @@ export default function Home() {
           <div className="max-w-lg mx-auto mb-8">
             <div className="relative group">
               {/* Animated gradient border */}
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-500 animate-pulse"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-2000 animate-pulse"></div>
               
               <div className="car-selector-box relative backdrop-blur-xl p-8 rounded-2xl border border-slate-600/50 shadow-2xl">
                 {/* Header with icon */}
