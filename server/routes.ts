@@ -764,7 +764,9 @@ export function registerRoutes(app: Express) {
         const modelData = JSON.parse(submission.modelData);
         const newModel = await storage.createCarModel({
           brand: modelData.brand,
+          brandSlug: generateSlug(modelData.brand),
           model: modelData.model,
+          modelSlug: generateSlug(modelData.model),
           category: modelData.category,
           description: modelData.description,
           image: modelData.image || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800",
@@ -778,6 +780,7 @@ export function registerRoutes(app: Express) {
         const newGeneration = await storage.createCarGeneration({
           modelId: modelId,
           name: genData.name,
+          slug: generateSlug(genData.name),
           yearStart: genData.yearStart,
           yearEnd: genData.yearEnd || null,
           description: genData.description,
@@ -792,6 +795,7 @@ export function registerRoutes(app: Express) {
         await storage.createCarVariant({
           generationId: generationId,
           ...variantData,
+          slug: generateSlug(variantData.engineName),
           status: "approved",
           submittedBy: submission.submittedBy,
           submittedByName: submission.submittedByName,

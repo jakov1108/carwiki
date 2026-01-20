@@ -408,8 +408,57 @@ export default function Admin() {
                             <p className="text-sm text-slate-400">
                               Pogon: {variantData.driveType} • Ubrzanje: {variantData.acceleration} • Potrošnja: {variantData.consumption}
                             </p>
-                            {variantData.description && (
-                              <p className="text-xs text-slate-500 mt-2 line-clamp-2">{variantData.description}</p>
+                            {variantData.torque && (
+                              <p className="text-sm text-slate-400">Okretni moment: {variantData.torque}</p>
+                            )}
+                            {variantData.topSpeed && (
+                              <p className="text-sm text-slate-400">Max brzina: {variantData.topSpeed}</p>
+                            )}
+                            
+                            {/* Dimenzije ako postoje */}
+                            {(variantData.weight || variantData.length || variantData.width || variantData.height) && (
+                              <div className="mt-2 pt-2 border-t border-slate-700">
+                                <p className="text-xs text-slate-500 font-medium mb-1">Dimenzije:</p>
+                                <p className="text-xs text-slate-400">
+                                  {variantData.weight && `Masa: ${variantData.weight}`}
+                                  {variantData.length && ` • Dužina: ${variantData.length}`}
+                                  {variantData.width && ` • Širina: ${variantData.width}`}
+                                  {variantData.height && ` • Visina: ${variantData.height}`}
+                                </p>
+                                {(variantData.wheelbase || variantData.trunkCapacity || variantData.fuelTankCapacity) && (
+                                  <p className="text-xs text-slate-400">
+                                    {variantData.wheelbase && `Međuosovinski razmak: ${variantData.wheelbase}`}
+                                    {variantData.trunkCapacity && ` • Prtljažnik: ${variantData.trunkCapacity}`}
+                                    {variantData.fuelTankCapacity && ` • Spremnik: ${variantData.fuelTankCapacity}`}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Detaljni opis */}
+                            {variantData.detailedDescription && (
+                              <div className="mt-2 pt-2 border-t border-slate-700">
+                                <p className="text-xs text-slate-500 font-medium mb-1">Detaljan opis:</p>
+                                <p className="text-xs text-slate-400 line-clamp-3">{variantData.detailedDescription}</p>
+                              </div>
+                            )}
+                            
+                            {/* Prednosti i nedostaci */}
+                            {(variantData.pros || variantData.cons) && (
+                              <div className="mt-2 pt-2 border-t border-slate-700 grid grid-cols-2 gap-2">
+                                {variantData.pros && (
+                                  <div>
+                                    <p className="text-xs text-green-400 font-medium mb-1">Prednosti:</p>
+                                    <p className="text-xs text-slate-400 whitespace-pre-line line-clamp-3">{variantData.pros}</p>
+                                  </div>
+                                )}
+                                {variantData.cons && (
+                                  <div>
+                                    <p className="text-xs text-red-400 font-medium mb-1">Nedostaci:</p>
+                                    <p className="text-xs text-slate-400 whitespace-pre-line line-clamp-3">{variantData.cons}</p>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
                           
