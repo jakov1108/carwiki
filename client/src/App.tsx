@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
 import SubmitCar from "./pages/SubmitCar";
+import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -45,6 +46,8 @@ function App() {
               <Route path="/kontakt" component={Contact} />
               <Route path="/o-nama" component={About} />
               <Route path="/predlozi-auto" component={SubmitCar} />
+              {/* Catch-all route for 404 */}
+              <Route component={NotFound} />
             </Switch>
           </Router>
         </main>
