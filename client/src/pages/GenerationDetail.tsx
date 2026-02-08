@@ -148,7 +148,7 @@ export default function GenerationDetail() {
                 <span className="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium keep-white">
                   {generation.name}
                 </span>
-                <span className="bg-slate-700 px-3 py-1 rounded-full text-sm text-slate-200 keep-white flex items-center gap-1">
+                <span className="bg-gray-700 px-3 py-1 rounded-full text-sm text-slate-200 keep-white flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   {generation.yearStart}
                   {generation.yearEnd ? ` - ${generation.yearEnd}` : " - danas"}

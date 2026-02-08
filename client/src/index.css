@@ -197,14 +197,40 @@
   .light .bg-slate-600 { background-color: #94a3b8; }
 
   .light .text-slate-300 { color: #475569; }
-  .light .text-slate-400 { color: #64748b; }
-  .light .text-slate-500 { color: #64748b; }
+  .light .text-slate-400 { color: #475569; }
+  .light .text-slate-500 { color: #475569; }
   .light .text-slate-200 { color: #334155; }
   .light .text-white { color: #0f172a; } /* Make white text dark in light mode */
+  .light .hover\:text-white:hover { color: #0f172a; } /* Make hover white text dark in light mode */
+
+  /* Fix colored text contrast for light mode */
+  .light .text-blue-400 { color: #2563eb; }
+  .light .text-blue-300 { color: #2563eb; }
+  .light .text-cyan-400 { color: #0891b2; }
+  .light .text-cyan-300 { color: #0891b2; }
+  .light .text-green-400 { color: #16a34a; }
+  .light .text-green-300 { color: #16a34a; }
+  .light .text-red-400 { color: #dc2626; }
+  .light .text-red-300 { color: #dc2626; }
+  .light .text-yellow-400 { color: #a16207; }
+  .light .text-yellow-500 { color: #a16207; }
+
+  /* Fix hover text color variants */
+  .light .hover\:text-blue-300:hover { color: #1d4ed8; }
+  .light .hover\:text-blue-400:hover { color: #1d4ed8; }
+  .light .hover\:text-green-300:hover { color: #15803d; }
+  .light .hover\:text-cyan-300:hover { color: #0e7490; }
+  .light .hover\:text-red-300:hover { color: #b91c1c; }
+
+  /* Fix gradient text for page titles */
+  .light .from-blue-400 { --tw-gradient-from: #2563eb; }
+  .light .to-cyan-400 { --tw-gradient-to: #0891b2; }
 
   .light .border-slate-700 { border-color: #cbd5e1; }
   .light .border-slate-800 { border-color: #e2e8f0; }
   .light .border-slate-600 { border-color: #94a3b8; }
+  .light .border-slate-600\/50 { border-color: rgba(148,163,184,0.5); }
+  .light .border-slate-500 { border-color: #94a3b8; }
 
   /* Gradients for light mode - for section backgrounds only */
   .light section.bg-gradient-to-br .from-slate-900 { --tw-gradient-from: #e2e8f0; }
@@ -237,12 +263,12 @@
   .light .hover\:bg-slate-700:hover { background-color: #cbd5e1; }
   .light .hover\:bg-slate-600:hover { background-color: #94a3b8; }
 
-  /* Light mode buttons - make dark buttons blue instead */
-  .light .bg-slate-700 { background-color: #3b82f6; }
-  .light .bg-slate-700:hover { background-color: #2563eb; }
+  /* Light mode bg-slate-700 - used for inactive pills, badges */
+  .light .bg-slate-700 { background-color: #cbd5e1; }
+  .light .bg-slate-700:hover { background-color: #94a3b8; }
 
-  /* Light mode disabled states */
-  .light .disabled\:bg-slate-600:disabled { background-color: #94a3b8; }
+  /* Light mode disabled states - needs enough contrast for white text */
+  .light .disabled\:bg-slate-600:disabled { background-color: #64748b; }
 
   /* Light mode gradient card backgrounds */
   .light .from-slate-800 { --tw-gradient-from: #e2e8f0; }
@@ -250,6 +276,15 @@
 
   /* Light mode opacity backgrounds */
   .light .bg-slate-800\/50 { background-color: rgb(226 232 240 / 0.7); }
+
+  /* Fix colored section backgrounds for light mode */
+  .light .bg-green-900\/20 { background-color: rgba(22,163,74,0.08); }
+  .light .bg-red-900\/20 { background-color: rgba(220,38,38,0.08); }
+  .light .border-green-700\/50 { border-color: rgba(22,163,74,0.3); }
+  .light .border-red-700\/50 { border-color: rgba(220,38,38,0.3); }
+
+  /* Fix carousel dot contrast */
+  .light .bg-slate-600 { background-color: #94a3b8; }
 
   /* Light mode prose/content styling */
   .light .prose-invert { color: #1e293b; }

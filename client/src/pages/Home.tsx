@@ -9,6 +9,15 @@ export default function Home() {
   const [searchBrand, setSearchBrand] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
   const [selectedGenerationId, setSelectedGenerationId] = useState("");
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Track screen size for carousel
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, []);
 
   const { data: models } = useQuery<CarModel[]>({
     queryKey: ["/api/models"],
@@ -49,15 +58,19 @@ export default function Home() {
 
   const visibleBlogPosts = blogPosts?.slice(0, 10) || []; // Limit to 10 posts
 
+  const maxIndex = isDesktop 
+    ? Math.max(0, visibleBlogPosts.length - 2) 
+    : Math.max(0, visibleBlogPosts.length - 1);
+
   const nextBlogSlide = useCallback(() => {
     if (visibleBlogPosts.length === 0) return;
-    setCurrentBlogIndex((prev) => (prev + 1) % visibleBlogPosts.length);
-  }, [visibleBlogPosts.length]);
+    setCurrentBlogIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+  }, [visibleBlogPosts.length, maxIndex]);
 
   const prevBlogSlide = useCallback(() => {
     if (visibleBlogPosts.length === 0) return;
-    setCurrentBlogIndex((prev) => (prev - 1 + visibleBlogPosts.length) % visibleBlogPosts.length);
-  }, [visibleBlogPosts.length]);
+    setCurrentBlogIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
+  }, [visibleBlogPosts.length, maxIndex]);
 
   // Touch handlers for swipe
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -87,7 +100,7 @@ export default function Home() {
     if (isAutoPlaying && visibleBlogPosts.length > 1) {
       autoPlayRef.current = setInterval(() => {
         nextBlogSlide();
-      }, 4000); // Change slide every 4 seconds
+      }, 6000); // Change slide every 6 seconds
     }
     return () => {
       if (autoPlayRef.current) {
@@ -121,17 +134,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <section className="relative py-20 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+      <section className="relative pt-16 pb-28 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-            Dobrodošli u Auto Wiki
-          </h1>
-          <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-300 mb-14 max-w-2xl mx-auto">
             Vaša kompletna enciklopedija automobila s detaljnim specifikacijama, recenzijama i najnovijim vijestima iz automobilskog svijeta.
           </p>
 
           {/* Search Section */}
-          <div className="max-w-lg mx-auto mb-8">
+          <div className="max-w-lg mx-auto mb-14">
             <div className="relative group">
               {/* Animated gradient border */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-2000 animate-pulse"></div>
@@ -161,10 +171,11 @@ export default function Home() {
                 <div className="space-y-5">
                   {/* Brand Select */}
                   <div className="group/select">
-                    <label className="flex items-center gap-2 text-sm font-medium selector-text mb-2 text-left">
+                    <label className="flex items-center gap-2 text-sm font-medium selector-text mb-1 text-left">
                       <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">1</span>
                       Odaberi marku
                     </label>
+                    <p className="text-xs text-slate-400 mb-2 ml-7">Odaberite marku automobila iz padajućeg izbornika</p>
                     <div className="relative">
                       <select
                         value={searchBrand}
@@ -185,10 +196,11 @@ export default function Home() {
 
                   {/* Model Select - only show when brand is selected */}
                   <div className={`transition-all duration-300 ease-out ${searchBrand ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 h-0 overflow-hidden'}`}>
-                    <label className="flex items-center gap-2 text-sm font-medium selector-text mb-2 text-left">
+                    <label className="flex items-center gap-2 text-sm font-medium selector-text mb-1 text-left">
                       <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">2</span>
                       Odaberi model
                     </label>
+                    <p className="text-xs text-slate-400 mb-2 ml-7">Odaberite model automobila za odabranu marku</p>
                     <div className="relative">
                       <select
                         value={selectedModelId}
@@ -210,10 +222,11 @@ export default function Home() {
                   {/* Generation Select - show when model is selected */}
                   {selectedModelId && generations && generations.length > 0 && (
                     <div className="transition-all duration-300 ease-out">
-                      <label className="flex items-center gap-2 text-sm font-medium selector-text mb-2 text-left">
+                      <label className="flex items-center gap-2 text-sm font-medium selector-text mb-1 text-left">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">3</span>
                         Odaberi generaciju
                       </label>
+                      <p className="text-xs text-slate-400 mb-2 ml-7">Odaberite generaciju (godište) odabranog modela</p>
                       <div className="relative">
                         <select
                           value={selectedGenerationId}
@@ -233,10 +246,11 @@ export default function Home() {
                   {/* Variants List - show when generation is selected */}
                   {selectedGenerationId && variants && variants.length > 0 && (
                     <div className="transition-all duration-300 ease-out">
-                      <label className="flex items-center gap-2 text-sm font-medium selector-text mb-2 text-left">
+                      <label className="flex items-center gap-2 text-sm font-medium selector-text mb-1 text-left">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-bold">4</span>
                         Odaberi motor
                       </label>
+                      <p className="text-xs text-slate-400 mb-2 ml-7">Kliknite na motornu varijantu za prikaz detalja</p>
                       <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                         {variants.map(variant => (
                           <Link
@@ -307,15 +321,17 @@ export default function Home() {
 
                   {/* Clear button */}
                   {searchBrand && (
-                    <button
-                      onClick={clearSearch}
-                      className="w-full text-sm selector-text transition-all duration-200 py-2.5 rounded-lg hover:bg-slate-700/50 flex items-center justify-center gap-2 group/clear"
-                    >
-                      <span className="w-4 h-4 rounded-full border border-current flex items-center justify-center group-hover/clear:border-red-400 group-hover/clear:text-red-400 transition-colors">
-                        <span className="text-xs">×</span>
-                      </span>
-                      Očisti odabir
-                    </button>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={clearSearch}
+                        className="bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white keep-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                      >
+                        <span className="w-4 h-4 rounded-full border-2 border-white flex items-center justify-center">
+                          <span className="text-xs">×</span>
+                        </span>
+                        Kreni ispočetka
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -326,8 +342,8 @@ export default function Home() {
             <Link href="/automobili" className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-8 py-3 rounded-lg font-semibold transition" data-testid="button-browse-cars">
               Pregledaj Automobile
             </Link>
-            <Link href="/blog" className="bg-blue-500 hover:bg-blue-600 text-white keep-white px-8 py-3 rounded-lg font-semibold transition" data-testid="button-read-blog">
-              Pročitaj Blog
+            <Link href="/usporedi" className="bg-slate-500 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-white keep-white px-8 py-3 rounded-lg font-semibold transition border border-slate-400 dark:border-slate-500" data-testid="button-read-blog">
+              Usporedi automobile
             </Link>
           </div>
         </div>
@@ -382,18 +398,19 @@ export default function Home() {
                 onTouchEnd={handleTouchEnd}
               >
                 <div 
-                  className="flex transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-${currentBlogIndex * 100}%)` }}
+                  className="flex transition-transform duration-700 ease-out"
+                  style={{ transform: `translateX(-${currentBlogIndex * (isDesktop ? 50 : 100)}%)` }}
                 >
                   {visibleBlogPosts.map((post) => (
                     <div
                       key={post.id}
-                      className="w-full flex-shrink-0 flex-grow-0"
-                      style={{ minWidth: '100%', maxWidth: '100%' }}
+                      className="flex-shrink-0 flex-grow-0"
+                      style={{ width: isDesktop ? '50%' : '100%' }}
                     >
                       <Link
                         href={`/blog/${post.slug || post.id}`}
-                        className="block px-1"
+                        className="block px-2"
+                        onClick={() => window.scrollTo(0, 0)}
                       >
                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500/50 transition-all duration-300 group/card">
                           <div className="relative w-full overflow-hidden" style={{ paddingBottom: '45%' }}>
@@ -424,7 +441,7 @@ export default function Home() {
 
               {/* Dots Indicator */}
               <div className="flex justify-center gap-2 mt-4">
-                {visibleBlogPosts.map((_, index) => (
+                {Array.from({ length: maxIndex + 1 }, (_, index) => (
                   <button
                     key={index}
                     onClick={() => {

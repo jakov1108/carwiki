@@ -362,7 +362,8 @@ export default function Compare() {
                 <div className="grid md:grid-cols-4 gap-4">
                   {/* Brand selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">Marka</label>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Marka</label>
+                    <p className="text-xs text-slate-500 mb-2">Odaberite marku automobila</p>
                     <select
                       value={searchBrand}
                       onChange={(e) => {
@@ -381,7 +382,8 @@ export default function Compare() {
 
                   {/* Model selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">Model</label>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Model</label>
+                    <p className="text-xs text-slate-500 mb-2">{searchBrand ? `Odaberite model marke ${searchBrand}` : 'Prvo odaberite marku'}</p>
                     <select
                       value={selectedModelId}
                       onChange={(e) => {
@@ -400,7 +402,8 @@ export default function Compare() {
 
                   {/* Generation selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">Generacija</label>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Generacija</label>
+                    <p className="text-xs text-slate-500 mb-2">{selectedModelId ? 'Odaberite generaciju (godište)' : 'Prvo odaberite model'}</p>
                     <select
                       value={selectedGenerationId}
                       onChange={(e) => setSelectedGenerationId(e.target.value)}
@@ -430,9 +433,10 @@ export default function Compare() {
                 {/* Variant selection */}
                 {selectedGenerationId && variants.length > 0 && (
                   <div className="mt-6">
-                    <label className="block text-sm font-medium text-slate-400 mb-3">
+                    <label className="block text-sm font-medium text-slate-400 mb-1">
                       Odaberi motornu varijantu
                     </label>
+                    <p className="text-xs text-slate-500 mb-3">Kliknite na motor koji želite dodati u usporedbu</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                       {variants.map(variant => {
                         const isAlreadySelected = selectedVariants.find(v => v.id === variant.id);

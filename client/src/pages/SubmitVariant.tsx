@@ -147,7 +147,7 @@ export default function SubmitCar() {
               </button>
               <button
                 onClick={() => setLocation("/automobili")}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold keep-white"
+                className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold keep-white"
               >
                 Pregledaj automobile
               </button>

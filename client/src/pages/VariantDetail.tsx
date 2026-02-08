@@ -128,7 +128,7 @@ export default function VariantDetail() {
                 <span className="bg-green-600 px-3 py-1 rounded-full text-sm font-medium keep-white">
                   {variant.engineName}
                 </span>
-                <span className="bg-slate-700 px-3 py-1 rounded-full text-sm text-slate-200 keep-white">
+                <span className="bg-gray-700 px-3 py-1 rounded-full text-sm text-slate-200 keep-white">
                   {variant.fuelType}
                 </span>
               </div>
