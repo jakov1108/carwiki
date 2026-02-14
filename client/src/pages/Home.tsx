@@ -136,12 +136,12 @@ export default function Home() {
     <div className="min-h-screen">
       <section className="relative pt-16 pb-28 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-xl text-slate-300 mb-14 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-300 mb-20 max-w-2xl mx-auto">
             Vaša kompletna enciklopedija automobila s detaljnim specifikacijama, recenzijama i najnovijim vijestima iz automobilskog svijeta.
           </p>
 
           {/* Search Section */}
-          <div className="max-w-lg mx-auto mb-14">
+          <div className="max-w-lg mx-auto mb-20">
             <div className="relative group">
               {/* Animated gradient border */}
               <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-2000 animate-pulse"></div>
@@ -171,11 +171,11 @@ export default function Home() {
                 <div className="space-y-5">
                   {/* Brand Select */}
                   <div className="group/select">
-                    <label className="flex items-center gap-2 text-sm font-medium selector-text mb-1 text-left">
-                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">1</span>
+                    <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">1</span>
                       Odaberi marku
                     </label>
-                    <p className="text-xs text-slate-400 mb-2 ml-7">Odaberite marku automobila iz padajućeg izbornika</p>
+                    <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite marku automobila iz padajućeg izbornika</p>
                     <div className="relative">
                       <select
                         value={searchBrand}
@@ -196,11 +196,11 @@ export default function Home() {
 
                   {/* Model Select - only show when brand is selected */}
                   <div className={`transition-all duration-300 ease-out ${searchBrand ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 h-0 overflow-hidden'}`}>
-                    <label className="flex items-center gap-2 text-sm font-medium selector-text mb-1 text-left">
-                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">2</span>
+                    <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">2</span>
                       Odaberi model
                     </label>
-                    <p className="text-xs text-slate-400 mb-2 ml-7">Odaberite model automobila za odabranu marku</p>
+                    <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite model automobila za odabranu marku</p>
                     <div className="relative">
                       <select
                         value={selectedModelId}
@@ -222,11 +222,11 @@ export default function Home() {
                   {/* Generation Select - show when model is selected */}
                   {selectedModelId && generations && generations.length > 0 && (
                     <div className="transition-all duration-300 ease-out">
-                      <label className="flex items-center gap-2 text-sm font-medium selector-text mb-1 text-left">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold">3</span>
+                      <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">3</span>
                         Odaberi generaciju
                       </label>
-                      <p className="text-xs text-slate-400 mb-2 ml-7">Odaberite generaciju (godište) odabranog modela</p>
+                      <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite generaciju (godište) odabranog modela</p>
                       <div className="relative">
                         <select
                           value={selectedGenerationId}
@@ -246,11 +246,11 @@ export default function Home() {
                   {/* Variants List - show when generation is selected */}
                   {selectedGenerationId && variants && variants.length > 0 && (
                     <div className="transition-all duration-300 ease-out">
-                      <label className="flex items-center gap-2 text-sm font-medium selector-text mb-1 text-left">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-bold">4</span>
+                      <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-sm font-bold">4</span>
                         Odaberi motor
                       </label>
-                      <p className="text-xs text-slate-400 mb-2 ml-7">Kliknite na motornu varijantu za prikaz detalja</p>
+                      <p className="text-sm text-slate-400 mb-2 ml-8">Kliknite na motornu varijantu za prikaz detalja</p>
                       <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                         {variants.map(variant => (
                           <Link

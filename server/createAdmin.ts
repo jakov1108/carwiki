@@ -35,8 +35,8 @@ async function createAdmin() {
       },
     });
 
-    if (!result || result.error) {
-      console.error("Failed to create user:", result?.error);
+    if (!result || !('user' in result) || !result.user) {
+      console.error("Failed to create user");
       process.exit(1);
     }
 

@@ -21,14 +21,15 @@ export default function MultiImageUploader({
 }: MultiImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const dragCounter = useRef(0);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
+  const uploadFiles = async (files: File[]) => {
     const remainingSlots = maxImages - images.length;
-    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    const filesToUpload = files.filter(f => f.type.startsWith('image/')).slice(0, remainingSlots);
+    if (filesToUpload.length === 0) return;
 
     setIsUploading(true);
 
@@ -58,9 +59,51 @@ export default function MultiImageUploader({
       console.error("Upload failed:", error);
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await uploadFiles(Array.from(files));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // File drop zone handlers
+  const handleDropZoneDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDraggingFile(true);
+    }
+  };
+
+  const handleDropZoneDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDraggingFile(false);
+    }
+  };
+
+  const handleDropZoneDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDropZoneDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+    dragCounter.current = 0;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      await uploadFiles(files);
     }
   };
 
@@ -98,7 +141,23 @@ export default function MultiImageUploader({
   };
 
   return (
-    <div className="space-y-4">
+    <div
+      ref={dropZoneRef}
+      className={`space-y-4 relative rounded-xl transition-all ${isDraggingFile ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900' : ''}`}
+      onDragEnter={handleDropZoneDragEnter}
+      onDragLeave={handleDropZoneDragLeave}
+      onDragOver={handleDropZoneDragOver}
+      onDrop={handleDropZoneDrop}
+    >
+      {/* Drop overlay */}
+      {isDraggingFile && (
+        <div className="absolute inset-0 bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-xl z-20 flex items-center justify-center">
+          <div className="text-center">
+            <Upload className="w-12 h-12 text-blue-400 mx-auto mb-2" />
+            <p className="text-blue-400 font-semibold text-lg">Ispustite slike ovdje</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <label className="block text-sm font-medium text-slate-300">
           Slike ({images.length}/{maxImages})

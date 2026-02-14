@@ -1,4 +1,4 @@
-# AutoWiki 🚗
+# CarWiki 🚗
 
 Enciklopedija automobila na hrvatskom jeziku.
 

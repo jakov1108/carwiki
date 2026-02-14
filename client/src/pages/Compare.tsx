@@ -107,6 +107,10 @@ export default function Compare() {
 
     if (values.some(v => v === null)) return null;
 
+    // If all values are the same, no winner
+    const allEqual = (values as number[]).every(v => v === values[0]);
+    if (allEqual) return null;
+
     // For these keys, higher is better
     const higherIsBetter = ["power", "torque", "topSpeed"];
     // For these keys, lower is better
