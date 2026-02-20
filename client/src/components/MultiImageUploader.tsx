@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { X, Upload, GripVertical, Plus } from "lucide-react";
+import { compressImage } from "../lib/imageCompression";
 
 interface ImageItem {
   id?: string;
@@ -37,12 +38,13 @@ export default function MultiImageUploader({
       const uploadedImages: ImageItem[] = [];
 
       for (const file of filesToUpload) {
+        const compressed = await compressImage(file);
         const response = await fetch("/api/upload-image", {
           method: "POST",
           headers: {
-            "Content-Type": file.type,
+            "Content-Type": compressed.type,
           },
-          body: file,
+          body: compressed,
         });
 
         if (response.ok) {

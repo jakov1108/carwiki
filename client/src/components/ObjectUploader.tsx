@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Upload, Loader2 } from "lucide-react";
+import { compressImage } from "../lib/imageCompression";
 
 interface ObjectUploaderProps {
   onUploadComplete: (imagePath: string) => void;
@@ -33,11 +34,12 @@ export function ObjectUploader({ onUploadComplete, currentImage }: ObjectUploade
       const previewUrl = URL.createObjectURL(file);
       setPreview(previewUrl);
 
+      const compressed = await compressImage(file);
       const response = await fetch("/api/upload-image", {
         method: "POST",
-        body: file,
+        body: compressed,
         headers: {
-          "Content-Type": file.type,
+          "Content-Type": compressed.type,
         },
         credentials: "include",
       });

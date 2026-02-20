@@ -45,6 +45,8 @@ export default function CarDetail() {
             src={car.image}
             alt={`${car.brand} ${car.model}`}
             className="w-full h-96 object-cover"
+            decoding="async"
+            fetchPriority="high"
           />
 
           <div className="p-8">
@@ -116,6 +118,7 @@ export default function CarDetail() {
                     src={car.videoUrl}
                     className="w-full h-full rounded-lg"
                     allowFullScreen
+                    loading="lazy"
                   />
                 </div>
               </div>

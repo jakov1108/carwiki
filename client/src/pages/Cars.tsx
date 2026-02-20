@@ -109,6 +109,9 @@ export default function Cars() {
                   src={car.image}
                   alt={`${car.brand} ${car.model}`}
                   className="w-full h-48 object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                   data-testid={`img-car-${car.id}`}
                 />
                 <div className="p-6">

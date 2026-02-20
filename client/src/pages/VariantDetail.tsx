@@ -353,6 +353,7 @@ export default function VariantDetail() {
                     src={variant.videoUrl}
                     className="w-full h-full rounded-lg"
                     allowFullScreen
+                    loading="lazy"
                   />
                 </div>
               </div>

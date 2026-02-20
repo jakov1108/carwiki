@@ -148,6 +148,9 @@ export default function ModelDetail() {
                       src={generation.image}
                       alt={`${model.brand} ${model.model} ${generation.name}`}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                      decoding="async"
+                      fetchPriority="low"
                     />
                     <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-sm px-3 py-1 rounded-full">
                       <div className="flex items-center gap-1 text-sm text-slate-200">

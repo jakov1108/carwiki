@@ -30,6 +30,9 @@ export default function Blog() {
                 src={post.image}
                 alt={post.title}
                 className="w-full h-48 object-cover"
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
               />
               <div className="p-6">
                 <div className="flex items-center space-x-2 mb-3">

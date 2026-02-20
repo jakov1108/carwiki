@@ -306,6 +306,7 @@ export default function Home() {
                             src={selectedModel.image} 
                             alt={`${selectedModel.brand} ${selectedModel.model}`}
                             className="relative w-20 h-14 object-cover rounded-lg"
+                            decoding="async"
                           />
                         </div>
                         <div className="flex-1 text-left">
@@ -418,6 +419,9 @@ export default function Home() {
                               src={post.image}
                               alt={post.title}
                               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
+                              loading="lazy"
+                              decoding="async"
+                              fetchPriority="low"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">

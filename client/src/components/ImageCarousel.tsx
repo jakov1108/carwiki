@@ -61,6 +61,9 @@ export default function ImageCarousel({
           src={images[0]}
           alt="Slika"
           className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+          fetchPriority="high"
         />
       </div>
     );
@@ -83,6 +86,9 @@ export default function ImageCarousel({
             src={image}
             alt={`Slika ${index + 1}`}
             className="w-full h-full object-cover flex-shrink-0"
+            loading={index === 0 ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={index === 0 ? "high" : "low"}
           />
         ))}
       </div>
