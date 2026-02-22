@@ -1,5 +1,22 @@
-import { useRef, useState } from "react";
-import { Bold, Italic, Heading2, List, Link as LinkIcon, Quote, Minus } from "lucide-react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import Underline from "@tiptap/extension-underline";
+import { useEffect, useRef } from "react";
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Heading2,
+  List,
+  ListOrdered,
+  Quote,
+  Minus,
+  Link as LinkIcon,
+  Undo,
+  Redo,
+} from "lucide-react";
 
 interface RichTextEditorProps {
   value: string;
@@ -14,197 +31,264 @@ export default function RichTextEditor({
   value,
   onChange,
   placeholder = "Unesite tekst...",
-  rows = 10,
-  required = false,
   className = "",
 }: RichTextEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [showHelp, setShowHelp] = useState(false);
+  const lastValueRef = useRef<string>(value);
 
-  const insertFormatting = (before: string, after: string = before, placeholder: string = "") => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = value.substring(start, end);
-    const textToInsert = selectedText || placeholder;
-
-    const newValue =
-      value.substring(0, start) +
-      before +
-      textToInsert +
-      after +
-      value.substring(end);
-
-    onChange(newValue);
-
-    // Restore cursor position after React re-renders
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + before.length + textToInsert.length;
-      textarea.setSelectionRange(
-        start + before.length,
-        newCursorPos
-      );
-    }, 0);
-  };
-
-  const insertAtLineStart = (prefix: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    // Find the start of the current line
-    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-    
-    const newValue =
-      value.substring(0, lineStart) +
-      prefix +
-      value.substring(lineStart);
-
-    onChange(newValue);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, start + prefix.length);
-    }, 0);
-  };
-
-  const toolbarButtons = [
-    {
-      icon: Bold,
-      label: "Podebljano (Ctrl+B)",
-      action: () => insertFormatting("**", "**", "podebljani tekst"),
-      shortcut: "b",
-    },
-    {
-      icon: Italic,
-      label: "Kurziv (Ctrl+I)",
-      action: () => insertFormatting("_", "_", "kurziv tekst"),
-      shortcut: "i",
-    },
-    {
-      icon: Heading2,
-      label: "Naslov",
-      action: () => insertAtLineStart("## "),
-    },
-    {
-      icon: List,
-      label: "Lista",
-      action: () => insertAtLineStart("• "),
-    },
-    {
-      icon: Quote,
-      label: "Citat",
-      action: () => insertAtLineStart("> "),
-    },
-    {
-      icon: LinkIcon,
-      label: "Link",
-      action: () => insertFormatting("[", "](url)", "tekst linka"),
-    },
-    {
-      icon: Minus,
-      label: "Horizontalna linija",
-      action: () => {
-        const textarea = textareaRef.current;
-        if (!textarea) return;
-        const start = textarea.selectionStart;
-        const needsNewlineBefore = start > 0 && value[start - 1] !== "\n";
-        const newValue =
-          value.substring(0, start) +
-          (needsNewlineBefore ? "\n" : "") +
-          "---\n" +
-          value.substring(start);
-        onChange(newValue);
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [2, 3] },
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { class: "text-blue-400 underline hover:text-blue-300" },
+      }),
+      Placeholder.configure({
+        placeholder,
+      }),
+    ],
+    content: value || "",
+    editorProps: {
+      attributes: {
+        class:
+          "min-h-[250px] px-4 py-3 focus:outline-none text-slate-200 leading-relaxed",
       },
     },
-  ];
+    onUpdate({ editor }) {
+      const html = editor.getHTML();
+      lastValueRef.current = html;
+      onChange(html);
+    },
+  });
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === "b") {
-        e.preventDefault();
-        insertFormatting("**", "**", "podebljani tekst");
-      } else if (e.key === "i") {
-        e.preventDefault();
-        insertFormatting("_", "_", "kurziv tekst");
-      }
+  // Sync external value changes (e.g. when editing an existing post)
+  useEffect(() => {
+    if (editor && value !== lastValueRef.current) {
+      lastValueRef.current = value;
+      editor.commands.setContent(value || "", false);
+    }
+  }, [value, editor]);
+
+  const setLink = () => {
+    if (!editor) return;
+    const prev = editor.getAttributes("link").href || "";
+    const url = window.prompt("URL linka:", prev);
+    if (url === null) return;
+    if (url === "") {
+      editor.chain().focus().unsetLink().run();
+    } else {
+      editor.chain().focus().setLink({ href: url }).run();
     }
   };
 
+  if (!editor) return null;
+
   return (
-    <div className={`rich-text-editor ${className}`}>
+    <div className={`rich-text-editor rounded-lg border border-slate-700 overflow-hidden ${className}`}>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 p-2 bg-slate-900 border border-slate-700 rounded-t-lg border-b-0">
-        {toolbarButtons.map((button, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={button.action}
-            title={button.label}
-            className="p-2 hover:bg-slate-700 rounded transition-colors text-slate-300 hover:text-white"
-          >
-            <button.icon className="w-4 h-4" />
-          </button>
-        ))}
-        
-        <div className="flex-1" />
-        
-        <button
-          type="button"
-          onClick={() => setShowHelp(!showHelp)}
-          className="text-xs text-slate-400 hover:text-slate-300 px-2 py-1 rounded hover:bg-slate-700 transition-colors"
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-slate-900 border-b border-slate-700">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+          title="Poništi (Ctrl+Z)"
         >
-          {showHelp ? "Sakrij pomoć" : "?"}
-        </button>
+          <Undo className="w-4 h-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+          title="Ponovi (Ctrl+Y)"
+        >
+          <Redo className="w-4 h-4" />
+        </ToolbarButton>
+
+        <Divider />
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          active={editor.isActive("bold")}
+          title="Podebljano (Ctrl+B)"
+        >
+          <Bold className="w-4 h-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          active={editor.isActive("italic")}
+          title="Kurziv (Ctrl+I)"
+        >
+          <Italic className="w-4 h-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          active={editor.isActive("underline")}
+          title="Podcrtano (Ctrl+U)"
+        >
+          <UnderlineIcon className="w-4 h-4" />
+        </ToolbarButton>
+
+        <Divider />
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          active={editor.isActive("heading", { level: 2 })}
+          title="Naslov H2"
+        >
+          <Heading2 className="w-4 h-4" />
+        </ToolbarButton>
+
+        <Divider />
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          active={editor.isActive("bulletList")}
+          title="Lista s točkama"
+        >
+          <List className="w-4 h-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          active={editor.isActive("orderedList")}
+          title="Numerirana lista"
+        >
+          <ListOrdered className="w-4 h-4" />
+        </ToolbarButton>
+
+        <Divider />
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          active={editor.isActive("blockquote")}
+          title="Citat"
+        >
+          <Quote className="w-4 h-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          title="Horizontalna linija"
+        >
+          <Minus className="w-4 h-4" />
+        </ToolbarButton>
+
+        <Divider />
+
+        <ToolbarButton
+          onClick={setLink}
+          active={editor.isActive("link")}
+          title="Dodaj link"
+        >
+          <LinkIcon className="w-4 h-4" />
+        </ToolbarButton>
       </div>
 
-      {/* Help section */}
-      {showHelp && (
-        <div className="p-3 bg-slate-900/50 border-x border-slate-700 text-xs text-slate-400 space-y-1">
-          <p><strong className="text-slate-300">**tekst**</strong> → <strong>podebljano</strong></p>
-          <p><strong className="text-slate-300">_tekst_</strong> → <em>kurziv</em></p>
-          <p><strong className="text-slate-300">## Naslov</strong> → Naslov sekcije</p>
-          <p><strong className="text-slate-300">• stavka</strong> → Lista</p>
-          <p><strong className="text-slate-300">&gt; tekst</strong> → Citat</p>
-          <p><strong className="text-slate-300">[tekst](url)</strong> → Link</p>
-          <p><strong className="text-slate-300">---</strong> → Horizontalna linija</p>
+      {/* Editor area */}
+      <div className="bg-slate-900">
+        <style>{`
+          .tiptap-editor .tiptap h2 { font-size: 1.5rem; font-weight: 700; margin: 1.2rem 0 0.6rem; color: #f1f5f9; }
+          .tiptap-editor .tiptap h3 { font-size: 1.2rem; font-weight: 600; margin: 1rem 0 0.5rem; color: #f1f5f9; }
+          .tiptap-editor .tiptap p { margin-bottom: 0.75rem; }
+          .tiptap-editor .tiptap ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+          .tiptap-editor .tiptap ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+          .tiptap-editor .tiptap li { margin-bottom: 0.25rem; }
+          .tiptap-editor .tiptap blockquote { border-left: 4px solid #3b82f6; padding: 0.5rem 1rem; margin: 1rem 0; background: rgba(30,41,59,0.5); border-radius: 0 0.25rem 0.25rem 0; color: #94a3b8; font-style: italic; }
+          .tiptap-editor .tiptap hr { border: none; border-top: 1px solid #475569; margin: 1.5rem 0; }
+          .tiptap-editor .tiptap strong { font-weight: 700; color: #fff; }
+          .tiptap-editor .tiptap em { font-style: italic; }
+          .tiptap-editor .tiptap u { text-decoration: underline; }
+          .tiptap-editor .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: #64748b; float: left; height: 0; pointer-events: none; }
+        `}</style>
+        <div className="tiptap-editor">
+          <EditorContent editor={editor} />
         </div>
-      )}
-
-      {/* Textarea */}
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        required={required}
-        rows={rows}
-        className="w-full bg-slate-900 border border-slate-700 rounded-b-lg px-4 py-3 focus:outline-none focus:border-blue-500 resize-y min-h-[200px] font-mono text-sm"
-      />
+      </div>
     </div>
   );
 }
 
-// Function to render markdown-like syntax to JSX
+// ── Toolbar helpers ──────────────────────────────────────────────────────────
+
+function ToolbarButton({
+  onClick,
+  active = false,
+  disabled = false,
+  title,
+  children,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`p-2 rounded transition-colors ${
+        active
+          ? "bg-blue-600 text-white"
+          : "text-slate-300 hover:bg-slate-700 hover:text-white"
+      } disabled:opacity-30 disabled:cursor-not-allowed`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Divider() {
+  return <div className="w-px h-5 bg-slate-700 mx-1" />;
+}
+
+// ── Render helpers (blog post page) ─────────────────────────────────────────
+
+/**
+ * Renders content for display. Handles both:
+ *  - HTML content from Tiptap (new posts)
+ *  - Legacy custom-format content (**, _text_, ## heading, • list, > quote, ---)
+ */
 export function renderFormattedContent(content: string): React.ReactNode {
+  if (!content) return null;
+
+  if (isHtmlContent(content)) {
+    return (
+      <div
+        className="prose prose-invert prose-slate max-w-none
+          prose-headings:text-white
+          prose-p:text-slate-300 prose-p:leading-relaxed
+          prose-strong:text-white
+          prose-a:text-blue-400 prose-a:no-underline hover:prose-a:text-blue-300
+          prose-blockquote:border-blue-500 prose-blockquote:text-slate-300 prose-blockquote:not-italic
+          prose-hr:border-slate-600
+          prose-li:text-slate-300
+          prose-ul:list-disc prose-ol:list-decimal"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+
+  return renderLegacyContent(content);
+}
+
+function isHtmlContent(content: string): boolean {
+  const trimmed = content.trim();
+  return trimmed.startsWith("<") && /<\/?[a-z][\s\S]*>/i.test(trimmed);
+}
+
+function renderLegacyContent(content: string): React.ReactNode {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let key = 0;
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-    
-    // Horizontal rule
+    const line = lines[i];
+
     if (line.trim() === "---") {
       elements.push(<hr key={key++} className="my-6 border-slate-600" />);
       continue;
     }
-
-    // Heading (## )
     if (line.startsWith("## ")) {
       elements.push(
         <h2 key={key++} className="text-2xl font-bold mt-6 mb-3 text-white">
@@ -213,8 +297,6 @@ export function renderFormattedContent(content: string): React.ReactNode {
       );
       continue;
     }
-
-    // Quote (> )
     if (line.startsWith("> ")) {
       elements.push(
         <blockquote key={key++} className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-slate-800/50 rounded-r italic text-slate-300">
@@ -223,8 +305,6 @@ export function renderFormattedContent(content: string): React.ReactNode {
       );
       continue;
     }
-
-    // List item (• or - )
     if (line.startsWith("• ") || line.startsWith("- ")) {
       elements.push(
         <li key={key++} className="ml-6 list-disc text-slate-300">
@@ -233,14 +313,10 @@ export function renderFormattedContent(content: string): React.ReactNode {
       );
       continue;
     }
-
-    // Empty line = paragraph break
     if (line.trim() === "") {
       elements.push(<div key={key++} className="h-4" />);
       continue;
     }
-
-    // Regular paragraph
     elements.push(
       <p key={key++} className="text-slate-300 leading-relaxed mb-3">
         {formatInlineText(line)}
@@ -251,54 +327,39 @@ export function renderFormattedContent(content: string): React.ReactNode {
   return <>{elements}</>;
 }
 
-// Helper function to format inline text (bold, italic, links)
 function formatInlineText(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
   let key = 0;
   let remaining = text;
 
   while (remaining.length > 0) {
-    // Check for link [text](url)
     const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
     if (linkMatch) {
       parts.push(
-        <a
-          key={key++}
-          href={linkMatch[2]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300 underline"
-        >
+        <a key={key++} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
           {linkMatch[1]}
         </a>
       );
       remaining = remaining.substring(linkMatch[0].length);
       continue;
     }
-
-    // Check for bold **text**
     const boldMatch = remaining.match(/^\*\*([^*]+)\*\*/);
     if (boldMatch) {
       parts.push(<strong key={key++} className="font-bold text-white">{boldMatch[1]}</strong>);
       remaining = remaining.substring(boldMatch[0].length);
       continue;
     }
-
-    // Check for italic _text_
     const italicMatch = remaining.match(/^_([^_]+)_/);
     if (italicMatch) {
       parts.push(<em key={key++} className="italic">{italicMatch[1]}</em>);
       remaining = remaining.substring(italicMatch[0].length);
       continue;
     }
-
-    // Find next special character or end
     const nextSpecial = remaining.search(/\[|\*\*|_/);
     if (nextSpecial === -1) {
       parts.push(<span key={key++}>{remaining}</span>);
       break;
     } else if (nextSpecial === 0) {
-      // Special char at start but didn't match pattern - treat as regular text
       parts.push(<span key={key++}>{remaining[0]}</span>);
       remaining = remaining.substring(1);
     } else {
@@ -309,3 +370,4 @@ function formatInlineText(text: string): React.ReactNode {
 
   return <>{parts}</>;
 }
+

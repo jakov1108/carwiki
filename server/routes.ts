@@ -540,7 +540,11 @@ export function registerRoutes(app: Express) {
   app.post("/api/blog", isAdmin, async (req: Request, res: Response) => {
     try {
       const postData = insertBlogPostSchema.parse(req.body);
-      const post = await storage.createBlogPost(postData);
+      const dataWithSlug = {
+        ...postData,
+        slug: postData.slug || generateSlug(postData.title),
+      };
+      const post = await storage.createBlogPost(dataWithSlug);
       res.json(post);
     } catch (error: any) {
       const validationError = fromError(error);
@@ -551,7 +555,9 @@ export function registerRoutes(app: Express) {
   app.put("/api/blog/:id", isAdmin, async (req: Request, res: Response) => {
     try {
       const postData = insertBlogPostSchema.partial().parse(req.body);
-      const post = await storage.updateBlogPost(req.params.id, postData);
+      const dataWithSlug: any = { ...postData };
+      if (postData.title) dataWithSlug.slug = generateSlug(postData.title);
+      const post = await storage.updateBlogPost(req.params.id, dataWithSlug);
       if (!post) {
         return res.status(404).json({ message: "Blog post not found" });
       }

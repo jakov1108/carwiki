@@ -7,7 +7,7 @@ import ViteExpress from "vite-express";
 
 const app = express();
 
-// Trust proxy for production (Replit uses reverse proxy)
+// Trust proxy for production (behind reverse proxy)
 app.set('trust proxy', 1);
 
 // Better Auth handler - must be before other middleware
