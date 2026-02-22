@@ -414,7 +414,7 @@ export default function Home() {
                         onClick={() => window.scrollTo(0, 0)}
                       >
                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500/50 transition-all duration-300 group/card">
-                          <div className="relative w-full overflow-hidden" style={{ paddingBottom: '45%' }}>
+                          <div className="relative w-full overflow-hidden" style={{ paddingBottom: '56%' }}>
                             <img
                               src={post.image}
                               alt={post.title}
@@ -423,15 +423,15 @@ export default function Home() {
                               decoding="async"
                               fetchPriority="low"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-                            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                              <span className="keep-white inline-block bg-blue-600/90 px-3 py-1 rounded text-xs md:text-sm font-medium backdrop-blur-sm mb-2 md:mb-3 text-white">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent"></div>
+                            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 overflow-hidden" style={{ maxHeight: '75%' }}>
+                              <span className="keep-white inline-block bg-blue-600/90 px-3 py-1 rounded text-xs font-medium backdrop-blur-sm mb-2 text-white">
                                 {post.category}
                               </span>
-                              <h3 className="keep-white font-bold text-white group-hover/card:text-blue-300 transition-colors text-lg md:text-2xl lg:text-3xl line-clamp-2">
+                              <h3 className="keep-white font-bold text-white group-hover/card:text-blue-300 transition-colors text-base md:text-xl lg:text-2xl line-clamp-2">
                                 {post.title}
                               </h3>
-                              <p className="keep-white text-slate-300 text-sm md:text-base mt-2 line-clamp-2 hidden md:block">
+                              <p className="keep-white text-slate-300 text-xs md:text-sm mt-1 line-clamp-2 hidden md:block">
                                 {post.excerpt}
                               </p>
                             </div>
