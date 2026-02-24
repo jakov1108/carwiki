@@ -50,7 +50,7 @@ export default function CarDetail() {
           />
 
           <div className="p-8">
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
               <div>
                 <h1 className="text-4xl font-bold mb-2">
                   {car.brand} {car.model}

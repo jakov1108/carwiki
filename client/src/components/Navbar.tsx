@@ -12,7 +12,7 @@ export default function Navbar() {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-slate-900 border-b border-slate-800">
+    <nav className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -27,27 +27,27 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/automobili" className="text-slate-300 hover:text-white transition" data-testid="link-cars">
+            <Link href="/automobili" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-cars">
               Automobili
             </Link>
-            <Link href="/usporedi" className="flex items-center gap-1 text-slate-300 hover:text-white transition" data-testid="link-compare">
+            <Link href="/usporedi" className="flex items-center gap-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-compare">
               <Scale className="w-4 h-4" />
               <span>Usporedi</span>
             </Link>
-            <Link href="/blog" className="text-slate-300 hover:text-white transition" data-testid="link-blog">
+            <Link href="/blog" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-blog">
               Blog
             </Link>
-            <Link href="/kontakt" className="text-slate-300 hover:text-white transition" data-testid="link-contact">
+            <Link href="/kontakt" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-contact">
               Kontakt
             </Link>
-            <Link href="/o-nama" className="text-slate-300 hover:text-white transition" data-testid="link-about">
+            <Link href="/o-nama" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-about">
               O nama
             </Link>
 
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-slate-300 hover:bg-slate-800 transition"
+              className="p-2 rounded-lg text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
               aria-label={theme === 'dark' ? 'Uključi svijetli način' : 'Uključi tamni način'}
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -56,21 +56,21 @@ export default function Navbar() {
             {user ? (
               <>
                 {user.role !== "admin" && (
-                  <Link href="/predlozi-auto" className="flex items-center gap-1 text-green-400 hover:text-green-300 transition" data-testid="link-submit-car">
+                  <Link href="/predlozi-auto" className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/20 px-3 py-1.5 rounded-md transition-all" data-testid="link-submit-car">
                     <PlusCircle className="w-4 h-4" />
                     <span>Dodaj auto</span>
                   </Link>
                 )}
                 {user.role === "admin" && (
-                  <Link href="/admin" className="text-blue-400 hover:text-blue-300 transition font-medium" data-testid="link-admin">
+                  <Link href="/admin" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-md transition-all font-medium" data-testid="link-admin">
                     Admin
                   </Link>
                 )}
                 <div className="flex items-center gap-3">
-                  <span className="text-slate-400 text-sm">{user.name}</span>
+                  <span className="text-slate-500 dark:text-slate-400 text-sm">{user.name}</span>
                   <button
                     onClick={() => logout()}
-                    className="text-slate-400 hover:text-white transition"
+                    className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
                     data-testid="button-logout"
                     aria-label="Odjava"
                   >
@@ -79,7 +79,7 @@ export default function Navbar() {
                 </div>
               </>
             ) : (
-              <Link href="/prijava" className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition" data-testid="link-login">
+              <Link href="/prijava" className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-md transition-all" data-testid="link-login">
                 <UserCircle className="w-5 h-5" />
                 <span>Prijava</span>
               </Link>
@@ -89,7 +89,7 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-slate-300 hover:text-white transition"
+            className="md:hidden p-2 rounded-md text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
             data-testid="button-mobile-menu"
             aria-label="Otvori izbornik"
             aria-expanded={mobileMenuOpen}
@@ -104,11 +104,11 @@ export default function Navbar() {
 
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-800">
+          <div className="md:hidden py-4 border-t border-slate-200 dark:border-slate-800">
             <div className="flex flex-col gap-4">
               <Link 
                 href="/automobili" 
-                className="text-slate-300 hover:text-white transition py-2"
+                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-md transition-all"
                 data-testid="link-cars-mobile"
                 onClick={closeMobileMenu}
               >
@@ -116,7 +116,7 @@ export default function Navbar() {
               </Link>
               <Link 
                 href="/usporedi" 
-                className="flex items-center gap-2 text-slate-300 hover:text-white transition py-2"
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-md transition-all"
                 data-testid="link-compare-mobile"
                 onClick={closeMobileMenu}
               >
@@ -125,7 +125,7 @@ export default function Navbar() {
               </Link>
               <Link 
                 href="/blog" 
-                className="text-slate-300 hover:text-white transition py-2"
+                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-md transition-all"
                 data-testid="link-blog-mobile"
                 onClick={closeMobileMenu}
               >
@@ -133,7 +133,7 @@ export default function Navbar() {
               </Link>
               <Link 
                 href="/kontakt" 
-                className="text-slate-300 hover:text-white transition py-2"
+                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-md transition-all"
                 data-testid="link-contact-mobile"
                 onClick={closeMobileMenu}
               >
@@ -141,7 +141,7 @@ export default function Navbar() {
               </Link>
               <Link 
                 href="/o-nama" 
-                className="text-slate-300 hover:text-white transition py-2"
+                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-md transition-all"
                 data-testid="link-about-mobile"
                 onClick={closeMobileMenu}
               >
@@ -151,7 +151,7 @@ export default function Navbar() {
               {/* Mobile Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="flex items-center gap-2 text-slate-300 hover:text-white transition py-2"
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-md transition-all"
               >
                 {theme === 'dark' ? (
                   <>
@@ -171,7 +171,7 @@ export default function Navbar() {
                   {user.role !== "admin" && (
                     <Link 
                       href="/predlozi-auto" 
-                      className="flex items-center gap-2 text-green-400 hover:text-green-300 transition py-2"
+                      className="flex items-center gap-2 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/20 px-3 py-2 rounded-md transition-all"
                       data-testid="link-submit-car-mobile"
                       onClick={closeMobileMenu}
                     >
@@ -182,21 +182,21 @@ export default function Navbar() {
                   {user.role === "admin" && (
                     <Link 
                       href="/admin" 
-                      className="text-blue-400 hover:text-blue-300 transition font-medium py-2"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20 px-3 py-2 rounded-md transition-all font-medium"
                       data-testid="link-admin-mobile"
                       onClick={closeMobileMenu}
                     >
                       Admin
                     </Link>
                   )}
-                  <div className="flex items-center justify-between py-2 border-t border-slate-800 pt-4">
+                  <div className="flex items-center justify-between py-2 border-t border-slate-200 dark:border-slate-800 pt-4">
                     <span className="text-slate-400 text-sm">{user.name}</span>
                     <button
                       onClick={() => {
                         logout();
                         closeMobileMenu();
                       }}
-                      className="flex items-center gap-2 text-slate-400 hover:text-white transition"
+                      className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all"
                       data-testid="button-logout-mobile"
                       aria-label="Odjava"
                     >
@@ -208,7 +208,7 @@ export default function Navbar() {
               ) : (
                 <Link 
                   href="/prijava" 
-                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition py-2"
+                  className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20 px-3 py-2 rounded-md transition-all"
                   data-testid="link-login-mobile"
                   onClick={closeMobileMenu}
                 >

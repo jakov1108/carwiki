@@ -147,7 +147,7 @@ export default function Cars() {
 
       {selectedCars.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 p-4 shadow-2xl z-40">
-          <div className="container mx-auto flex items-center justify-between">
+          <div className="container mx-auto flex flex-wrap items-center justify-between gap-3">
             <div className="text-white">
               <span className="font-semibold">{selectedCars.length}</span>
               <span className="text-slate-400 ml-2">

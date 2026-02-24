@@ -132,6 +132,7 @@
   
   html {
     overscroll-behavior: none;
+    overflow-x: hidden;
   }
   
   html.dark {
@@ -147,6 +148,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
   }
 }
 

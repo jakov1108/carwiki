@@ -73,7 +73,7 @@ export default function ModelDetail() {
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 mb-6 text-sm">
+        <div className="flex flex-wrap items-center gap-2 mb-6 text-sm">
           <Link href="/automobili" className="text-slate-400 hover:text-blue-400 transition">
             Sve marke
           </Link>

@@ -86,9 +86,9 @@ export default function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className={`rich-text-editor rounded-lg border border-slate-700 overflow-hidden ${className}`}>
+    <div className={`rich-text-editor rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden ${className}`}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-slate-900 border-b border-slate-700">
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
@@ -183,20 +183,28 @@ export default function RichTextEditor({
       </div>
 
       {/* Editor area */}
-      <div className="bg-slate-900">
+      <div className="bg-white dark:bg-slate-900">
         <style>{`
-          .tiptap-editor .tiptap h2 { font-size: 1.5rem; font-weight: 700; margin: 1.2rem 0 0.6rem; color: #f1f5f9; }
-          .tiptap-editor .tiptap h3 { font-size: 1.2rem; font-weight: 600; margin: 1rem 0 0.5rem; color: #f1f5f9; }
-          .tiptap-editor .tiptap p { margin-bottom: 0.75rem; }
+          .tiptap-editor .tiptap h2 { font-size: 1.5rem; font-weight: 700; margin: 1.2rem 0 0.6rem; color: #1e293b; }
+          .tiptap-editor .tiptap h3 { font-size: 1.2rem; font-weight: 600; margin: 1rem 0 0.5rem; color: #1e293b; }
+          .tiptap-editor .tiptap p { margin-bottom: 0.75rem; color: #1e293b; }
           .tiptap-editor .tiptap ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
           .tiptap-editor .tiptap ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
-          .tiptap-editor .tiptap li { margin-bottom: 0.25rem; }
-          .tiptap-editor .tiptap blockquote { border-left: 4px solid #3b82f6; padding: 0.5rem 1rem; margin: 1rem 0; background: rgba(30,41,59,0.5); border-radius: 0 0.25rem 0.25rem 0; color: #94a3b8; font-style: italic; }
-          .tiptap-editor .tiptap hr { border: none; border-top: 1px solid #475569; margin: 1.5rem 0; }
-          .tiptap-editor .tiptap strong { font-weight: 700; color: #fff; }
+          .tiptap-editor .tiptap li { margin-bottom: 0.25rem; color: #1e293b; }
+          .tiptap-editor .tiptap blockquote { border-left: 4px solid #3b82f6; padding: 0.5rem 1rem; margin: 1rem 0; background: rgba(241,245,249,0.8); border-radius: 0 0.25rem 0.25rem 0; color: #475569; font-style: italic; }
+          .tiptap-editor .tiptap hr { border: none; border-top: 1px solid #cbd5e1; margin: 1.5rem 0; }
+          .tiptap-editor .tiptap strong { font-weight: 700; color: #0f172a; }
           .tiptap-editor .tiptap em { font-style: italic; }
           .tiptap-editor .tiptap u { text-decoration: underline; }
-          .tiptap-editor .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: #64748b; float: left; height: 0; pointer-events: none; }
+          .tiptap-editor .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: #94a3b8; float: left; height: 0; pointer-events: none; }
+          .dark .tiptap-editor .tiptap h2 { color: #f1f5f9; }
+          .dark .tiptap-editor .tiptap h3 { color: #f1f5f9; }
+          .dark .tiptap-editor .tiptap p { color: #e2e8f0; }
+          .dark .tiptap-editor .tiptap li { color: #e2e8f0; }
+          .dark .tiptap-editor .tiptap blockquote { background: rgba(30,41,59,0.5); color: #94a3b8; }
+          .dark .tiptap-editor .tiptap hr { border-top-color: #475569; }
+          .dark .tiptap-editor .tiptap strong { color: #fff; }
+          .dark .tiptap-editor .tiptap p.is-editor-empty:first-child::before { color: #64748b; }
         `}</style>
         <div className="tiptap-editor">
           <EditorContent editor={editor} />
@@ -230,7 +238,7 @@ function ToolbarButton({
       className={`p-2 rounded transition-colors ${
         active
           ? "bg-blue-600 text-white"
-          : "text-slate-300 hover:bg-slate-700 hover:text-white"
+          : "text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
       {children}
@@ -239,7 +247,7 @@ function ToolbarButton({
 }
 
 function Divider() {
-  return <div className="w-px h-5 bg-slate-700 mx-1" />;
+  return <div className="w-px h-5 bg-slate-300 dark:bg-slate-700 mx-1" />;
 }
 
 // ── Render helpers (blog post page) ─────────────────────────────────────────
@@ -255,14 +263,14 @@ export function renderFormattedContent(content: string): React.ReactNode {
   if (isHtmlContent(content)) {
     return (
       <div
-        className="prose prose-invert prose-slate max-w-none
-          prose-headings:text-white
-          prose-p:text-slate-300 prose-p:leading-relaxed
-          prose-strong:text-white
-          prose-a:text-blue-400 prose-a:no-underline hover:prose-a:text-blue-300
-          prose-blockquote:border-blue-500 prose-blockquote:text-slate-300 prose-blockquote:not-italic
-          prose-hr:border-slate-600
-          prose-li:text-slate-300
+        className="prose dark:prose-invert prose-slate max-w-none
+          prose-headings:text-slate-900 dark:prose-headings:text-white
+          prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-relaxed
+          prose-strong:text-slate-900 dark:prose-strong:text-white
+          prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:text-blue-500 dark:hover:prose-a:text-blue-300
+          prose-blockquote:border-blue-500 prose-blockquote:text-slate-600 dark:prose-blockquote:text-slate-300 prose-blockquote:not-italic
+          prose-hr:border-slate-300 dark:prose-hr:border-slate-600
+          prose-li:text-slate-700 dark:prose-li:text-slate-300
           prose-ul:list-disc prose-ol:list-decimal"
         dangerouslySetInnerHTML={{ __html: content }}
       />

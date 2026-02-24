@@ -17,6 +17,7 @@ import SubmitCar from "./pages/SubmitCar";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Navbar />
         <main className="flex-1">
           <Router>
+            <ScrollToTop />
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/automobili" component={Models} />

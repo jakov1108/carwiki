@@ -221,7 +221,7 @@ export default function Compare() {
                 {/* Header cards */}
                 <div 
                   className="grid gap-4 mb-6" 
-                  style={{ gridTemplateColumns: `200px repeat(3, minmax(200px, 1fr))` }}
+                  style={{ gridTemplateColumns: `180px repeat(${selectedVariants.length}, minmax(0, 1fr))` }}
                 >
                   <div></div>
                   {selectedVariants.map((variant) => (
@@ -258,10 +258,6 @@ export default function Compare() {
                       </div>
                     </div>
                   ))}
-                  {/* Empty placeholders to maintain grid */}
-                  {Array.from({ length: 3 - selectedVariants.length }).map((_, i) => (
-                    <div key={`empty-${i}`}></div>
-                  ))}
                 </div>
 
                 {/* Specs comparison table */}
@@ -274,7 +270,7 @@ export default function Compare() {
                       <div 
                         key={spec.key}
                         className={`grid gap-4 ${idx !== specs.length - 1 ? 'border-b border-slate-700' : ''}`}
-                        style={{ gridTemplateColumns: `200px repeat(3, minmax(200px, 1fr))` }}
+                        style={{ gridTemplateColumns: `180px repeat(${selectedVariants.length}, minmax(0, 1fr))` }}
                       >
                         <div className="p-4 flex items-center gap-2 bg-slate-900/50">
                           <Icon className="w-4 h-4 text-slate-400" />
@@ -299,7 +295,7 @@ export default function Compare() {
                           );
                         })}
                         {/* Empty cells to maintain grid */}
-                        {Array.from({ length: 3 - selectedVariants.length }).map((_, i) => (
+                        {selectedVariants.length < 3 && Array.from({ length: 0 }).map((_, i) => (
                           <div key={`empty-cell-${i}`} className="p-4"></div>
                         ))}
                       </div>
@@ -363,7 +359,7 @@ export default function Compare() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   {/* Brand selection */}
                   <div>
                     <label className="block text-sm font-medium text-slate-400 mb-1">Marka</label>
