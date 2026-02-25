@@ -362,9 +362,10 @@ export default function Compare() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   {/* Brand selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Marka</label>
+                    <label htmlFor="compare-brand" className="block text-sm font-medium text-slate-400 mb-1">Marka</label>
                     <p className="text-xs text-slate-500 mb-2">Odaberite marku automobila</p>
                     <select
+                      id="compare-brand"
                       value={searchBrand}
                       onChange={(e) => {
                         setSearchBrand(e.target.value);
@@ -382,9 +383,10 @@ export default function Compare() {
 
                   {/* Model selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Model</label>
+                    <label htmlFor="compare-model" className="block text-sm font-medium text-slate-400 mb-1">Model</label>
                     <p className="text-xs text-slate-500 mb-2">{searchBrand ? `Odaberite model marke ${searchBrand}` : 'Prvo odaberite marku'}</p>
                     <select
+                      id="compare-model"
                       value={selectedModelId}
                       onChange={(e) => {
                         setSelectedModelId(e.target.value);
@@ -402,9 +404,10 @@ export default function Compare() {
 
                   {/* Generation selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Generacija</label>
+                    <label htmlFor="compare-generation" className="block text-sm font-medium text-slate-400 mb-1">Generacija</label>
                     <p className="text-xs text-slate-500 mb-2">{selectedModelId ? 'Odaberite generaciju (godište)' : 'Prvo odaberite model'}</p>
                     <select
+                      id="compare-generation"
                       value={selectedGenerationId}
                       onChange={(e) => setSelectedGenerationId(e.target.value)}
                       disabled={!selectedModelId}

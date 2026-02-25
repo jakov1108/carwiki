@@ -3,7 +3,7 @@ import { useRoute, Link } from "wouter";
 import type { BlogPost, Image } from "@shared/schema";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
-import { renderFormattedContent } from "../components/RichTextEditor";
+import { renderFormattedContent } from "../components/FormattedContent";
 
 export default function BlogPostPage() {
   const [, params] = useRoute("/blog/:slug");

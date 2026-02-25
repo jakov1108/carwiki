@@ -131,8 +131,7 @@
   }
   
   html {
-    overscroll-behavior: none;
-    overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
   
   html.dark {
@@ -146,9 +145,10 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    overscroll-behavior: none;
+    overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
     overflow-x: hidden;
+    overflow-y: auto;
   }
 }
 
@@ -206,8 +206,8 @@
   .light .hover\:text-white:hover { color: #0f172a; } /* Make hover white text dark in light mode */
 
   /* Fix colored text contrast for light mode */
-  .light .text-blue-400 { color: #2563eb; }
-  .light .text-blue-300 { color: #2563eb; }
+  .light .text-blue-400 { color: #1d4ed8; }
+  .light .text-blue-300 { color: #1d4ed8; }
   .light .text-cyan-400 { color: #0891b2; }
   .light .text-cyan-300 { color: #0891b2; }
   .light .text-green-400 { color: #16a34a; }

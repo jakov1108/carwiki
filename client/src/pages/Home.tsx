@@ -4,6 +4,29 @@ import { useQuery } from "@tanstack/react-query";
 import { Car, BookOpen, Shield, Search, ChevronRight, ChevronLeft } from "lucide-react";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost } from "@shared/schema";
 
+// Generate responsive image URL at a specific width
+function getResponsiveImageUrl(url: string, width: number): string {
+  if (!url) return url;
+  // Unsplash: replace ?w=XXXX parameter
+  if (url.includes('images.unsplash.com')) {
+    return url.replace(/[?&]w=\d+/, `?w=${width}`);
+  }
+  // Wikimedia: replace /XXXXpx- thumbnail size
+  if (url.includes('wikimedia.org') && url.includes('/thumb/')) {
+    return url.replace(/\/\d+px-/, `/${width}px-`);
+  }
+  return url;
+}
+
+// Generate srcSet for responsive images
+function getImageSrcSet(url: string): string {
+  if (!url) return '';
+  const widths = [400, 640, 800, 1280];
+  return widths
+    .map(w => `${getResponsiveImageUrl(url, w)} ${w}w`)
+    .join(', ');
+}
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const [searchBrand, setSearchBrand] = useState("");
@@ -171,13 +194,14 @@ export default function Home() {
                 <div className="space-y-5">
                   {/* Brand Select */}
                   <div className="group/select">
-                    <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                    <label htmlFor="select-brand" className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
                       <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">1</span>
                       Odaberi marku
                     </label>
                     <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite marku automobila iz padajućeg izbornika</p>
                     <div className="relative">
                       <select
+                        id="select-brand"
                         value={searchBrand}
                         onChange={(e) => {
                           setSearchBrand(e.target.value);
@@ -196,13 +220,14 @@ export default function Home() {
 
                   {/* Model Select - only show when brand is selected */}
                   <div className={`transition-all duration-300 ease-out ${searchBrand ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 h-0 overflow-hidden'}`}>
-                    <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                    <label htmlFor="select-model" className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
                       <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">2</span>
                       Odaberi model
                     </label>
                     <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite model automobila za odabranu marku</p>
                     <div className="relative">
                       <select
+                        id="select-model"
                         value={selectedModelId}
                         onChange={(e) => {
                           setSelectedModelId(e.target.value);
@@ -222,13 +247,14 @@ export default function Home() {
                   {/* Generation Select - show when model is selected */}
                   {selectedModelId && generations && generations.length > 0 && (
                     <div className="transition-all duration-300 ease-out">
-                      <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                      <label htmlFor="select-generation" className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">3</span>
                         Odaberi generaciju
                       </label>
                       <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite generaciju (godište) odabranog modela</p>
                       <div className="relative">
                         <select
+                          id="select-generation"
                           value={selectedGenerationId}
                           onChange={(e) => setSelectedGenerationId(e.target.value)}
                           className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
@@ -416,7 +442,9 @@ export default function Home() {
                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500/50 transition-all duration-300 group/card">
                           <div className="relative w-full overflow-hidden" style={{ paddingBottom: '56%' }}>
                             <img
-                              src={post.image}
+                              src={getResponsiveImageUrl(post.image, 640)}
+                              srcSet={getImageSrcSet(post.image)}
+                              sizes="(max-width: 768px) 100vw, 50vw"
                               alt={post.title}
                               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
                               loading="lazy"
@@ -444,7 +472,7 @@ export default function Home() {
               </div>
 
               {/* Dots Indicator */}
-              <div className="flex justify-center gap-2 mt-4">
+              <div className="flex justify-center gap-0 mt-4">
                 {Array.from({ length: maxIndex + 1 }, (_, index) => (
                   <button
                     key={index}
@@ -452,13 +480,15 @@ export default function Home() {
                       handleCarouselInteraction();
                       setCurrentBlogIndex(index);
                     }}
-                    className={`h-2 rounded-full transition-all duration-300 ${
+                    className="p-3 group"
+                    aria-label={`Idi na članak ${index + 1}`}
+                  >
+                    <span className={`block h-2 rounded-full transition-all duration-300 ${
                       index === currentBlogIndex 
                         ? 'bg-blue-500 w-6' 
-                        : 'bg-slate-600 hover:bg-slate-500 w-2'
-                    }`}
-                    aria-label={`Idi na članak ${index + 1}`}
-                  />
+                        : 'bg-slate-600 group-hover:bg-slate-500 w-2'
+                    }`} />
+                  </button>
                 ))}
               </div>
             </div>

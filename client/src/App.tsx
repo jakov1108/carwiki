@@ -1,23 +1,34 @@
+import { lazy, Suspense } from "react";
 import { Route, Router, Switch } from "wouter";
 import { AuthProvider } from "./lib/auth";
-import Home from "./pages/Home";
-import Models from "./pages/Models";
-import ModelDetail from "./pages/ModelDetail";
-import GenerationDetail from "./pages/GenerationDetail";
-import VariantDetail from "./pages/VariantDetail";
-import Compare from "./pages/Compare";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Admin from "./pages/Admin";
-import Contact from "./pages/Contact";
-import About from "./pages/About";
-import SubmitCar from "./pages/SubmitCar";
-import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
+
+// Lazy-load all route pages to reduce critical request chain
+const Home = lazy(() => import("./pages/Home"));
+const Models = lazy(() => import("./pages/Models"));
+const ModelDetail = lazy(() => import("./pages/ModelDetail"));
+const GenerationDetail = lazy(() => import("./pages/GenerationDetail"));
+const VariantDetail = lazy(() => import("./pages/VariantDetail"));
+const Compare = lazy(() => import("./pages/Compare"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Contact = lazy(() => import("./pages/Contact"));
+const About = lazy(() => import("./pages/About"));
+const SubmitCar = lazy(() => import("./pages/SubmitCar"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -27,7 +38,8 @@ function App() {
         <main className="flex-1">
           <Router>
             <ScrollToTop />
-            <Switch>
+            <Suspense fallback={<PageLoader />}>
+              <Switch>
               <Route path="/" component={Home} />
               <Route path="/automobili" component={Models} />
               {/* Dynamic routing: /brand/model/generation/variant */}
@@ -51,6 +63,7 @@ function App() {
               {/* Catch-all route for 404 */}
               <Route component={NotFound} />
             </Switch>
+            </Suspense>
           </Router>
         </main>
         <Footer />
