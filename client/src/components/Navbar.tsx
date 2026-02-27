@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../lib/auth";
 import { useTheme } from "../lib/theme";
@@ -8,11 +8,28 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        closeMobileMenu();
+      }
+    };
+    if (mobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [mobileMenuOpen]);
+
   return (
-    <nav className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+    <nav ref={navRef} className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -63,7 +80,7 @@ export default function Navbar() {
                 )}
                 {user.role === "admin" && (
                   <Link href="/admin" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-md transition-all font-medium" data-testid="link-admin">
-                    Admin
+                    Admin Dashboard
                   </Link>
                 )}
                 <div className="flex items-center gap-3">
@@ -186,7 +203,7 @@ export default function Navbar() {
                       data-testid="link-admin-mobile"
                       onClick={closeMobileMenu}
                     >
-                      Admin
+                      Admin Dashboard
                     </Link>
                   )}
                   <div className="flex items-center justify-between py-2 border-t border-slate-200 dark:border-slate-800 pt-4">

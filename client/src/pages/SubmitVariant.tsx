@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
+import { toYouTubeEmbedUrl } from "../lib/youtube";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { X, Check, AlertCircle, ChevronRight } from "lucide-react";
@@ -486,6 +487,7 @@ export default function SubmitCar() {
                     type="url"
                     value={variantData.videoUrl}
                     onChange={(e) => setVariantData({ ...variantData, videoUrl: e.target.value })}
+                    onBlur={(e) => setVariantData({ ...variantData, videoUrl: toYouTubeEmbedUrl(e.target.value) })}
                     placeholder="https://youtube.com/watch?v=..."
                     className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2 focus:border-blue-500 focus:outline-none"
                   />

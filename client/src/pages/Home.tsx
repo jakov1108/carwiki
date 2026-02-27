@@ -198,7 +198,7 @@ export default function Home() {
                       <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">1</span>
                       Odaberi marku
                     </label>
-                    <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite marku automobila iz padajućeg izbornika</p>
+                    <p className="text-sm text-slate-400 mb-2 text-center">Odaberite marku automobila iz padajućeg izbornika</p>
                     <div className="relative">
                       <select
                         id="select-brand"
@@ -224,7 +224,7 @@ export default function Home() {
                       <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">2</span>
                       Odaberi model
                     </label>
-                    <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite model automobila za odabranu marku</p>
+                    <p className="text-sm text-slate-400 mb-2 text-center">Odaberite model automobila za odabranu marku</p>
                     <div className="relative">
                       <select
                         id="select-model"
@@ -251,7 +251,7 @@ export default function Home() {
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">3</span>
                         Odaberi generaciju
                       </label>
-                      <p className="text-sm text-slate-400 mb-2 ml-8">Odaberite generaciju (godište) odabranog modela</p>
+                      <p className="text-sm text-slate-400 mb-2 text-center">Odaberite generaciju (godište) odabranog modela</p>
                       <div className="relative">
                         <select
                           id="select-generation"
@@ -276,7 +276,7 @@ export default function Home() {
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-sm font-bold">4</span>
                         Odaberi motor
                       </label>
-                      <p className="text-sm text-slate-400 mb-2 ml-8">Kliknite na motornu varijantu za prikaz detalja</p>
+                      <p className="text-sm text-slate-400 mb-2 text-center">Kliknite na motornu varijantu za prikaz detalja</p>
                       <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                         {variants.map(variant => (
                           <Link

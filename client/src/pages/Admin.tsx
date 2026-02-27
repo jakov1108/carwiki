@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../lib/auth";
+import { toYouTubeEmbedUrl } from "../lib/youtube";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost, ContactMessage } from "@shared/schema";
@@ -908,11 +909,15 @@ function ModelForm({ model, models, preselectedBrand, onClose }: { model: CarMod
       fetch(`/api/images/model/${model.id}`)
         .then(res => res.json())
         .then((data: { id: string; url: string }[]) => {
-          setImages(data.map(img => ({ id: img.id, url: img.url })));
+          if (data.length > 0) {
+            setImages(data.map(img => ({ id: img.id, url: img.url })));
+          } else if (model.image) {
+            // No images in new table yet — fall back to legacy single image
+            setImages([{ url: model.image }]);
+          }
           setImagesLoaded(true);
         })
         .catch(() => {
-          // If no images endpoint or error, use legacy single image
           if (model.image) {
             setImages([{ url: model.image }]);
           }
@@ -1139,11 +1144,15 @@ function GenerationForm({
       fetch(`/api/images/generation/${generation.id}`)
         .then(res => res.json())
         .then((data: { id: string; url: string }[]) => {
-          setImages(data.map(img => ({ id: img.id, url: img.url })));
+          if (data.length > 0) {
+            setImages(data.map(img => ({ id: img.id, url: img.url })));
+          } else if (generation.image) {
+            // No images in new table yet — fall back to legacy single image
+            setImages([{ url: generation.image }]);
+          }
           setImagesLoaded(true);
         })
         .catch(() => {
-          // If no images endpoint or error, use legacy single image
           if (generation.image) {
             setImages([{ url: generation.image }]);
           }
@@ -1653,6 +1662,7 @@ function VariantForm({
               type="url"
               value={formData.videoUrl}
               onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+              onBlur={(e) => setFormData({ ...formData, videoUrl: toYouTubeEmbedUrl(e.target.value) })}
               placeholder="https://youtube.com/watch?v=..."
               className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
             />
