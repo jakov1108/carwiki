@@ -312,7 +312,10 @@ export default function Compare() {
           <div className="mb-8">
             {!showSelector ? (
               <button
-                onClick={() => setShowSelector(true)}
+                onClick={() => {
+                  resetSelection();
+                  setShowSelector(true);
+                }}
                 className="w-full p-6 border-2 border-dashed border-slate-700 rounded-xl text-slate-400 hover:text-white hover:border-blue-500 transition-all flex items-center justify-center gap-2"
               >
                 <span className="text-2xl">+</span>
