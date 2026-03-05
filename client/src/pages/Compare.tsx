@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Check, ChevronRight, Fuel, Gauge, Zap, Settings, Car, Scale, Package } from "lucide-react";
+import { X, Check, ChevronRight, Fuel, Gauge, Zap, Settings, Car, Scale, Package, RotateCcw, Info } from "lucide-react";
 import type { CarModel, CarGeneration, CarVariant } from "@shared/schema";
 
 interface VariantWithDetails extends CarVariant {
@@ -10,6 +10,40 @@ interface VariantWithDetails extends CarVariant {
 
 export default function Compare() {
   const [selectedVariants, setSelectedVariants] = useState<VariantWithDetails[]>([]);
+  const preloadedRef = useRef(false);
+
+  // Auto-load variant from URL query param (e.g. /usporedi?variantId=abc)
+  useEffect(() => {
+    if (preloadedRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const variantId = params.get("variantId");
+    if (!variantId) return;
+    preloadedRef.current = true;
+
+    (async () => {
+      try {
+        // Fetch variant details
+        const vRes = await fetch(`/api/variants/${variantId}`);
+        if (!vRes.ok) return;
+        const variant = await vRes.json();
+
+        // Fetch generation and model for context
+        let generation: CarGeneration | undefined;
+        let model: CarModel | undefined;
+        try {
+          const gRes = await fetch(`/api/generations/${variant.generationId}`);
+          if (gRes.ok) {
+            const gen = await gRes.json();
+            generation = gen;
+            const mRes = await fetch(`/api/models/${gen.modelId}`);
+            if (mRes.ok) model = await mRes.json();
+          }
+        } catch {}
+
+        setSelectedVariants([{ ...variant, generation, model }]);
+      } catch {}
+    })();
+  }, []);
   const [searchBrand, setSearchBrand] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
   const [selectedGenerationId, setSelectedGenerationId] = useState("");
@@ -140,6 +174,35 @@ export default function Compare() {
         <p className="text-slate-400 text-center mb-8">
           Odaberite do 3 varijante za usporedbu ({selectedVariants.length}/3 odabrano)
         </p>
+
+        {/* Clear All + Legend bar */}
+        {selectedVariants.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setSelectedVariants([])}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 transition text-sm"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Obriši sve
+              </button>
+              <span className="text-sm text-slate-500">
+                {selectedVariants.length === 1 && "Dodajte još barem 1 vozilo za usporedbu"}
+                {selectedVariants.length === 2 && "Možete dodati još 1 vozilo"}
+                {selectedVariants.length === 3 && "Maksimalan broj vozila odabran"}
+              </span>
+            </div>
+            {selectedVariants.length >= 2 && (
+              <div className="flex items-center gap-2 text-sm">
+                <Info className="w-4 h-4 text-slate-500" />
+                <span className="text-slate-500">Legenda:</span>
+                <span className="flex items-center gap-1 text-green-400">
+                  <Check className="w-3.5 h-3.5" /> Najbolja vrijednost
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Selected variants comparison */}
         {selectedVariants.length > 0 && (

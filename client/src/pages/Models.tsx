@@ -3,6 +3,7 @@ import { Link, useParams } from "wouter";
 import type { CarModel } from "@shared/schema";
 import { Search, ChevronRight, ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { CardGridSkeleton, BreadcrumbSkeleton } from "../components/Skeleton";
 
 export default function Models() {
   const params = useParams<{ brandSlug?: string }>();
@@ -53,8 +54,19 @@ export default function Models() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Učitavam...</div>
+      <div className="min-h-screen py-12">
+        <div className="container mx-auto px-4">
+          <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            Baza Automobila
+          </h1>
+          <BreadcrumbSkeleton />
+          <div className="mb-8">
+            <div className="relative max-w-xl mx-auto">
+              <div className="w-full bg-slate-800 border border-slate-700 rounded-lg h-12 animate-pulse" />
+            </div>
+          </div>
+          <CardGridSkeleton count={8} />
+        </div>
       </div>
     );
   }

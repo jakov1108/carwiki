@@ -4,8 +4,19 @@ import { toYouTubeEmbedUrl } from "../lib/youtube";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { CarModel, CarGenerationWithModel } from "@shared/schema";
-import { Plus, X, ChevronRight, ArrowLeft, Check, Car, Layers, Settings, Upload } from "lucide-react";
+import { Plus, X, ChevronRight, ArrowLeft, Check, Car, Layers, Settings, Upload, Clock, CheckCircle, XCircle, FileText } from "lucide-react";
 import MultiImageUploader from "../components/MultiImageUploader";
+
+interface CarSubmissionUser {
+  id: string;
+  status: string;
+  mode: string;
+  modelData: string | null;
+  generationData: string | null;
+  variantData: string;
+  adminNotes: string | null;
+  createdAt: string;
+}
 
 interface ImageItem {
   id?: string;
@@ -83,6 +94,10 @@ export default function SubmitCar() {
   });
   const { data: generations, isLoading: generationsLoading } = useQuery<CarGenerationWithModel[]>({ 
     queryKey: ["/api/generations"] 
+  });
+  const { data: mySubmissions } = useQuery<CarSubmissionUser[]>({
+    queryKey: ["/api/my-submissions"],
+    enabled: !!user,
   });
 
   // Derived data
@@ -953,6 +968,20 @@ export default function SubmitCar() {
                     </div>
                   )}
 
+                  {/* Inline validation hints */}
+                  {!canSubmitVariant && (
+                    <div className="bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 px-4 py-3 rounded text-sm">
+                      <p className="font-medium mb-1">Popunite obavezna polja za slanje:</p>
+                      <ul className="list-disc list-inside space-y-0.5 text-yellow-400/80">
+                        {!variantData.engineName.trim() && <li>Oznaka motora</li>}
+                        {!variantData.power.trim() && <li>Snaga</li>}
+                        {!variantData.acceleration.trim() && <li>Ubrzanje 0-100 km/h</li>}
+                        {!variantData.consumption.trim() && <li>Potrošnja</li>}
+                        {!variantData.transmission.trim() && <li>Mjenjač</li>}
+                      </ul>
+                    </div>
+                  )}
+
                   {/* Summary before submit */}
                   <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
                     <h4 className="font-semibold mb-2">Sažetak prijedloga:</h4>
@@ -984,6 +1013,59 @@ export default function SubmitCar() {
               </div>
             )}
           </>
+        )}
+
+        {/* My Submissions History */}
+        {mySubmissions && mySubmissions.length > 0 && currentStep !== "success" && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <FileText className="w-6 h-6 text-blue-400" />
+              Moji prijedlozi
+            </h2>
+            <div className="space-y-3">
+              {mySubmissions.map((sub) => {
+                const vData = JSON.parse(sub.variantData);
+                const mData = sub.modelData ? JSON.parse(sub.modelData) : null;
+                const gData = sub.generationData ? JSON.parse(sub.generationData) : null;
+
+                const statusConfig = {
+                  pending: { icon: Clock, label: "Na čekanju", color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/30" },
+                  approved: { icon: CheckCircle, label: "Odobreno", color: "text-green-400", bg: "bg-green-500/10 border-green-500/30" },
+                  rejected: { icon: XCircle, label: "Odbijeno", color: "text-red-400", bg: "bg-red-500/10 border-red-500/30" },
+                }[sub.status] || { icon: Clock, label: sub.status, color: "text-slate-400", bg: "bg-slate-500/10 border-slate-500/30" };
+
+                const StatusIcon = statusConfig.icon;
+
+                return (
+                  <div key={sub.id} className={`p-4 rounded-lg border ${statusConfig.bg}`}>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <StatusIcon className={`w-4 h-4 ${statusConfig.color}`} />
+                          <span className={`text-sm font-medium ${statusConfig.color}`}>{statusConfig.label}</span>
+                          <span className="text-xs text-slate-500">
+                            {new Date(sub.createdAt).toLocaleDateString('hr-HR')}
+                          </span>
+                        </div>
+                        <p className="font-medium text-white">
+                          {mData ? `${mData.brand} ${mData.model}` : ""} {gData?.name || ""} — {vData.engineName}
+                        </p>
+                        <p className="text-sm text-slate-400">
+                          {vData.power} • {vData.fuelType} • {vData.transmission}
+                        </p>
+                      </div>
+                      {sub.status === "rejected" && sub.adminNotes && (
+                        <div className="w-full mt-2 p-3 bg-red-900/20 rounded-lg border border-red-700/30">
+                          <p className="text-xs font-medium text-red-400 mb-1">Razlog odbijanja:</p>
+                          <p className="text-sm text-red-300">{sub.adminNotes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
     </div>

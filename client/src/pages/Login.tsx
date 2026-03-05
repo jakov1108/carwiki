@@ -17,7 +17,14 @@ export default function Login() {
       await login(email, password);
       setLocation("/");
     } catch (err: any) {
-      setError(err.message || "Prijava neuspješna");
+      const msg = err.message || "Prijava neuspješna";
+      if (msg.includes("Invalid") || msg.includes("invalid") || msg.includes("credentials")) {
+        setError("Neispravna email adresa ili lozinka. Provjerite podatke i pokušajte ponovno.");
+      } else if (msg.includes("not found") || msg.includes("No user")) {
+        setError("Ne postoji račun s ovom email adresom. Možda se trebate registrirati?");
+      } else {
+        setError(msg);
+      }
     }
   };
 
@@ -30,6 +37,9 @@ export default function Login() {
               Prijava
             </h1>
             <p className="text-slate-400">Prijavite se na svoj račun</p>
+            <p className="text-xs text-slate-500 mt-2">
+              Prijavljeni korisnici mogu predlagati nove automobile, pratiti status prijedloga i pristupiti svom dashboardu.
+            </p>
           </div>
 
           {error && (

@@ -3,6 +3,7 @@ import { useParams, Link } from "wouter";
 import type { CarGenerationWithModel, CarVariantWithDetails, Image } from "@shared/schema";
 import { ArrowLeft, Calendar, Fuel, Gauge, Zap, Settings, ChevronRight } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
+import { DetailHeaderSkeleton, BreadcrumbSkeleton, VariantCardSkeleton } from "../components/Skeleton";
 
 export default function GenerationDetail() {
   // Get params from the URL - wouter passes these through Route
@@ -56,8 +57,13 @@ export default function GenerationDetail() {
 
   if (generationLoading || variantsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Učitavam...</div>
+      <div className="min-h-screen py-12">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <BreadcrumbSkeleton />
+          <DetailHeaderSkeleton />
+          <div className="mb-6"><div className="h-7 w-40 bg-slate-700/50 rounded animate-pulse" /></div>
+          <VariantCardSkeleton count={3} />
+        </div>
       </div>
     );
   }

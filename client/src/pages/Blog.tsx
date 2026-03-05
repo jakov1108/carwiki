@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import type { BlogPost } from "@shared/schema";
 import { Calendar, User } from "lucide-react";
+import { BlogCardSkeleton } from "../components/Skeleton";
 
 export default function Blog() {
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
@@ -10,8 +11,13 @@ export default function Blog() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Učitavam...</div>
+      <div className="min-h-screen py-12">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            Auto Wiki Blog
+          </h1>
+          <BlogCardSkeleton count={4} />
+        </div>
       </div>
     );
   }

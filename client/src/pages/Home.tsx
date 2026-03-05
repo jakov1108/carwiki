@@ -398,7 +398,7 @@ export default function Home() {
                   handleCarouselInteraction();
                   prevBlogSlide();
                 }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 -translate-x-1/2 border border-slate-600 hover:border-blue-500"
+                className="absolute left-0 top-[calc(50%-25px)] -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 -translate-x-1/2 border border-slate-600 hover:border-blue-500"
                 aria-label="Prethodni članak"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -410,7 +410,7 @@ export default function Home() {
                   handleCarouselInteraction();
                   nextBlogSlide();
                 }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 translate-x-1/2 border border-slate-600 hover:border-blue-500"
+                className="absolute right-0 top-[calc(50%-25px)] -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 translate-x-1/2 border border-slate-600 hover:border-blue-500"
                 aria-label="Sljedeći članak"
               >
                 <ChevronRight className="w-5 h-5" />

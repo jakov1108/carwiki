@@ -727,6 +727,17 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // User: Get own submissions
+  app.get("/api/my-submissions", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const session = (req as any).session;
+      const submissions = await storage.getCarSubmissionsByUser(session.user.id);
+      res.json(submissions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch submissions" });
+    }
+  });
+
   // Admin: Get pending submissions count
   app.get("/api/submissions/pending/count", isAdmin, async (_req: Request, res: Response) => {
     try {

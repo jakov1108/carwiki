@@ -18,7 +18,14 @@ export default function Register() {
       await register(email, password, name);
       setLocation("/");
     } catch (err: any) {
-      setError(err.message || "Registracija neuspješna");
+      const msg = err.message || "Registracija neuspješna";
+      if (msg.includes("already") || msg.includes("exists") || msg.includes("duplicate")) {
+        setError("Račun s ovom email adresom već postoji. Pokušajte se prijaviti.");
+      } else if (msg.includes("password") || msg.includes("short")) {
+        setError("Lozinka mora imati najmanje 6 znakova.");
+      } else {
+        setError(msg);
+      }
     }
   };
 
@@ -31,6 +38,9 @@ export default function Register() {
               Registracija
             </h1>
             <p className="text-slate-400">Stvorite novi račun</p>
+            <p className="text-xs text-slate-500 mt-2">
+              Registracijom dobivate mogućnost predlaganja novih automobila u našu bazu i praćenja statusa vaših prijedloga.
+            </p>
           </div>
 
           {error && (

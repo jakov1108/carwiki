@@ -370,6 +370,12 @@ export const storage = {
     return await db.select().from(carSubmissions).orderBy(desc(carSubmissions.createdAt));
   },
 
+  async getCarSubmissionsByUser(userId: string) {
+    return await db.select().from(carSubmissions)
+      .where(eq(carSubmissions.submittedBy, userId))
+      .orderBy(desc(carSubmissions.createdAt));
+  },
+
   async getPendingCarSubmissions() {
     return await db.select().from(carSubmissions)
       .where(eq(carSubmissions.status, "pending"))

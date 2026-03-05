@@ -8,6 +8,7 @@ import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Setting
 import { ObjectUploader } from "../components/ObjectUploader";
 import MultiImageUploader from "../components/MultiImageUploader";
 import RichTextEditor from "../components/RichTextEditor";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 interface ImageItem {
   id?: string;
@@ -48,6 +49,25 @@ export default function Admin() {
   const [showGenerationForm, setShowGenerationForm] = useState(false);
   const [showVariantForm, setShowVariantForm] = useState(false);
   const [showBlogForm, setShowBlogForm] = useState(false);
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+    typeToConfirm?: string;
+    variant?: "danger" | "warning";
+    confirmLabel?: string;
+  }>({ open: false, title: "", description: "", onConfirm: () => {} });
+
+  const showConfirm = (opts: Omit<typeof confirmDialog, "open">) => {
+    setConfirmDialog({ ...opts, open: true });
+  };
+
+  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; submissionId: string; notes: string }>(
+    { open: false, submissionId: "", notes: "" }
+  );
   
   const [editingModel, setEditingModel] = useState<CarModel | null>(null);
   const [editingGeneration, setEditingGeneration] = useState<CarGenerationWithModel | null>(null);
@@ -331,7 +351,12 @@ export default function Admin() {
                           <span>Uredi</span>
                         </button>
                         <button
-                          onClick={() => confirm("Jeste li sigurni?") && deleteVariant.mutate(variant.id)}
+                          onClick={() => showConfirm({
+                            title: "Obrisati varijantu?",
+                            description: `Jeste li sigurni da želite obrisati ovu varijantu? Ova radnja se ne može poništiti.`,
+                            onConfirm: () => deleteVariant.mutate(variant.id),
+                            variant: "danger",
+                          })}
                           className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded flex items-center space-x-2"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -471,9 +496,13 @@ export default function Admin() {
                         <div className="flex flex-col gap-2 min-w-[120px]">
                           <button
                             onClick={() => {
-                              if (confirm("Odobri ovaj prijedlog? Kreirat će se novi model/generacija/varijanta.")) {
-                                approveSubmission.mutate(submission.id);
-                              }
+                              showConfirm({
+                                title: "Odobriti prijedlog?",
+                                description: "Odobravanjem ovog prijedloga kreirat će se novi model/generacija/varijanta u bazi podataka.",
+                                onConfirm: () => approveSubmission.mutate(submission.id),
+                                variant: "warning",
+                                confirmLabel: "Odobri",
+                              });
                             }}
                             disabled={approveSubmission.isPending}
                             className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded flex items-center justify-center gap-2 disabled:opacity-50"
@@ -482,10 +511,7 @@ export default function Admin() {
                             <span>Odobri</span>
                           </button>
                           <button
-                            onClick={() => {
-                              const notes = prompt("Razlog odbijanja (opcionalno):");
-                              rejectSubmission.mutate({ id: submission.id, notes: notes || undefined });
-                            }}
+                            onClick={() => setRejectDialog({ open: true, submissionId: submission.id, notes: "" })}
                             disabled={rejectSubmission.isPending}
                             className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center gap-2 disabled:opacity-50"
                           >
@@ -493,7 +519,12 @@ export default function Admin() {
                             <span>Odbij</span>
                           </button>
                           <button
-                            onClick={() => confirm("Jeste li sigurni da želite obrisati?") && deleteSubmission.mutate(submission.id)}
+                            onClick={() => showConfirm({
+                              title: "Obrisati prijedlog?",
+                              description: "Jeste li sigurni da želite obrisati ovaj prijedlog korisnika?",
+                              onConfirm: () => deleteSubmission.mutate(submission.id),
+                              variant: "danger",
+                            })}
                             className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center gap-2"
                           >
                             <Trash2 className="w-5 h-5" />
@@ -618,7 +649,13 @@ export default function Admin() {
                         <button onClick={() => { setEditingModel(model); setShowModelForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => confirm("Obrisati model i sve generacije/varijante?") && deleteModel.mutate(model.id)} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                        <button onClick={() => showConfirm({
+                          title: "Obrisati model?",
+                          description: `Brisanjem modela "${model.brand} ${model.model}" obrisat će se i SVE generacije i varijante koje mu pripadaju.\n\nOva radnja se NE MOŽE poništiti.`,
+                          onConfirm: () => deleteModel.mutate(model.id),
+                          typeToConfirm: "OBRIŠI",
+                          variant: "danger",
+                        })} className="p-2 bg-red-600 hover:bg-red-700 rounded">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -666,7 +703,13 @@ export default function Admin() {
                         <button onClick={() => { setEditingGeneration(gen); setShowGenerationForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => confirm("Obrisati generaciju i sve varijante?") && deleteGeneration.mutate(gen.id)} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                        <button onClick={() => showConfirm({
+                          title: "Obrisati generaciju?",
+                          description: `Brisanjem generacije "${gen.name}" obrisat će se i SVE varijante motora koje joj pripadaju.\n\nOva radnja se NE MOŽE poništiti.`,
+                          onConfirm: () => deleteGeneration.mutate(gen.id),
+                          typeToConfirm: "OBRIŠI",
+                          variant: "danger",
+                        })} className="p-2 bg-red-600 hover:bg-red-700 rounded">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -726,7 +769,12 @@ export default function Admin() {
                         <button onClick={() => { setEditingVariant(variant); setShowVariantForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => confirm("Obrisati varijantu?") && deleteVariant.mutate(variant.id)} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                        <button onClick={() => showConfirm({
+                          title: "Obrisati varijantu?",
+                          description: `Jeste li sigurni da želite obrisati varijantu "${variant.engineName}"?\n\nOva radnja se ne može poništiti.`,
+                          onConfirm: () => deleteVariant.mutate(variant.id),
+                          variant: "danger",
+                        })} className="p-2 bg-red-600 hover:bg-red-700 rounded">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -782,7 +830,12 @@ export default function Admin() {
                         <Edit className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => confirm("Jeste li sigurni?") && deleteBlog.mutate(post.id)}
+                        onClick={() => showConfirm({
+                          title: "Obrisati blog post?",
+                          description: `Jeste li sigurni da želite obrisati blog post "${post.title}"?`,
+                          onConfirm: () => deleteBlog.mutate(post.id),
+                          variant: "danger",
+                        })}
                         className="p-2 bg-red-600 hover:bg-red-700 rounded"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -812,7 +865,12 @@ export default function Admin() {
                       <p className="text-xs text-slate-500">{new Date(message.date).toLocaleString('hr-HR')}</p>
                     </div>
                     <button
-                      onClick={() => confirm("Jeste li sigurni da želite obrisati ovu poruku?") && deleteMessage.mutate(message.id)}
+                      onClick={() => showConfirm({
+                        title: "Obrisati poruku?",
+                        description: `Obrisati poruku od ${message.name} (${message.email})?`,
+                        onConfirm: () => deleteMessage.mutate(message.id),
+                        variant: "danger",
+                      })}
                       className="p-2 bg-red-600 hover:bg-red-700 rounded"
                       title="Obriši poruku"
                     >
@@ -872,6 +930,76 @@ export default function Admin() {
               setEditingBlog(null);
             }}
           />
+        )}
+
+        {/* Confirm Dialog */}
+        <ConfirmDialog
+          open={confirmDialog.open}
+          onClose={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+          onConfirm={confirmDialog.onConfirm}
+          title={confirmDialog.title}
+          description={confirmDialog.description}
+          typeToConfirm={confirmDialog.typeToConfirm}
+          variant={confirmDialog.variant || "danger"}
+          confirmLabel={confirmDialog.confirmLabel ?? "Obriši"}
+          cancelLabel="Odustani"
+        />
+
+        {/* Reject Submission Dialog */}
+        {rejectDialog.open && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setRejectDialog({ open: false, submissionId: "", notes: "" })}
+            />
+            <div className="relative bg-slate-800 rounded-xl border border-red-500/30 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95">
+              <button
+                onClick={() => setRejectDialog({ open: false, submissionId: "", notes: "" })}
+                className="absolute top-3 right-3 p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-start gap-4 mb-5">
+                <div className="p-2 rounded-full bg-red-900/20 shrink-0">
+                  <XCircle className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Odbij prijedlog</h3>
+                  <p className="text-sm text-slate-400 mt-1">Navedi razlog odbijanja — korisnik će ga vidjeti uz status prijedloga.</p>
+                </div>
+              </div>
+
+              <textarea
+                autoFocus
+                rows={4}
+                value={rejectDialog.notes}
+                onChange={(e) => setRejectDialog(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="npr. Nedostaju podaci o motoru, pogrešna kategorija, duplikat..."
+                className="w-full bg-slate-900 border border-slate-600 hover:border-slate-500 focus:border-red-500 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 resize-none focus:outline-none transition"
+              />
+              <p className="text-xs text-slate-500 mt-1.5 mb-5">Razlog je opcionalan, ali preporučen.</p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setRejectDialog({ open: false, submissionId: "", notes: "" })}
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition"
+                >
+                  Odustani
+                </button>
+                <button
+                  onClick={() => {
+                    rejectSubmission.mutate({ id: rejectDialog.submissionId, notes: rejectDialog.notes || undefined });
+                    setRejectDialog({ open: false, submissionId: "", notes: "" });
+                  }}
+                  disabled={rejectSubmission.isPending}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition"
+                >
+                  {rejectSubmission.isPending ? "Učitavam..." : "Odbij prijedlog"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
