@@ -1957,11 +1957,15 @@ function BlogForm({ post, onClose }: { post: BlogPost | null; onClose: () => voi
       fetch(`/api/images/blog/${post.id}`)
         .then(res => res.json())
         .then((data: { id: string; url: string }[]) => {
-          setImages(data.map(img => ({ id: img.id, url: img.url })));
+          if (data.length > 0) {
+            setImages(data.map(img => ({ id: img.id, url: img.url })));
+          } else if (post.image) {
+            // No images in new table yet — fall back to legacy single image
+            setImages([{ url: post.image }]);
+          }
           setImagesLoaded(true);
         })
         .catch(() => {
-          // If no images endpoint or error, use legacy single image
           if (post.image) {
             setImages([{ url: post.image }]);
           }
