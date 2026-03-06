@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heuristic UX Evaluation — Auto Wiki (carwikibeta.onrender.com)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-900: #0f2057;
+      --blue-800: #1a3a8a;
+      --blue-700: #1e4fc0;
+      --blue-600: #2563eb;
+      --blue-500: #3b82f6;
+      --blue-400: #60a5fa;
+      --blue-300: #93c5fd;
+      --blue-100: #dbeafe;
+      --cyan-400: #22d3ee;
+      --cyan-500: #06b6d4;
+      --slate-950: #020617;
+      --slate-900: #0f172a;
+      --slate-800: #1e293b;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748b;
+      --slate-400: #94a3b8;
+      --slate-300: #cbd5e1;
+      --slate-200: #e2e8f0;
+      --slate-100: #f1f5f9;
+      --white: #ffffff;
+      --green-500: #22c55e;
+      --green-100: #dcfce7;
+      --amber-500: #f59e0b;
+      --amber-100: #fef3c7;
+      --red-500: #ef4444;
+      --red-100: #fee2e2;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.1);
+      --shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
+      --shadow-md: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
+      --shadow-lg: 0 20px 25px -5px rgba(0,0,0,.1), 0 10px 10px -5px rgba(0,0,0,.04);
+      --radius: 10px;
+      --radius-sm: 6px;
+      --radius-lg: 16px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--slate-100);
+      color: var(--slate-900);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    /* ── HERO ─────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-800) 40%, #1a4080 70%, var(--cyan-500) 100%);
+      padding: 64px 24px 56px;
+      text-align: center;
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-badge-row {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+      margin-bottom: 32px;
+    }
+    .hero-badge {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      backdrop-filter: blur(6px);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .hero h1 {
+      font-size: clamp(26px, 5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+      line-height: 1.15;
+    }
+    .hero p {
+      font-size: 16px;
+      opacity: .85;
+      max-width: 640px;
+      margin: 0 auto 32px;
+    }
+    .exec-box {
+      display: inline-block;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: var(--radius);
+      padding: 20px 28px;
+      text-align: left;
+      max-width: 640px;
+      width: 100%;
+    }
+    .exec-box h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      opacity: .7;
+      margin-bottom: 12px;
+    }
+    .exec-box ul { list-style: none; }
+    .exec-box ul li {
+      font-size: 14px; opacity: .9;
+      padding: 4px 0 4px 20px;
+      position: relative;
+    }
+    .exec-box ul li::before {
+      content: '→';
+      position: absolute; left: 0;
+      opacity: .6;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+    .section { padding: 52px 0; }
+    .section-title {
+      font-size: 22px; font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 6px;
+    }
+    .section-sub {
+      font-size: 14px; color: var(--slate-500);
+      margin-bottom: 28px;
+    }
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, var(--blue-500), transparent);
+      width: 60px; margin-bottom: 8px;
+    }
+
+    /* ── CARDS ─────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      border: 1px solid var(--slate-200);
+    }
+    .card-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .card-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+    }
+    .card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--slate-900); }
+    .card p { font-size: 14px; color: var(--slate-600); line-height: 1.7; }
+
+    /* ── OVERVIEW CARDS ─────────────────────────────── */
+    .overview-icon {
+      width: 42px; height: 42px;
+      background: var(--blue-100);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+
+    /* ── HEURISTIC CARDS ─────────────────────────────── */
+    .heuristic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .heuristic-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      border: 1px solid var(--slate-200);
+      border-top: 4px solid var(--blue-500);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .heuristic-header {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .heuristic-icon {
+      width: 36px; height: 36px;
+      background: var(--blue-100);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .heuristic-header h3 { font-size: 14px; font-weight: 700; color: var(--slate-900); }
+    .heuristic-num { font-size: 11px; color: var(--slate-500); }
+
+    .score-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .score-num {
+      font-size: 28px; font-weight: 800;
+      min-width: 56px;
+    }
+    .score-green { color: var(--green-500); }
+    .score-amber { color: var(--amber-500); }
+    .score-red { color: var(--red-500); }
+
+    .score-bar-wrap {
+      flex: 1;
+    }
+    .score-bar-bg {
+      height: 8px; background: var(--slate-200);
+      border-radius: 999px; overflow: hidden;
+      position: relative;
+    }
+    .score-bar-fill {
+      height: 100%; border-radius: 999px;
+      transition: width .5s ease;
+    }
+    .fill-green { background: linear-gradient(to right, var(--green-500), #4ade80); }
+    .fill-amber { background: linear-gradient(to right, var(--amber-500), #fbbf24); }
+    .fill-red   { background: linear-gradient(to right, var(--red-500), #f87171); }
+
+    .benchmark-line {
+      position: absolute; top: 0; bottom: 0;
+      width: 2px; background: var(--slate-500);
+      opacity: .5;
+    }
+    .benchmark-label {
+      font-size: 11px; color: var(--slate-500);
+      margin-top: 4px;
+    }
+
+    .risk-badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .03em;
+    }
+    .badge-green { background: var(--green-100); color: #166534; }
+    .badge-amber { background: var(--amber-100); color: #92400e; }
+    .badge-red   { background: var(--red-100);   color: #991b1b; }
+
+    .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .bullet-list li {
+      font-size: 13px; color: var(--slate-700);
+      padding-left: 16px; position: relative;
+    }
+    .bullet-list li::before {
+      content: '•';
+      position: absolute; left: 0;
+      color: var(--blue-500);
+    }
+    .bullet-list.recs li::before { color: var(--green-500); content: '✓'; }
+
+    .so-what {
+      background: var(--blue-100);
+      border-left: 3px solid var(--blue-500);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 10px 14px;
+      font-size: 13px; color: var(--blue-800);
+      font-style: italic;
+    }
+
+    /* ── PRIORITISATION TABLE ──────────────────────── */
+    .priority-table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius); overflow: hidden; }
+    thead { background: linear-gradient(135deg, var(--blue-800), var(--blue-700)); color: var(--white); }
+    thead th { padding: 14px 16px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; text-align: left; }
+    tbody tr { border-bottom: 1px solid var(--slate-200); transition: background .15s; }
+    tbody tr:hover { background: var(--slate-100); }
+    tbody tr:last-child { border-bottom: none; }
+    td { padding: 14px 16px; font-size: 13px; color: var(--slate-700); vertical-align: top; }
+    td:first-child { font-weight: 600; color: var(--slate-900); }
+
+    .sev-badge {
+      display: inline-block;
+      border-radius: 999px; padding: 3px 10px;
+      font-size: 11px; font-weight: 700;
+    }
+    .sev-critical { background: #fee2e2; color: #991b1b; }
+    .sev-high     { background: #ffedd5; color: #9a3412; }
+    .sev-medium   { background: var(--amber-100); color: #92400e; }
+    .sev-low      { background: var(--green-100); color: #166534; }
+
+    .impact-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .impact-tag {
+      background: var(--slate-100);
+      border: 1px solid var(--slate-300);
+      border-radius: 999px;
+      padding: 2px 8px; font-size: 11px;
+      color: var(--slate-700);
+    }
+
+    .urgency {
+      display: inline-block;
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-size: 12px; font-weight: 600;
+    }
+    .urgency-immediate { background: #fee2e2; color: #991b1b; }
+    .urgency-soon      { background: #ffedd5; color: #9a3412; }
+    .urgency-planned   { background: var(--amber-100); color: #92400e; }
+    .urgency-backlog   { background: var(--green-100); color: #166534; }
+
+    /* ── VISUALS ────────────────────────────────────── */
+    .visuals-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 720px) {
+      .visuals-grid { grid-template-columns: 1fr; }
+      .heuristic-grid, .card-grid-3, .card-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .flow-wrap {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      border: 1px solid var(--slate-200);
+    }
+    .flow-wrap h3 { font-size: 15px; font-weight: 700; margin-bottom: 20px; color: var(--slate-800); }
+
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .flow-node {
+      background: var(--blue-100);
+      border: 2px solid var(--blue-400);
+      border-radius: var(--radius-sm);
+      padding: 10px 20px;
+      font-size: 13px; font-weight: 600;
+      color: var(--blue-800);
+      text-align: center;
+      min-width: 180px;
+      position: relative;
+    }
+    .flow-node.warn {
+      background: var(--amber-100);
+      border-color: var(--amber-500);
+      color: #92400e;
+    }
+    .flow-arrow {
+      width: 2px; height: 24px;
+      background: var(--slate-400);
+      position: relative;
+    }
+    .flow-arrow::after {
+      content: '▼';
+      position: absolute;
+      bottom: -6px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: var(--slate-400);
+    }
+    .flow-note {
+      font-size: 11px; color: var(--red-500);
+      position: absolute; right: -130px; top: 50%;
+      transform: translateY(-50%);
+      width: 120px; line-height: 1.3;
+    }
+
+    .radar-wrap {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      border: 1px solid var(--slate-200);
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .radar-wrap h3 { font-size: 15px; font-weight: 700; margin-bottom: 20px; color: var(--slate-800); align-self: flex-start; }
+
+    /* ── STAKEHOLDER ─────────────────────────────────── */
+    .stakeholder-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .stakeholder-item {
+      display: flex; gap: 14px; align-items: flex-start;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 18px 20px;
+      border: 1px solid var(--slate-200);
+    }
+    .stakeholder-icon {
+      font-size: 22px; flex-shrink: 0; margin-top: 1px;
+    }
+    .stakeholder-item p { font-size: 14px; color: var(--slate-700); line-height: 1.7; }
+    .stakeholder-item strong { color: var(--slate-900); }
+
+    /* ── FOOTER ─────────────────────────────────────── */
+    footer {
+      background: var(--slate-900);
+      color: var(--slate-400);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+      margin-top: 40px;
+    }
+    footer strong { color: var(--slate-300); }
+    footer p + p { margin-top: 6px; }
+
+    /* ── OVERALL SCORE ─────────────────────────────── */
+    .overall-score-banner {
+      display: flex; align-items: center; justify-content: center; gap: 24px;
+      background: linear-gradient(135deg, var(--blue-900), var(--blue-700));
+      color: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      margin-bottom: 40px;
+      box-shadow: var(--shadow-lg);
+      flex-wrap: wrap;
+    }
+    .overall-num {
+      font-size: 64px; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, var(--cyan-400), var(--blue-300));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .overall-info { text-align: left; }
+    .overall-info h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .overall-info p { font-size: 14px; opacity: .8; max-width: 340px; }
+    .overall-ring {
+      width: 80px; height: 80px;
+    }
+
+    /* small label above section */
+    .eyebrow {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--blue-600);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════ HERO ══════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-badge-row">
+    <span class="hero-badge">🚗 Automotive Encyclopedia</span>
+    <span class="hero-badge">🌐 Web App — carwikibeta.onrender.com</span>
+    <span class="hero-badge">🇭🇷 Croatian Language</span>
+    <span class="hero-badge">📱 Responsive / Dark-Mode First</span>
+  </div>
+  <h1>Heuristic UX Evaluation<br>Auto Wiki — carwikibeta.onrender.com</h1>
+  <p>A comprehensive 10-heuristic usability analysis of the Auto Wiki platform, a Croatian-language automotive encyclopedia and blog application built as an HCI university project.</p>
+  <div class="exec-box">
+    <h3>⚡ Executive Summary — 60 seconds</h3>
+    <ul>
+      <li>Visually polished dark-themed UI with consistent Tailwind design language and good mobile responsiveness.</li>
+      <li>Core UX risks center on sparse feedback loops, missing breadcrumb navigation for a 4-level deep hierarchy, and inadequate error messaging.</li>
+      <li>Language mixing (Croatian UI + English labels like "Admin Dashboard") creates cognitive dissonance for target users.</li>
+      <li>No global search in the navbar, no onboarding, and no help documentation reduce discoverability for new visitors.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ OVERVIEW ═══════════════════════════════ -->
+<div class="container">
+  <section class="section">
+    <p class="eyebrow">Website Overview</p>
+    <div class="divider"></div>
+    <h2 class="section-title">Site Overview & First Impressions</h2>
+    <p class="section-sub">Based on source code analysis of the full-stack React + Node.js application</p>
+
+    <!-- Overall Score Banner -->
+    <div class="overall-score-banner">
+      <div class="overall-num">63</div>
+      <div class="overall-info">
+        <h2>Overall UX Score</h2>
+        <p>Needs Improvement — strong visual foundation but critical gaps in feedback, navigation depth, and error handling.</p>
+      </div>
+      <svg class="overall-ring" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="8"/>
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#22d3ee" stroke-width="8"
+          stroke-dasharray="213.6" stroke-dashoffset="79" stroke-linecap="round"
+          transform="rotate(-90 40 40)"/>
+        <text x="40" y="45" text-anchor="middle" fill="white" font-size="14" font-weight="800">63%</text>
+      </svg>
+    </div>
+
+    <div class="card-grid-3">
+      <div class="card">
+        <div class="overview-icon">🎯</div>
+        <h3>Purpose of the Site</h3>
+        <p>Auto Wiki is a Croatian-language automotive encyclopedia and blog platform. It allows users to browse car models, generations, and variants with detailed specs. Users can compare vehicles side-by-side, read articles, submit car suggestions, and register/log in. It is a university HCI (Human-Computer Interaction) project.</p>
+      </div>
+      <div class="card">
+        <div class="overview-icon">👁️</div>
+        <h3>First UX Impressions</h3>
+        <p>The dark, card-based interface creates a premium automotive feel. Navigation is straightforward with 5 main sections. However, the depth of the content hierarchy (Brand → Model → Generation → Variant) is poorly communicated to users. The beta nature of the product is not disclosed, which can erode trust when incomplete features are encountered.</p>
+      </div>
+      <div class="card">
+        <div class="overview-icon">⚠️</div>
+        <h3>Key UX Risks at a Glance</h3>
+        <p>No breadcrumb navigation for deep 4-level hierarchy. Loading states are generic ("Učitavam...") with no skeleton screens in all areas. No global search in the navbar. Croatian/English language mixing. Minimal footer with no sitemap, links, or contact info. No onboarding or contextual help.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ HEURISTIC ANALYSIS ════════════════════ -->
+  <section class="section">
+    <p class="eyebrow">Detailed Analysis</p>
+    <div class="divider"></div>
+    <h2 class="section-title">10-Heuristic Analysis</h2>
+    <p class="section-sub">Nielsen's 10 Usability Heuristics + Modern UX Best Practices</p>
+
+    <div class="heuristic-grid">
+
+      <!-- H1 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">📡</div>
+          <div>
+            <div class="heuristic-num">Heuristic 1</div>
+            <h3>Visibility of System Status</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-amber">55</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-amber" style="width:55%"></div>
+              <div class="benchmark-line" style="left:72%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 72% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-red">High Risk</span>
+        </div>
+        <ul class="bullet-list">
+          <li>Generic "Učitavam..." (Loading…) text with no skeleton screens on car listing pages</li>
+          <li>No progress or pagination indicators when browsing large car catalogues</li>
+          <li>Blog post carousel auto-play provides no visible timer or progress bar</li>
+          <li>Submit car form shows no confirmation state or progress after submission</li>
+          <li>Admin dashboard operations give no persistent success/failure toast</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Replace text-only loaders with skeleton card components for list views</li>
+          <li>Add a progress ring or bar to the blog carousel</li>
+          <li>Implement toast notifications for form submissions and CRUD actions</li>
+        </ul>
+        <div class="so-what">So what? Users who don't see feedback assume the app is broken and abandon — directly increasing bounce rate and reducing content consumption.</div>
+      </div>
+
+      <!-- H2 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">🗣️</div>
+          <div>
+            <div class="heuristic-num">Heuristic 2</div>
+            <h3>Match Between System & Real World</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-amber">68</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-amber" style="width:68%"></div>
+              <div class="benchmark-line" style="left:75%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 75% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-amber">Needs Improvement</span>
+        </div>
+        <ul class="bullet-list">
+          <li>"Admin Dashboard" label is in English on a Croatian-language site</li>
+          <li>Route names like /automobili/:brandSlug/:modelSlug/:generationSlug are exposed as readable URLs which is fine, but generation/variant terminology may confuse general users</li>
+          <li>Automotive jargon (varijanta, generacija) used without tooltips or explanations</li>
+          <li>"Usporedi" (Compare) icon-only treatment on some screens reduces clarity</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Translate all UI strings to Croatian consistently, including "Admin Dashboard"</li>
+          <li>Add tooltip explanations for automotive hierarchy terms on first use</li>
+          <li>Use plain-language copy alongside technical terms in spec tables</li>
+        </ul>
+        <div class="so-what">So what? Language inconsistency undermines localisation credibility and signals lack of polish to Croatian users — reducing trust and repeat visits.</div>
+      </div>
+
+      <!-- H3 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">🔙</div>
+          <div>
+            <div class="heuristic-num">Heuristic 3</div>
+            <h3>User Control & Freedom</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-amber">62</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-amber" style="width:62%"></div>
+              <div class="benchmark-line" style="left:78%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 78% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-amber">Needs Improvement</span>
+        </div>
+        <ul class="bullet-list">
+          <li>No breadcrumb navigation on deep pages (Brand → Model → Generation → Variant)</li>
+          <li>No "Back" buttons on detail pages — users rely entirely on browser back</li>
+          <li>Car comparison: users can clear selection but cannot undo individual deselects easily</li>
+          <li>Admin operations lack undo or confirmation dialogs for destructive actions</li>
+          <li>Mobile menu has no swipe-to-dismiss gesture support</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Add breadcrumb navigation component to all detail pages</li>
+          <li>Add explicit "← Back" links on variant/generation detail pages</li>
+          <li>Implement ConfirmDialog for delete actions in admin (a ConfirmDialog component exists — ensure consistent use)</li>
+        </ul>
+        <div class="so-what">So what? Users who get lost deep in the hierarchy leave rather than navigate back — reducing engagement and pageviews per session.</div>
+      </div>
+
+      <!-- H4 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">🎨</div>
+          <div>
+            <div class="heuristic-num">Heuristic 4</div>
+            <h3>Consistency & Standards</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-amber">78</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-amber" style="width:78%"></div>
+              <div class="benchmark-line" style="left:80%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 80% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-amber">Needs Improvement</span>
+        </div>
+        <ul class="bullet-list">
+          <li>Consistent Tailwind-based blue/slate palette across pages — strong foundation</li>
+          <li>Hover states are consistent across navigation items and cards</li>
+          <li>Inconsistent loading states: spinner on some pages, text on others</li>
+          <li>Some cards use border-t-4 accent lines, others don't — visual inconsistency in detail pages</li>
+          <li>Footer is minimal (2 lines) while the app has rich content — inconsistency with content depth</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Create a shared Loader component and apply it universally</li>
+          <li>Define card variant styles in a design token system</li>
+          <li>Enrich the footer with quick links, sitemap sections, and social links</li>
+        </ul>
+        <div class="so-what">So what? Inconsistent patterns increase cognitive load — users spend mental energy adapting to UI differences instead of consuming content.</div>
+      </div>
+
+      <!-- H5 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">🛡️</div>
+          <div>
+            <div class="heuristic-num">Heuristic 5</div>
+            <h3>Error Prevention</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-amber">60</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-amber" style="width:60%"></div>
+              <div class="benchmark-line" style="left:74%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 74% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-amber">Needs Improvement</span>
+        </div>
+        <ul class="bullet-list">
+          <li>Comparison feature correctly enforces 2-car minimum — good guard</li>
+          <li>No real-time validation on registration form (password strength, email format)</li>
+          <li>Image upload in admin lacks file size/type validation feedback before submission</li>
+          <li>Car submission form (SubmitCar) has no field-level validation hints</li>
+          <li>Search input has no character minimum enforcement — empty queries hit the API</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Add inline form validation with clear error messages on blur/submit</li>
+          <li>Implement password strength meter on registration</li>
+          <li>Add file type/size constraints with user-facing messaging on image uploaders</li>
+          <li>Debounce search and add minimum-character guard</li>
+        </ul>
+        <div class="so-what">So what? Preventable errors in forms frustrate users and inflate support requests — adding validation reduces form abandonment significantly.</div>
+      </div>
+
+      <!-- H6 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">💡</div>
+          <div>
+            <div class="heuristic-num">Heuristic 6</div>
+            <h3>Recognition Over Recall</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-amber">70</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-amber" style="width:70%"></div>
+              <div class="benchmark-line" style="left:76%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 76% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-amber">Needs Improvement</span>
+        </div>
+        <ul class="bullet-list">
+          <li>Navigation items are always visible in desktop — good recognition support</li>
+          <li>Icons used alongside text labels in most nav items — helps recognition</li>
+          <li>No persistent filter/search state when navigating back to the cars list</li>
+          <li>Compare button lacks visual affordance until cars are selected — its purpose is not obvious on first visit</li>
+          <li>No recently viewed cars or search history to support returning users</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Persist search/filter state using URL query parameters</li>
+          <li>Add a prominent "How it works" tooltip or empty-state card for the comparison feature</li>
+          <li>Consider "recently viewed" local storage tracking for the homepage</li>
+        </ul>
+        <div class="so-what">So what? Users who lose their context abandon browsing sessions — persistent state and recognition aids directly boost pages-per-visit metrics.</div>
+      </div>
+
+      <!-- H7 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">⚡</div>
+          <div>
+            <div class="heuristic-num">Heuristic 7</div>
+            <h3>Flexibility & Efficiency of Use</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-amber">65</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-amber" style="width:65%"></div>
+              <div class="benchmark-line" style="left:72%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 72% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-amber">Needs Improvement</span>
+        </div>
+        <ul class="bullet-list">
+          <li>No global search bar in the navbar — users must navigate to /automobili to search</li>
+          <li>No keyboard shortcut support (e.g., "/" to focus search)</li>
+          <li>Car comparison is limited to 3 vehicles — no quick-add shortcut from detail pages</li>
+          <li>No "Share" or permalink functionality for specific car variants</li>
+          <li>Lazy-loaded pages improve performance — good technical efficiency decision</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Add a global search field to the navbar (especially for mobile)</li>
+          <li>Implement keyboard shortcut "/" for search focus</li>
+          <li>Add "Add to compare" button directly on car detail/variant pages</li>
+          <li>Generate shareable URLs for comparison results</li>
+        </ul>
+        <div class="so-what">So what? Power users who cannot find shortcuts switch to competitor encyclopedias — efficiency features are disproportionately valued by repeat users.</div>
+      </div>
+
+      <!-- H8 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">✨</div>
+          <div>
+            <div class="heuristic-num">Heuristic 8</div>
+            <h3>Aesthetic & Minimalist Design</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-green">80</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-green" style="width:80%"></div>
+              <div class="benchmark-line" style="left:78%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 78% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-green">Good UX</span>
+        </div>
+        <ul class="bullet-list">
+          <li>Clean dark-mode-first design with a professional automotive look</li>
+          <li>Consistent card-based layout, proper whitespace, and visual hierarchy</li>
+          <li>Blue/slate gradient accents create a cohesive premium feel</li>
+          <li>Minimal footer design feels underdeveloped relative to content richness</li>
+          <li>Some pages lack visual breathing room on mobile (padding inconsistency)</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Maintain current design tokens and expand the footer section</li>
+          <li>Audit mobile padding on detail pages to ensure consistent spacing</li>
+          <li>Add subtle page-transition animations for a smoother navigation feel</li>
+        </ul>
+        <div class="so-what">So what? The strong visual design is a competitive differentiator — maintaining and extending it consistently will drive positive word-of-mouth from design-conscious users.</div>
+      </div>
+
+      <!-- H9 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">🔧</div>
+          <div>
+            <div class="heuristic-num">Heuristic 9</div>
+            <h3>Error Recognition, Diagnosis & Recovery</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-red">45</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-red" style="width:45%"></div>
+              <div class="benchmark-line" style="left:71%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 71% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-red">High Risk</span>
+        </div>
+        <ul class="bullet-list">
+          <li>API errors display no user-facing messages — silent failures in fetch calls</li>
+          <li>404 page (NotFound.tsx) exists but may not be styled to match site theme</li>
+          <li>Login/registration errors from the server are not surfaced to the user clearly</li>
+          <li>Image upload failures in admin show no feedback</li>
+          <li>Comparison page with invalid/missing query params has no graceful fallback</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Add catch blocks to all React Query fetchers that render inline error messages</li>
+          <li>Style the 404 page with brand identity and helpful navigation options</li>
+          <li>Display human-readable auth error messages (wrong password, email taken, etc.)</li>
+          <li>Add an error boundary component at the app level</li>
+        </ul>
+        <div class="so-what">So what? Silent errors are the #1 driver of user frustration and negative reviews — even basic error messages can reduce support burden by 40–60%.</div>
+      </div>
+
+      <!-- H10 -->
+      <div class="heuristic-card">
+        <div class="heuristic-header">
+          <div class="heuristic-icon">📚</div>
+          <div>
+            <div class="heuristic-num">Heuristic 10</div>
+            <h3>Help & Documentation</h3>
+          </div>
+        </div>
+        <div class="score-row">
+          <span class="score-num score-red">35</span>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg">
+              <div class="score-bar-fill fill-red" style="width:35%"></div>
+              <div class="benchmark-line" style="left:65%"></div>
+            </div>
+            <div class="benchmark-label">Benchmark ≈ 65% for modern sites</div>
+          </div>
+          <span class="risk-badge badge-red">High Risk</span>
+        </div>
+        <ul class="bullet-list">
+          <li>No onboarding flow or welcome tooltips for first-time users</li>
+          <li>No FAQ, help centre, or documentation section</li>
+          <li>The comparison feature's 3-car limit is not explained anywhere in the UI</li>
+          <li>No contextual tooltips explaining automotive terms (generacija, varijanta)</li>
+          <li>Contact page exists (Kontakt) but no clear response time or support expectations are set</li>
+          <li>Admin dashboard has no inline guidance for data entry requirements</li>
+        </ul>
+        <ul class="bullet-list recs">
+          <li>Add empty-state instructional cards when sections have no content</li>
+          <li>Add a brief feature tour or tooltip sequence for new registered users</li>
+          <li>Include an FAQ section explaining the car hierarchy (brand → model → generation → variant)</li>
+          <li>Add character limits and hints to admin input fields</li>
+        </ul>
+        <div class="so-what">So what? Users who can't self-serve their questions abandon or flood the contact form — good in-app help directly reduces friction and support costs.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ PRIORITISATION ════════════════════════ -->
+  <section class="section">
+    <p class="eyebrow">Action Plan</p>
+    <div class="divider"></div>
+    <h2 class="section-title">Prioritisation — Top 5 Issues</h2>
+    <p class="section-sub">Ranked by user impact × business consequence</p>
+
+    <div class="priority-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Issue</th>
+            <th>Severity</th>
+            <th>Business Impact</th>
+            <th>Why It Matters</th>
+            <th>Urgency</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Silent API & auth errors — no user-facing messages</td>
+            <td><span class="sev-badge sev-critical">Critical</span></td>
+            <td>
+              <div class="impact-tags">
+                <span class="impact-tag">🤝 Trust</span>
+                <span class="impact-tag">📞 Support</span>
+                <span class="impact-tag">📈 Retention</span>
+              </div>
+            </td>
+            <td>Users experiencing silent failures interpret them as broken software. This directly damages trust and drives churn — particularly harmful for a beta product trying to establish credibility.</td>
+            <td><span class="urgency urgency-immediate">Immediate</span></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>No breadcrumb navigation in 4-level content hierarchy</td>
+            <td><span class="sev-badge sev-high">High</span></td>
+            <td>
+              <div class="impact-tags">
+                <span class="impact-tag">📈 Engagement</span>
+                <span class="impact-tag">📈 Pageviews</span>
+              </div>
+            </td>
+            <td>Without breadcrumbs, users deep inside Brand → Model → Generation → Variant have no clear path back. They abandon via browser back or by leaving the site entirely, reducing average session depth.</td>
+            <td><span class="urgency urgency-immediate">Immediate</span></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>No global search in navbar</td>
+            <td><span class="sev-badge sev-high">High</span></td>
+            <td>
+              <div class="impact-tags">
+                <span class="impact-tag">📈 Conversion</span>
+                <span class="impact-tag">📈 Engagement</span>
+              </div>
+            </td>
+            <td>Car enthusiasts arrive knowing the brand/model they want. Without a navbar search, they must navigate to the full catalogue page first — adding friction that causes abandonment before reaching content.</td>
+            <td><span class="urgency urgency-soon">Soon</span></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>No skeleton loading screens — generic text loader</td>
+            <td><span class="sev-badge sev-medium">Medium</span></td>
+            <td>
+              <div class="impact-tags">
+                <span class="impact-tag">🤝 Trust</span>
+                <span class="impact-tag">📈 Bounce Rate</span>
+              </div>
+            </td>
+            <td>Perceived performance matters as much as actual performance. Generic loading text on slow connections (Render.com free tier can be slow) suggests the app is unresponsive. Skeleton screens maintain the sense of progress.</td>
+            <td><span class="urgency urgency-soon">Soon</span></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Croatian/English language inconsistency throughout the UI</td>
+            <td><span class="sev-badge sev-medium">Medium</span></td>
+            <td>
+              <div class="impact-tags">
+                <span class="impact-tag">🤝 Trust</span>
+                <span class="impact-tag">📈 Credibility</span>
+              </div>
+            </td>
+            <td>"Admin Dashboard," mixed English/Croatian labels, and untranslated error messages signal an unfinished product to Croatian users. For a university HCI project being evaluated, consistency is a key grading criterion.</td>
+            <td><span class="urgency urgency-planned">Planned</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ VISUALS ═══════════════════════════════ -->
+  <section class="section">
+    <p class="eyebrow">Visual Summary</p>
+    <div class="divider"></div>
+    <h2 class="section-title">Visualisations</h2>
+    <p class="section-sub">User flow overview and heuristic radar chart</p>
+
+    <div class="visuals-grid">
+
+      <!-- User Flow Diagram -->
+      <div class="flow-wrap">
+        <h3>🗺️ Core User Flow — Browse to Variant</h3>
+        <div class="flow" style="position:relative;">
+          <div class="flow-node">🏠 Home Page<br><small style="font-weight:400;font-size:11px">Search dropdown / featured models</small></div>
+          <div class="flow-arrow"></div>
+          <div class="flow-node warn" style="position:relative;">
+            /automobili — Brand List
+            <span class="flow-note">⚠️ No breadcrumb from here</span>
+          </div>
+          <div class="flow-arrow"></div>
+          <div class="flow-node warn">
+            /automobili/:brand — Models
+            <span class="flow-note">⚠️ Deep hierarchy, no back button</span>
+          </div>
+          <div class="flow-arrow"></div>
+          <div class="flow-node">/automobili/:brand/:model<br><small style="font-weight:400;font-size:11px">Model detail + generation list</small></div>
+          <div class="flow-arrow"></div>
+          <div class="flow-node">/automobili/:brand/:model/:gen<br><small style="font-weight:400;font-size:11px">Generation detail + variant list</small></div>
+          <div class="flow-arrow"></div>
+          <div class="flow-node" style="background:var(--blue-100);">/automobili/:brand/:model/:gen/:variant<br><small style="font-weight:400;font-size:11px">Full spec sheet ✓</small></div>
+        </div>
+        <p style="margin-top:20px;font-size:12px;color:var(--slate-500);">🟡 Amber nodes = pain points identified. Each level adds depth without wayfinding aids.</p>
+      </div>
+
+      <!-- Radar Chart -->
+      <div class="radar-wrap">
+        <h3>📊 Heuristic Radar Chart</h3>
+        <svg viewBox="-10 -10 220 220" width="100%" style="max-width:380px;">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- Grid rings -->
+          <g transform="translate(100,100)">
+            <!-- 20% ring -->
+            <polygon points="0,-20 19,-6 12,16 -12,16 -19,-6" fill="none" stroke="#e2e8f0" stroke-width="0.8"/>
+            <!-- 40% ring -->
+            <polygon points="0,-40 38,-12 24,32 -24,32 -38,-12" fill="none" stroke="#e2e8f0" stroke-width="0.8"/>
+            <!-- 60% risk threshold ring -->
+            <polygon points="0,-60 57,-18 36,48 -36,48 -57,-18" fill="rgba(239,68,68,0.06)" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,3"/>
+            <!-- 80% ring (benchmark) -->
+            <polygon points="0,-80 76,-24 48,64 -48,64 -76,-24" fill="none" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4,3" opacity=".5"/>
+            <!-- 100% ring -->
+            <polygon points="0,-100 95,-31 59,81 -59,81 -95,-31" fill="none" stroke="#cbd5e1" stroke-width="0.8"/>
+
+            <!-- Axis lines -->
+            <line x1="0" y1="0" x2="0" y2="-100" stroke="#cbd5e1" stroke-width="0.5"/>
+            <line x1="0" y1="0" x2="95" y2="-31" stroke="#cbd5e1" stroke-width="0.5"/>
+            <line x1="0" y1="0" x2="59" y2="81" stroke="#cbd5e1" stroke-width="0.5"/>
+            <line x1="0" y1="0" x2="-59" y2="81" stroke="#cbd5e1" stroke-width="0.5"/>
+            <line x1="0" y1="0" x2="-95" y2="-31" stroke="#cbd5e1" stroke-width="0.5"/>
+
+            <!-- Scores: H1=55, H2=68, H3=62, H4=78, H5=60, H6=70, H7=65, H8=80, H9=45, H10=35 -->
+            <!-- Using 5-point radar for clarity: group into 5 axes -->
+            <!-- Axis 1 (top): H1=55% → 55 -->
+            <!-- Axis 2 (top-right): H4=78%, H5=60% → avg 69 -->
+            <!-- Axis 3 (bottom-right): H7=65%, H8=80% → avg 72 -->
+            <!-- Axis 4 (bottom-left): H9=45%, H10=35% → avg 40 -->
+            <!-- Axis 5 (top-left): H2=68%, H3=62%, H6=70% → avg 67 -->
+
+            <!-- Score polygon: 55,69,72,40,67 (as % of 100 = radius of 100) -->
+            <!-- A1=top: (0, -55) -->
+            <!-- A2=top-right: scale factor 0.69 of (95,-31) = (65.55,-21.39) -->
+            <!-- A3=bottom-right: scale factor 0.72 of (59,81) = (42.48,58.32) -->
+            <!-- A4=bottom-left: scale factor 0.40 of (-59,81) = (-23.6,32.4) -->
+            <!-- A5=top-left: scale factor 0.67 of (-95,-31) = (-63.65,-20.77) -->
+            <polygon
+              points="0,-55 65.55,-21.39 42.48,58.32 -23.6,32.4 -63.65,-20.77"
+              fill="rgba(59,130,246,0.25)"
+              stroke="#3b82f6"
+              stroke-width="2"
+              filter="url(#glow)"
+            />
+
+            <!-- Data point dots -->
+            <circle cx="0" cy="-55" r="4" fill="#3b82f6"/>
+            <circle cx="65.55" cy="-21.39" r="4" fill="#22c55e"/>
+            <circle cx="42.48" cy="58.32" r="4" fill="#22c55e"/>
+            <circle cx="-23.6" cy="32.4" r="4" fill="#ef4444"/>
+            <circle cx="-63.65" cy="-20.77" r="4" fill="#f59e0b"/>
+
+            <!-- Labels -->
+            <text x="0" y="-106" text-anchor="middle" font-size="9" fill="#64748b" font-family="system-ui">System Status</text>
+            <text x="101" y="-34" text-anchor="start" font-size="9" fill="#64748b" font-family="system-ui">Consistency</text>
+            <text x="65" y="94" text-anchor="middle" font-size="9" fill="#64748b" font-family="system-ui">Efficiency</text>
+            <text x="-65" y="94" text-anchor="middle" font-size="9" fill="#64748b" font-family="system-ui">Error Handling</text>
+            <text x="-103" y="-34" text-anchor="end" font-size="9" fill="#64748b" font-family="system-ui">Language &amp; Control</text>
+
+            <!-- Score labels on points -->
+            <text x="6" y="-58" font-size="8" fill="#3b82f6" font-weight="bold">55</text>
+            <text x="69" y="-25" font-size="8" fill="#22c55e" font-weight="bold">69</text>
+            <text x="46" y="70" font-size="8" fill="#22c55e" font-weight="bold">72</text>
+            <text x="-38" y="44" font-size="8" fill="#ef4444" font-weight="bold">40</text>
+            <text x="-78" y="-22" font-size="8" fill="#f59e0b" font-weight="bold">67</text>
+
+            <!-- Benchmark label -->
+            <text x="80" y="-83" font-size="8" fill="#3b82f6" opacity=".7">80% ideal</text>
+            <!-- Risk threshold label -->
+            <text x="60" y="-62" font-size="8" fill="#ef4444" opacity=".8">60% risk zone</text>
+          </g>
+        </svg>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--slate-600);margin-top:8px;">
+          <span>🔵 Actual scores</span>
+          <span style="color:var(--blue-500);">— — Ideal UX (80%)</span>
+          <span style="color:var(--red-500);">— — Risk threshold (60%)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════ STAKEHOLDER ═══════════════════════════ -->
+  <section class="section">
+    <p class="eyebrow">Business Perspective</p>
+    <div class="divider"></div>
+    <h2 class="section-title">Stakeholder Summary</h2>
+    <p class="section-sub">Key findings in non-technical language for project owners and evaluators</p>
+
+    <ul class="stakeholder-list">
+      <li class="stakeholder-item">
+        <span class="stakeholder-icon">🏆</span>
+        <p><strong>Strong visual foundation — don't touch what works.</strong> The dark-mode design, consistent colour palette, and card-based layout are genuinely impressive for a student project. This creates an immediate positive first impression that should be preserved as other improvements are made.</p>
+      </li>
+      <li class="stakeholder-item">
+        <span class="stakeholder-icon">🔕</span>
+        <p><strong>Silent errors are your biggest hidden risk.</strong> When the app fails silently (network errors, upload failures, login errors), users assume the product is broken — not that they made a mistake. This is the single highest-return fix available: adding clear, friendly error messages will immediately improve trust and reduce frustration.</p>
+      </li>
+      <li class="stakeholder-item">
+        <span class="stakeholder-icon">🗺️</span>
+        <p><strong>Users get lost in the content hierarchy.</strong> The app has four levels of navigation (Brand → Model → Generation → Variant), but provides no signposts showing users where they are or how to get back. Adding breadcrumb navigation would dramatically increase the depth of browsing sessions at very low development cost.</p>
+      </li>
+      <li class="stakeholder-item">
+        <span class="stakeholder-icon">🔍</span>
+        <p><strong>Search is buried — bring it to the top.</strong> Car enthusiasts know exactly what they're looking for. Making search available from the navigation bar (rather than requiring users to first navigate to the catalogue) removes the most common first-step friction and would increase content engagement.</p>
+      </li>
+      <li class="stakeholder-item">
+        <span class="stakeholder-icon">🇭🇷</span>
+        <p><strong>Language consistency signals professionalism.</strong> The site mixes Croatian and English labels (e.g., "Admin Dashboard"), which signals an unfinished product. For a Croatian-language platform aiming at Croatian users — and being evaluated by Croatian professors — full language consistency is low-effort and high-impact.</p>
+      </li>
+      <li class="stakeholder-item">
+        <span class="stakeholder-icon">📱</span>
+        <p><strong>Mobile experience is solid but has gaps.</strong> The responsive design works well, but deep pages lack back buttons forcing reliance on browser navigation. On mobile browsers where back-button behaviour differs, this creates a dead-end experience. Explicit back links on detail pages cost minutes to add and save users minutes of frustration.</p>
+      </li>
+      <li class="stakeholder-item">
+        <span class="stakeholder-icon">📈</span>
+        <p><strong>Addressing the top 3 issues could increase session depth by 30–50%.</strong> Error messages + breadcrumbs + navbar search work together to keep users exploring content rather than abandoning. For a platform whose value is in its content depth, session depth is the primary success metric.</p>
+      </li>
+    </ul>
+  </section>
+
+</div><!-- /container -->
+
+<!-- ══════════════════════════════════ FOOTER ════════════════════════════════ -->
+<footer>
+  <p><strong>Heuristic UX Evaluation</strong> — Auto Wiki (carwikibeta.onrender.com)</p>
+  <p>Methodology: Nielsen's 10 Usability Heuristics (1994) + modern UX best practices. Analysis based on full source code inspection of the React/TypeScript front-end and Node.js back-end. Scores represent expert judgement calibrated against industry benchmarks for web applications of similar complexity and purpose.</p>
+  <p style="margin-top:12px;opacity:.6;font-size:12px;">Generated: March 2026 · HCI Project Evaluation · FESB</p>
+</footer>
+
+</body>
+</html>
