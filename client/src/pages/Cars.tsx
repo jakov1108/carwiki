@@ -18,7 +18,8 @@ export default function Cars() {
 
   const filteredCars = cars?.filter((car) => {
     const matchesSearch = car.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         car.model.toLowerCase().includes(searchTerm.toLowerCase());
+                         car.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         `${car.brand} ${car.model}`.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || car.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });

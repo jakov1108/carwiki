@@ -60,7 +60,16 @@ export default function Models() {
 
   // Filter brands by search term when no brand selected
   const filteredBrands: BrandInfo[] = !params.brandSlug
-    ? brands.filter((b: BrandInfo) => b.brand.toLowerCase().includes(searchTerm.toLowerCase()))
+    ? brands.filter((b: BrandInfo) => {
+        const term = searchTerm.toLowerCase();
+        if (b.brand.toLowerCase().includes(term)) return true;
+        return models?.some(m => {
+          const mBrandSlug = m.brandSlug || m.brand.toLowerCase().replace(/\s+/g, '-');
+          if (mBrandSlug !== b.brandSlug) return false;
+          const combo = `${m.brand} ${m.model}`.toLowerCase();
+          return combo.includes(term) || m.model.toLowerCase().includes(term);
+        }) ?? false;
+      })
     : brands;
 
   if (isError) {
