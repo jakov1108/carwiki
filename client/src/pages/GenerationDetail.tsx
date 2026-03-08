@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import type { CarGenerationWithModel, CarVariantWithDetails, Image } from "@shared/schema";
-import { ArrowLeft, Calendar, Fuel, Gauge, Zap, Settings, ChevronRight } from "lucide-react";
+import { ArrowLeft, Calendar, Fuel, Gauge, Zap, Settings, ChevronRight, PlusCircle } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
 import { DetailHeaderSkeleton, BreadcrumbSkeleton, VariantCardSkeleton } from "../components/Skeleton";
 
@@ -175,9 +175,16 @@ export default function GenerationDetail() {
 
         {!variants || variants.length === 0 ? (
           <div className="bg-slate-800 rounded-lg p-8 text-center border border-slate-700">
-            <p className="text-slate-400">
+            <p className="text-slate-400 mb-4">
               Još nema dodanih varijanti motora za ovu generaciju.
             </p>
+            <Link
+              href="/predlozi-auto"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Dodaj varijantu
+            </Link>
           </div>
         ) : (
           <div className="space-y-8">
@@ -245,6 +252,20 @@ export default function GenerationDetail() {
               ))}
           </div>
         )}
+
+        {/* Contribute CTA */}
+        <div className="mt-10 bg-slate-800/50 border border-slate-700 rounded-lg p-6 text-center">
+          <p className="text-slate-400 text-sm mb-3">
+            Nedostaje varijanta motora? Pomozite nam proširiti bazu podataka.
+          </p>
+          <Link
+            href="/predlozi-auto"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Predloži novu varijantu
+          </Link>
+        </div>
       </div>
     </div>
   );

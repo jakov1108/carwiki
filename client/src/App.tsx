@@ -22,6 +22,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Contact = lazy(() => import("./pages/Contact"));
 const About = lazy(() => import("./pages/About"));
 const SubmitCar = lazy(() => import("./pages/SubmitCar"));
+const Cars = lazy(() => import("./pages/Cars"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PageLoader() {
@@ -55,6 +56,7 @@ function App() {
               <Route path="/model/:id" component={ModelDetail} />
               <Route path="/generacija/:id" component={GenerationDetail} />
               <Route path="/varijanta/:id" component={VariantDetail} />
+              <Route path="/pretraga" component={Cars} />
               <Route path="/usporedi" component={Compare} />
               <Route path="/blog" component={Blog} />
               <Route path="/blog/:id" component={BlogPost} />

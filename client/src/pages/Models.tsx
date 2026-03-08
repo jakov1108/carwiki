@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import type { CarModel } from "@shared/schema";
-import { Search, ChevronRight, ArrowLeft } from "lucide-react";
+import { Search, ChevronRight, ArrowLeft, Info, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CardGridSkeleton, BreadcrumbSkeleton } from "../components/Skeleton";
 
@@ -13,6 +13,9 @@ export default function Models() {
     return urlParams.get("q") || "";
   });
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showHierarchyHelp, setShowHierarchyHelp] = useState(() => {
+    return !localStorage.getItem("hideHierarchyHelp");
+  });
 
   // Keep search in sync if user navigates here again with a different ?q=
   useEffect(() => {
@@ -114,6 +117,38 @@ export default function Models() {
         <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
           Baza Automobila
         </h1>
+
+        {/* Hierarchy explainer for first-time visitors */}
+        {showHierarchyHelp && !params.brandSlug && (
+          <div className="mb-6 bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 max-w-3xl mx-auto relative">
+            <button
+              onClick={() => { setShowHierarchyHelp(false); localStorage.setItem("hideHierarchyHelp", "1"); }}
+              className="absolute top-3 right-3 text-slate-500 hover:text-white"
+              aria-label="Zatvori"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-blue-300 font-medium mb-2">Kako je organizirana baza?</p>
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
+                  <span className="bg-slate-800 px-2 py-1 rounded font-medium text-slate-300">Marka</span>
+                  <ChevronRight className="w-3 h-3" />
+                  <span className="bg-slate-800 px-2 py-1 rounded font-medium text-slate-300">Model</span>
+                  <ChevronRight className="w-3 h-3" />
+                  <span className="bg-slate-800 px-2 py-1 rounded font-medium text-slate-300">Generacija</span>
+                  <ChevronRight className="w-3 h-3" />
+                  <span className="bg-slate-800 px-2 py-1 rounded font-medium text-slate-300">Varijanta</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Npr. <span className="text-slate-400">Volkswagen</span> → <span className="text-slate-400">Golf</span> → <span className="text-slate-400">MK7 (2012–2019)</span> → <span className="text-slate-400">2.0 TDI 150 KS</span>. 
+                  Odaberite marku za početak pregledavanja.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 text-sm justify-center">

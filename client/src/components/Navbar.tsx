@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../lib/auth";
 import { useTheme } from "../lib/theme";
-import { Car, Menu, X, LogOut, UserCircle, Scale, PlusCircle, Sun, Moon, Search } from "lucide-react";
+import { Car, Menu, X, LogOut, UserCircle, Scale, PlusCircle, Sun, Moon, Search, SlidersHorizontal } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -114,6 +114,10 @@ export default function Navbar() {
             <Link href="/automobili" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-cars">
               Automobili
             </Link>
+            <Link href="/pretraga" className="flex items-center gap-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-search">
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>Pretraga</span>
+            </Link>
             <Link href="/usporedi" className="flex items-center gap-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-compare">
               <Scale className="w-4 h-4" />
               <span>Usporedi</span>
@@ -206,6 +210,15 @@ export default function Navbar() {
                 onClick={closeMobileMenu}
               >
                 Automobili
+              </Link>
+              <Link 
+                href="/pretraga" 
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-md transition-all"
+                data-testid="link-search-mobile"
+                onClick={closeMobileMenu}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Napredna pretraga</span>
               </Link>
               <Link 
                 href="/usporedi" 

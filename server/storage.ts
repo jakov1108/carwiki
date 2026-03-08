@@ -221,6 +221,69 @@ export const storage = {
     });
   },
 
+  // ========== ADVANCED SEARCH ==========
+  async searchVariants(filters: {
+    search?: string;
+    brand?: string;
+    category?: string;
+    fuelType?: string;
+    driveType?: string;
+    transmission?: string;
+    powerMin?: number;
+    powerMax?: number;
+    yearMin?: number;
+    yearMax?: number;
+  }): Promise<CarVariantWithDetails[]> {
+    const variants = await db.select().from(carVariants)
+      .where(eq(carVariants.status, "approved"));
+    const generations = await db.select().from(carGenerations);
+    const models = await db.select().from(carModels);
+
+    const enriched = variants.map(variant => {
+      const generation = generations.find(g => g.id === variant.generationId);
+      const model = generation ? models.find(m => m.id === generation.modelId) : undefined;
+      return { ...variant, generation: generation!, model: model! };
+    }).filter(v => v.generation && v.model) as CarVariantWithDetails[];
+
+    return enriched.filter(v => {
+      // Text search across brand, model, engine name
+      if (filters.search) {
+        const term = filters.search.toLowerCase();
+        const haystack = `${v.model.brand} ${v.model.model} ${v.engineName} ${v.generation.name}`.toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      // Brand filter
+      if (filters.brand && v.model.brandSlug !== filters.brand) return false;
+      // Category filter
+      if (filters.category && v.model.category !== filters.category) return false;
+      // Fuel type filter
+      if (filters.fuelType && v.fuelType !== filters.fuelType) return false;
+      // Drive type filter
+      if (filters.driveType && v.driveType !== filters.driveType) return false;
+      // Transmission type filter (manual/automatic detection)
+      if (filters.transmission) {
+        const trans = v.transmission.toLowerCase();
+        if (filters.transmission === 'manual' && !trans.includes('ručni') && !trans.includes('manual')) return false;
+        if (filters.transmission === 'automatic' && trans.includes('ručni')) return false;
+      }
+      // Power range filter - parse number from strings like "150 KS"
+      if (filters.powerMin !== undefined || filters.powerMax !== undefined) {
+        const powerNum = parseInt(v.power.replace(/[^0-9]/g, ''), 10);
+        if (isNaN(powerNum)) return false;
+        if (filters.powerMin !== undefined && powerNum < filters.powerMin) return false;
+        if (filters.powerMax !== undefined && powerNum > filters.powerMax) return false;
+      }
+      // Year range filter - uses generation yearStart/yearEnd
+      if (filters.yearMin !== undefined || filters.yearMax !== undefined) {
+        const genStart = v.generation.yearStart;
+        const genEnd = v.generation.yearEnd ?? new Date().getFullYear();
+        if (filters.yearMin !== undefined && genEnd < filters.yearMin) return false;
+        if (filters.yearMax !== undefined && genStart > filters.yearMax) return false;
+      }
+      return true;
+    });
+  },
+
   // ========== LEGACY CAR FUNCTIONS (for backward compatibility) ==========
   async getCars() {
     return await db.select().from(cars).where(eq(cars.status, "approved")).orderBy(desc(cars.createdAt));

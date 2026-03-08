@@ -7,11 +7,30 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const { login } = useAuth();
   const [, setLocation] = useLocation();
 
+  const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
+
+  const emailError = !email.trim() ? "Email je obavezan" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Unesite ispravnu email adresu" : "";
+  const passwordError = !password ? "Lozinka je obavezna" : password.length < 6 ? "Lozinka mora imati najmanje 6 znakova" : "";
+
+  const isFormValid = !emailError && !passwordError;
+
+  const fieldClass = (fieldError: string, field: string) =>
+    `w-full bg-slate-900 border rounded-lg px-4 py-2 focus:outline-none transition ${
+      touched[field] && fieldError
+        ? "border-red-500 focus:border-red-400"
+        : touched[field] && !fieldError
+          ? "border-green-600 focus:border-green-500"
+          : "border-slate-700 focus:border-blue-500"
+    }`;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({ email: true, password: true });
+    if (!isFormValid) return;
     setError("");
     try {
       await login(email, password);
@@ -48,16 +67,19 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div>
               <label className="block text-sm font-medium mb-2">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                onBlur={() => markTouched("email")}
+                className={fieldClass(emailError, "email")}
               />
+              {touched.email && emailError && (
+                <p className="text-red-400 text-xs mt-1">{emailError}</p>
+              )}
             </div>
 
             <div>
@@ -66,9 +88,12 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                onBlur={() => markTouched("password")}
+                className={fieldClass(passwordError, "password")}
               />
+              {touched.password && passwordError && (
+                <p className="text-red-400 text-xs mt-1">{passwordError}</p>
+              )}
             </div>
 
             <button

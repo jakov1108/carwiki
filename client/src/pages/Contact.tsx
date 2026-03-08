@@ -9,6 +9,24 @@ export default function Contact() {
     message: "",
   });
   const [success, setSuccess] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
+
+  const nameError = !formData.name.trim() ? "Ime je obavezno" : "";
+  const emailError = !formData.email.trim() ? "Email je obavezan" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? "Unesite ispravnu email adresu" : "";
+  const messageError = !formData.message.trim() ? "Poruka je obavezna" : formData.message.trim().length < 10 ? "Poruka mora imati barem 10 znakova" : "";
+
+  const isFormValid = !nameError && !emailError && !messageError;
+
+  const fieldClass = (fieldError: string, field: string) =>
+    `w-full bg-slate-900 border rounded-lg px-4 py-2 focus:outline-none transition ${
+      touched[field] && fieldError
+        ? "border-red-500 focus:border-red-400"
+        : touched[field] && !fieldError
+          ? "border-green-600 focus:border-green-500"
+          : "border-slate-700 focus:border-blue-500"
+    }`;
 
   const sendMessage = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -23,12 +41,15 @@ export default function Contact() {
     onSuccess: () => {
       setSuccess(true);
       setFormData({ name: "", email: "", message: "" });
+      setTouched({});
       setTimeout(() => setSuccess(false), 5000);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({ name: true, email: true, message: true });
+    if (!isFormValid) return;
     sendMessage.mutate(formData);
   };
 
@@ -46,16 +67,19 @@ export default function Contact() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div>
               <label className="block text-sm font-medium mb-2">Ime i prezime</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                onBlur={() => markTouched("name")}
+                className={fieldClass(nameError, "name")}
               />
+              {touched.name && nameError && (
+                <p className="text-red-400 text-xs mt-1">{nameError}</p>
+              )}
             </div>
 
             <div>
@@ -64,9 +88,12 @@ export default function Contact() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                onBlur={() => markTouched("email")}
+                className={fieldClass(emailError, "email")}
               />
+              {touched.email && emailError && (
+                <p className="text-red-400 text-xs mt-1">{emailError}</p>
+              )}
             </div>
 
             <div>
@@ -74,10 +101,13 @@ export default function Contact() {
               <textarea
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                required
+                onBlur={() => markTouched("message")}
                 rows={6}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                className={fieldClass(messageError, "message")}
               />
+              {touched.message && messageError && (
+                <p className="text-red-400 text-xs mt-1">{messageError}</p>
+              )}
             </div>
 
             <button

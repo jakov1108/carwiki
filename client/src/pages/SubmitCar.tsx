@@ -4,7 +4,8 @@ import { toYouTubeEmbedUrl } from "../lib/youtube";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { CarModel, CarGenerationWithModel } from "@shared/schema";
-import { Plus, X, ChevronRight, ArrowLeft, Check, Car, Layers, Settings, Upload, Clock, CheckCircle, XCircle, FileText } from "lucide-react";
+import { Plus, X, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Check, Car, Layers, Settings, Upload, Clock, CheckCircle, XCircle, FileText, HelpCircle, Info, Lightbulb } from "lucide-react";
+import { Link } from "wouter";
 import MultiImageUploader from "../components/MultiImageUploader";
 
 interface CarSubmissionUser {
@@ -87,6 +88,28 @@ export default function SubmitCar() {
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
+  const [variantTouched, setVariantTouched] = useState<Record<string, boolean>>({});
+
+  const markVariantTouched = (field: string) => setVariantTouched(prev => ({ ...prev, [field]: true }));
+
+  // Per-field validation for required variant fields
+  const variantErrors: Record<string, string> = {
+    engineName: !variantData.engineName.trim() ? "Oznaka motora je obavezna" : "",
+    power: !variantData.power.trim() ? "Snaga je obavezna" : "",
+    acceleration: !variantData.acceleration.trim() ? "Ubrzanje je obavezno" : "",
+    consumption: !variantData.consumption.trim() ? "Potrošnja je obavezna" : "",
+    transmission: !variantData.transmission.trim() ? "Mjenjač je obavezan" : "",
+  };
+
+  const variantFieldClass = (field: string) =>
+    `w-full bg-slate-900 border rounded px-4 py-2 focus:outline-none transition ${
+      variantTouched[field] && variantErrors[field]
+        ? "border-red-500 focus:border-red-400"
+        : variantTouched[field] && !variantErrors[field]
+          ? "border-green-600 focus:border-green-500"
+          : "border-slate-700 focus:border-blue-500"
+    }`;
 
   // Data queries
   const { data: models, isLoading: modelsLoading } = useQuery<CarModel[]>({ 
@@ -195,6 +218,8 @@ export default function SubmitCar() {
 
   // Handle final submission
   const handleSubmit = () => {
+    setVariantTouched({ engineName: true, power: true, acceleration: true, consumption: true, transmission: true });
+    if (!canSubmitVariant) return;
     setError(null);
     setIsSubmitting(true);
     submitCar.mutate();
@@ -223,6 +248,63 @@ export default function SubmitCar() {
         <p className="text-center text-slate-400 mb-8">
           Dodajte novi automobil u našu bazu podataka. Vaš prijedlog će pregledati administrator.
         </p>
+
+        {/* How It Works Guide */}
+        {currentStep !== "success" && (
+          <div className="mb-8 bg-slate-800/50 border border-blue-500/20 rounded-xl overflow-hidden">
+            <button
+              onClick={() => setShowGuide(!showGuide)}
+              className="w-full flex items-center justify-between p-4 hover:bg-slate-800/80 transition text-left"
+            >
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-blue-400" />
+                <span className="font-semibold text-blue-300">Kako funkcionira dodavanje automobila?</span>
+              </div>
+              {showGuide ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+            </button>
+            {showGuide && (
+              <div className="px-4 pb-5 space-y-4">
+                {/* 4-step process */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  {[
+                    { step: "1", title: "Marka", desc: "Odaberite postojeću ili dodajte novu marku (npr. Volkswagen, BMW)", icon: Car, color: "blue" },
+                    { step: "2", title: "Model", desc: "Odaberite model automobila unutar marke (npr. Golf, 3 Series)", icon: Layers, color: "cyan" },
+                    { step: "3", title: "Generacija", desc: "Odaberite generaciju modela s godinama (npr. MK7, E90)", icon: Settings, color: "purple" },
+                    { step: "4", title: "Varijanta", desc: "Unesite specifikacije motorne varijante (npr. 2.0 TDI 150 KS)", icon: Upload, color: "green" },
+                  ].map(item => (
+                    <div key={item.step} className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs font-bold bg-${item.color}-500/20 text-${item.color}-400 px-1.5 py-0.5 rounded`}>
+                          {item.step}
+                        </span>
+                        <item.icon className="w-4 h-4 text-slate-400" />
+                        <span className="font-medium text-sm text-white">{item.title}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Review process explanation */}
+                <div className="flex items-start gap-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
+                  <Info className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="text-yellow-300 font-medium mb-1">Proces pregleda</p>
+                    <p className="text-slate-400">
+                      Nakon slanja, vaš prijedlog dobiva status <span className="text-yellow-400">"Na čekanju"</span>. 
+                      Administrator ga pregledava i može ga <span className="text-green-400">odobriti</span> ili <span className="text-red-400">odbiti</span> (s obrazloženjem). 
+                      Status svih vaših prijedloga možete pratiti na dnu ove stranice.
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-500">
+                  Trebate više informacija? Pogledajte <Link href="/o-nama" className="text-blue-400 hover:text-blue-300 underline">FAQ i pojmovnik</Link>.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Success State */}
         {currentStep === "success" && (
@@ -324,7 +406,10 @@ export default function SubmitCar() {
             {/* Step 1: Brand Selection */}
             {currentStep === "brand" && (
               <div className="bg-slate-800 rounded-lg p-8 border border-slate-700">
-                <h2 className="text-2xl font-bold mb-6">Odaberi marku automobila</h2>
+                <h2 className="text-2xl font-bold mb-2">Odaberi marku automobila</h2>
+                <p className="text-slate-400 text-sm mb-6">
+                  Marka je proizvođač vozila. Odaberite postojeću marku iz baze, ili dodajte novu ako ne postoji.
+                </p>
                 
                 {/* Toggle: Existing or New */}
                 <div className="flex gap-2 mb-6">
@@ -410,9 +495,13 @@ export default function SubmitCar() {
                   <ArrowLeft className="w-4 h-4" /> Natrag na marke
                 </button>
                 
-                <h2 className="text-2xl font-bold mb-6">
+                <h2 className="text-2xl font-bold mb-2">
                   {isNewBrand ? `Nova marka: ${newBrandName}` : selectedBrand} - Odaberi model
                 </h2>
+                <p className="text-slate-400 text-sm mb-6">
+                  Model je linija automobila unutar marke (npr. <span className="text-slate-300">Golf</span> za Volkswagen, <span className="text-slate-300">3 Series</span> za BMW). 
+                  Jedan model može imati više generacija.
+                </p>
 
                 {/* Toggle: Existing or New - only if not new brand */}
                 {!isNewBrand && brandModels.length > 0 && (
@@ -542,9 +631,14 @@ export default function SubmitCar() {
                   <ArrowLeft className="w-4 h-4" /> Natrag na modele
                 </button>
                 
-                <h2 className="text-2xl font-bold mb-6">
+                <h2 className="text-2xl font-bold mb-2">
                   {effectiveBrand} {effectiveModelName} - Odaberi generaciju
                 </h2>
+                <p className="text-slate-400 text-sm mb-6">
+                  Generacija je specifična verzija modela s definiranim godinama proizvodnje 
+                  (npr. <span className="text-slate-300">Golf MK7</span> = 2012–2019, <span className="text-slate-300">Golf MK8</span> = 2019–danas). 
+                  Svaka generacija može imati više motornih varijanti.
+                </p>
 
                 {/* Toggle: Existing or New - only if existing model with generations */}
                 {!isNewModel && modelGenerations.length > 0 && (
@@ -675,9 +769,18 @@ export default function SubmitCar() {
                 <h2 className="text-2xl font-bold mb-2">
                   {effectiveBrand} {effectiveModelName} {effectiveGenerationName}
                 </h2>
-                <p className="text-slate-400 mb-6">Unesite podatke o motoru/varijanti</p>
+                <p className="text-slate-400 mb-4">Unesite podatke o motoru/varijanti</p>
+                
+                <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 mb-6">
+                  <Lightbulb className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-slate-400">
+                    Varijanta opisuje konkretnu motornu izvedbu (npr. <span className="text-slate-300">2.0 TDI 150 KS</span>). 
+                    Polja označena s <span className="text-white">*</span> su obavezna. 
+                    Podatke o snazi, momentu i potrošnji možete pronaći na službenim stranicama proizvođača.
+                  </p>
+                </div>
 
-                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
+                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} noValidate className="space-y-6">
                   {/* Engine Info */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -686,10 +789,13 @@ export default function SubmitCar() {
                         type="text"
                         value={variantData.engineName}
                         onChange={(e) => setVariantData({ ...variantData, engineName: e.target.value })}
-                        required
+                        onBlur={() => markVariantTouched("engineName")}
                         placeholder="npr. 2.0 TDI, 1.4 TSI"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={variantFieldClass("engineName")}
                       />
+                      {variantTouched.engineName && variantErrors.engineName && (
+                        <p className="text-red-400 text-sm mt-1">{variantErrors.engineName}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Kod motora</label>
@@ -737,10 +843,13 @@ export default function SubmitCar() {
                         type="text"
                         value={variantData.power}
                         onChange={(e) => setVariantData({ ...variantData, power: e.target.value })}
-                        required
+                        onBlur={() => markVariantTouched("power")}
                         placeholder="npr. 150 KS"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={variantFieldClass("power")}
                       />
+                      {variantTouched.power && variantErrors.power && (
+                        <p className="text-red-400 text-sm mt-1">{variantErrors.power}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Okretni moment</label>
@@ -761,10 +870,13 @@ export default function SubmitCar() {
                         type="text"
                         value={variantData.acceleration}
                         onChange={(e) => setVariantData({ ...variantData, acceleration: e.target.value })}
-                        required
+                        onBlur={() => markVariantTouched("acceleration")}
                         placeholder="npr. 8.6s"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={variantFieldClass("acceleration")}
                       />
+                      {variantTouched.acceleration && variantErrors.acceleration && (
+                        <p className="text-red-400 text-sm mt-1">{variantErrors.acceleration}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Maksimalna brzina</label>
@@ -785,10 +897,13 @@ export default function SubmitCar() {
                         type="text"
                         value={variantData.consumption}
                         onChange={(e) => setVariantData({ ...variantData, consumption: e.target.value })}
-                        required
+                        onBlur={() => markVariantTouched("consumption")}
                         placeholder="npr. 4.5 L/100km"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={variantFieldClass("consumption")}
                       />
+                      {variantTouched.consumption && variantErrors.consumption && (
+                        <p className="text-red-400 text-sm mt-1">{variantErrors.consumption}</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Mjenjač *</label>
@@ -796,10 +911,13 @@ export default function SubmitCar() {
                         type="text"
                         value={variantData.transmission}
                         onChange={(e) => setVariantData({ ...variantData, transmission: e.target.value })}
-                        required
+                        onBlur={() => markVariantTouched("transmission")}
                         placeholder="npr. 6-brzinski ručni, 7-DSG"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={variantFieldClass("transmission")}
                       />
+                      {variantTouched.transmission && variantErrors.transmission && (
+                        <p className="text-red-400 text-sm mt-1">{variantErrors.transmission}</p>
+                      )}
                     </div>
                   </div>
 

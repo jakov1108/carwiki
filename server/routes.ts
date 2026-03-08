@@ -281,6 +281,27 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Advanced search/filter for variants
+  app.get("/api/variants/search", async (req: Request, res: Response) => {
+    try {
+      const filters: Parameters<typeof storage.searchVariants>[0] = {};
+      if (typeof req.query.search === 'string' && req.query.search) filters.search = req.query.search;
+      if (typeof req.query.brand === 'string' && req.query.brand) filters.brand = req.query.brand;
+      if (typeof req.query.category === 'string' && req.query.category) filters.category = req.query.category;
+      if (typeof req.query.fuelType === 'string' && req.query.fuelType) filters.fuelType = req.query.fuelType;
+      if (typeof req.query.driveType === 'string' && req.query.driveType) filters.driveType = req.query.driveType;
+      if (typeof req.query.transmission === 'string' && req.query.transmission) filters.transmission = req.query.transmission;
+      if (req.query.powerMin) { const n = Number(req.query.powerMin); if (!isNaN(n)) filters.powerMin = n; }
+      if (req.query.powerMax) { const n = Number(req.query.powerMax); if (!isNaN(n)) filters.powerMax = n; }
+      if (req.query.yearMin) { const n = Number(req.query.yearMin); if (!isNaN(n)) filters.yearMin = n; }
+      if (req.query.yearMax) { const n = Number(req.query.yearMax); if (!isNaN(n)) filters.yearMax = n; }
+      const results = await storage.searchVariants(filters);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to search variants" });
+    }
+  });
+
   app.get("/api/variants/admin/all", isAdmin, async (_req: Request, res: Response) => {
     try {
       const variants = await storage.getAllCarVariants();
