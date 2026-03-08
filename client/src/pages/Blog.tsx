@@ -5,9 +5,21 @@ import { Calendar, User } from "lucide-react";
 import { BlogCardSkeleton } from "../components/Skeleton";
 
 export default function Blog() {
-  const { data: posts, isLoading } = useQuery<BlogPost[]>({
+  const { data: posts, isLoading, isError } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog"],
   });
+
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-lg font-semibold mb-2">Greška pri učitavanju bloga</p>
+          <p className="text-slate-400 text-sm">Provjerite internetsku vezu i pokušajte ponovo.</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition">Pokušaj ponovo</button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

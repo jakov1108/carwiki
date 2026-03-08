@@ -1,24 +1,61 @@
-import { useState, useRef, useEffect } from "react";
-import { Link } from "wouter";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "../lib/auth";
 import { useTheme } from "../lib/theme";
-import { Car, Menu, X, LogOut, UserCircle, Scale, PlusCircle, Sun, Moon } from "lucide-react";
+import { Car, Menu, X, LogOut, UserCircle, Scale, PlusCircle, Sun, Moon, Search } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const navRef = useRef<HTMLElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [, navigate] = useLocation();
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    setTimeout(() => searchInputRef.current?.focus(), 50);
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  }, []);
+
+  const submitSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    navigate(`/automobili?q=${encodeURIComponent(q)}`);
+    closeSearch();
+    closeMobileMenu();
+  }, [searchQuery, navigate, closeSearch]);
+
+  // "/" key shortcut: focus search
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        openSearch();
+      }
+      if (e.key === "Escape" && searchOpen) closeSearch();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [openSearch, closeSearch, searchOpen]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
         closeMobileMenu();
+        closeSearch();
       }
     };
-    if (mobileMenuOpen) {
+    if (mobileMenuOpen || searchOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("touchstart", handleClickOutside);
     }
@@ -26,7 +63,7 @@ export default function Navbar() {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, searchOpen, closeSearch]);
 
   return (
     <nav ref={navRef} className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
@@ -44,6 +81,36 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
+            {/* Global Search */}
+            {searchOpen ? (
+              <form onSubmit={submitSearch} className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Pretraži automobile..."
+                    className="bg-slate-800 dark:bg-slate-800 border border-slate-600 focus:border-blue-500 rounded-lg pl-9 pr-4 py-1.5 text-sm text-white placeholder-slate-400 focus:outline-none w-52 transition-all"
+                  />
+                </div>
+                <button type="submit" className="sr-only">Pretraži</button>
+                <button type="button" onClick={closeSearch} className="p-1.5 text-slate-400 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={openSearch}
+                className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all"
+                title="Pretraži (/)" 
+                aria-label="Pretraži automobile"
+              >
+                <Search className="w-4 h-4" />
+                <span className="text-xs text-slate-400 font-mono">/</span>
+              </button>
+            )}
             <Link href="/automobili" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-md transition-all" data-testid="link-cars">
               Automobili
             </Link>
@@ -80,7 +147,7 @@ export default function Navbar() {
                 )}
                 {user.role === "admin" && (
                   <Link href="/admin" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-md transition-all font-medium" data-testid="link-admin">
-                    Admin Dashboard
+                    Upravljačka ploča
                   </Link>
                 )}
                 <div className="flex items-center gap-3">
@@ -122,8 +189,17 @@ export default function Navbar() {
         {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-slate-200 dark:border-slate-800">
-            <div className="flex flex-col gap-4">
-              <Link 
+            <div className="flex flex-col gap-4">              {/* Mobile Search */}
+              <form onSubmit={submitSearch} className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Pretraži automobile..."
+                  className="w-full bg-slate-800 dark:bg-slate-800 border border-slate-600 focus:border-blue-500 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none"
+                />
+              </form>              <Link 
                 href="/automobili" 
                 className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-md transition-all"
                 data-testid="link-cars-mobile"
@@ -203,7 +279,7 @@ export default function Navbar() {
                       data-testid="link-admin-mobile"
                       onClick={closeMobileMenu}
                     >
-                      Admin Dashboard
+                      Upravljačka ploča
                     </Link>
                   )}
                   <div className="flex items-center justify-between py-2 border-t border-slate-200 dark:border-slate-800 pt-4">

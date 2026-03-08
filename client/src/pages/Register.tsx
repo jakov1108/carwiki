@@ -82,6 +82,30 @@ export default function Register() {
                 minLength={6}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
               />
+              {/* Password strength meter */}
+              {password.length > 0 && (() => {
+                let strength = 0;
+                if (password.length >= 6) strength++;
+                if (password.length >= 10) strength++;
+                if (/[A-Z]/.test(password)) strength++;
+                if (/[0-9]/.test(password)) strength++;
+                if (/[^A-Za-z0-9]/.test(password)) strength++;
+                const label = strength <= 1 ? "Slaba" : strength <= 3 ? "Srednja" : "Jaka";
+                const color = strength <= 1 ? "bg-red-500" : strength <= 3 ? "bg-yellow-500" : "bg-green-500";
+                const textColor = strength <= 1 ? "text-red-400" : strength <= 3 ? "text-yellow-400" : "text-green-400";
+                const width = `${Math.min(100, strength * 20)}%`;
+                return (
+                  <div className="mt-2">
+                    <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${color}`}
+                        style={{ width }}
+                      />
+                    </div>
+                    <p className={`text-xs mt-1 ${textColor}`}>Jačina lozinke: {label}</p>
+                  </div>
+                );
+              })()}
             </div>
 
             <button

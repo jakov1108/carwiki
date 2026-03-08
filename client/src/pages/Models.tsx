@@ -2,15 +2,26 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import type { CarModel } from "@shared/schema";
 import { Search, ChevronRight, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CardGridSkeleton, BreadcrumbSkeleton } from "../components/Skeleton";
 
 export default function Models() {
   const params = useParams<{ brandSlug?: string }>();
-  const [searchTerm, setSearchTerm] = useState("");
+  // Pre-fill search from ?q= URL param (e.g. from navbar search)
+  const [searchTerm, setSearchTerm] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("q") || "";
+  });
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const { data: models, isLoading } = useQuery<CarModel[]>({
+  // Keep search in sync if user navigates here again with a different ?q=
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const q = urlParams.get("q");
+    if (q !== null) setSearchTerm(q);
+  }, []);
+
+  const { data: models, isLoading, isError } = useQuery<CarModel[]>({
     queryKey: ["/api/models"],
   });
 
@@ -51,6 +62,23 @@ export default function Models() {
   const filteredBrands: BrandInfo[] = !params.brandSlug
     ? brands.filter((b: BrandInfo) => b.brand.toLowerCase().includes(searchTerm.toLowerCase()))
     : brands;
+
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-lg font-semibold mb-2">Greška pri učitavanju podataka</p>
+          <p className="text-slate-400 text-sm">Provjerite internetsku vezu i pokušajte ponovo.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
+          >
+            Pokušaj ponovo
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -9,6 +9,7 @@ import { ObjectUploader } from "../components/ObjectUploader";
 import MultiImageUploader from "../components/MultiImageUploader";
 import RichTextEditor from "../components/RichTextEditor";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 
 interface ImageItem {
   id?: string;
@@ -38,6 +39,7 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<Tab>("cars");
   const queryClient = useQueryClient();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // Hierarchical navigation state
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
@@ -96,7 +98,9 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/models"] });
       queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
+      toastSuccess("Model obrisan.");
     },
+    onError: () => toastError("Greška pri brisanju modela."),
   });
 
   const deleteGeneration = useMutation({
@@ -107,7 +111,9 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
+      toastSuccess("Generacija obrisana.");
     },
+    onError: () => toastError("Greška pri brisanju generacije."),
   });
 
   const deleteVariant = useMutation({
@@ -119,7 +125,9 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/pending"] });
+      toastSuccess("Varijanta obrisana.");
     },
+    onError: () => toastError("Greška pri brisanju varijante."),
   });
 
   const updateVariantStatus = useMutation({
@@ -132,11 +140,13 @@ export default function Admin() {
       if (!res.ok) throw new Error("Failed to update status");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/pending"] });
+      toastSuccess(status === "approved" ? "Varijanta odobrena." : "Varijanta odbijena.");
     },
+    onError: () => toastError("Greška pri ažuriranju statusa."),
   });
 
   const deleteBlog = useMutation({
@@ -144,7 +154,11 @@ export default function Admin() {
       const res = await fetch(`/api/blog/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/blog"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+      toastSuccess("Blog post obrisan.");
+    },
+    onError: () => toastError("Greška pri brisanju blog posta."),
   });
 
   const deleteMessage = useMutation({
@@ -152,7 +166,11 @@ export default function Admin() {
       const res = await fetch(`/api/contact/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/contact"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contact"] });
+      toastSuccess("Poruka obrisana.");
+    },
+    onError: () => toastError("Greška pri brisanju poruke."),
   });
 
   // Submission mutations
@@ -171,7 +189,9 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
+      toastSuccess("✅ Prijedlog odobren i dodan u bazu.");
     },
+    onError: () => toastError("Greška pri odobravanju prijedloga."),
   });
 
   const rejectSubmission = useMutation({
@@ -186,7 +206,9 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/submissions"] });
+      toastSuccess("Prijedlog odbijen.");
     },
+    onError: () => toastError("Greška pri odbijanju prijedloga."),
   });
 
   const deleteSubmission = useMutation({
@@ -194,7 +216,11 @@ export default function Admin() {
       const res = await fetch(`/api/submissions/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/submissions"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/submissions"] });
+      toastSuccess("Prijedlog obrisan.");
+    },
+    onError: () => toastError("Greška pri brisanju prijedloga."),
   });
 
   useEffect(() => {

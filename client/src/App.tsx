@@ -4,6 +4,8 @@ import { AuthProvider } from "./lib/auth";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { ToastProvider } from "./components/Toast";
 
 // Lazy-load all route pages to reduce critical request chain
 const Home = lazy(() => import("./pages/Home"));
@@ -32,14 +34,16 @@ function PageLoader() {
 
 function App() {
   return (
-    <AuthProvider>
-      <div className="min-h-screen flex flex-col bg-slate-950 text-white">
-        <Navbar />
-        <main className="flex-1">
-          <Router>
-            <ScrollToTop />
-            <Suspense fallback={<PageLoader />}>
-              <Switch>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+        <div className="min-h-screen flex flex-col bg-slate-950 text-white">
+          <Navbar />
+          <main className="flex-1">
+            <Router>
+              <ScrollToTop />
+              <Suspense fallback={<PageLoader />}>
+                <Switch>
               <Route path="/" component={Home} />
               <Route path="/automobili" component={Models} />
               {/* Dynamic routing: /brand/model/generation/variant */}
@@ -63,12 +67,14 @@ function App() {
               {/* Catch-all route for 404 */}
               <Route component={NotFound} />
             </Switch>
-            </Suspense>
-          </Router>
-        </main>
-        <Footer />
-      </div>
-    </AuthProvider>
+              </Suspense>
+            </Router>
+          </main>
+          <Footer />
+        </div>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

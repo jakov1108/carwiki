@@ -17,7 +17,7 @@ export default function VariantDetail() {
   const variantId = params.id;
   const isSlugRoute = !!(brandSlug && modelSlug && generationSlug && variantSlug);
 
-  const { data: variant, isLoading } = useQuery<CarVariantWithDetails>({
+  const { data: variant, isLoading, isError } = useQuery<CarVariantWithDetails>({
     queryKey: isSlugRoute 
       ? ["/api/car", brandSlug, modelSlug, generationSlug, variantSlug] 
       : ["/api/variants", variantId],
@@ -47,6 +47,18 @@ export default function VariantDetail() {
   const allImages = variant?.generation?.image 
     ? [variant.generation.image, ...additionalVarImages] 
     : additionalVarImages;
+
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-lg font-semibold mb-2">Greška pri učitavanju varijante</p>
+          <p className="text-slate-400 text-sm">Provjerite internetsku vezu i pokušajte ponovo.</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition">Pokušaj ponovo</button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
