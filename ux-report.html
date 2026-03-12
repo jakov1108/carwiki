@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heuristic UX Evaluation v3 — Auto Wiki (CarWiki)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-50:  #eff6ff;
+      --blue-100: #dbeafe;
+      --blue-200: #bfdbfe;
+      --blue-400: #60a5fa;
+      --blue-500: #3b82f6;
+      --blue-600: #2563eb;
+      --blue-700: #1d4ed8;
+      --cyan-400: #22d3ee;
+      --cyan-500: #06b6d4;
+      --slate-50:  #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --green-100: #dcfce7;
+      --green-500: #22c55e;
+      --green-600: #16a34a;
+      --amber-100: #fef9c3;
+      --amber-500: #f59e0b;
+      --amber-600: #d97706;
+      --red-100:   #fee2e2;
+      --red-400:   #f87171;
+      --red-500:   #ef4444;
+      --red-600:   #dc2626;
+      --purple-500:#a855f7;
+      --purple-600:#9333ea;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--slate-100);
+      color: var(--slate-800);
+      line-height: 1.6;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #065f46 0%, #0f172a 40%, #1d4ed8 100%);
+      color: #fff;
+      padding: 64px 32px 56px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-inner { position: relative; max-width: 900px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      color: #86efac;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(1.75rem, 4vw, 2.8rem);
+      font-weight: 800;
+      margin-bottom: 16px;
+      letter-spacing: -.02em;
+    }
+    .hero h1 span { color: #86efac; }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: #94a3b8;
+      max-width: 640px;
+      margin: 0 auto 28px;
+    }
+    .hero-pills { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 36px; }
+    .pill {
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.2);
+      color: #e2e8f0;
+      font-size: 13px;
+      padding: 6px 16px;
+      border-radius: 999px;
+    }
+    .pill.improved {
+      background: rgba(34,197,94,.15);
+      border-color: rgba(34,197,94,.4);
+      color: #86efac;
+    }
+    .pill.threshold {
+      background: rgba(234,179,8,.15);
+      border-color: rgba(234,179,8,.4);
+      color: #fde047;
+    }
+    .hero-score {
+      font-size: clamp(3.5rem, 8vw, 5rem);
+      font-weight: 900;
+      color: #86efac;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .hero-score-label { font-size: 1rem; color: #94a3b8; margin-bottom: 32px; }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 48px 0; }
+
+    /* ── DELTA BANNER ── */
+    .delta-banner {
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+      border-top: 3px solid #22c55e;
+      color: #fff;
+      padding: 32px 24px;
+    }
+    .delta-banner-inner { max-width: 1100px; margin: 0 auto; }
+    .delta-banner h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #86efac;
+      margin-bottom: 16px;
+    }
+    .delta-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .delta-chip {
+      background: rgba(134,239,172,.15);
+      border: 1px solid rgba(134,239,172,.3);
+      color: #bbf7d0;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+    }
+    .delta-chip::before { content: "✓ "; color: #4ade80; }
+
+    /* ── EXECUTIVE SUMMARY ── */
+    .exec-summary {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 32px;
+    }
+    .exec-summary h3 { font-size: 1rem; font-weight: 700; color: var(--blue-700); margin-bottom: 12px; }
+    .exec-summary p { color: var(--slate-600); font-size: .95rem; margin-bottom: 8px; }
+    .exec-summary ul { padding-left: 20px; color: var(--slate-600); font-size: .95rem; }
+    .exec-summary li { margin-bottom: 4px; }
+
+    /* ── SCORE COMPARISON ── */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-box {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .compare-box.before { border-top: 3px solid var(--red-400); }
+    .compare-box.middle { border-top: 3px solid #f59e0b; }
+    .compare-box.after  { border-top: 3px solid var(--green-500); }
+    .compare-box h4 {
+      font-size: .9rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--slate-100);
+    }
+    .score-diff-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      font-size: .82rem;
+    }
+    .score-diff-name { flex: 1; color: var(--slate-600); }
+    .score-diff-val { font-weight: 700; min-width: 28px; text-align: right; }
+    .score-before-val { color: var(--red-500); }
+    .score-middle-val { color: var(--amber-600); }
+    .score-after-val  { color: var(--green-600); }
+    .score-diff-arrow { font-size: .75rem; min-width: 50px; text-align: right; }
+    .arr-up   { color: var(--green-600); }
+    .arr-same { color: var(--amber-600); }
+    .arr-none { color: var(--slate-400); }
+
+    /* ── RADAR CHART ── */
+    .radar-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      padding: 32px 0;
+    }
+    .radar-legend { display: flex; flex-direction: column; gap: 10px; min-width: 180px; }
+    .radar-legend-item { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--slate-600); }
+    .radar-legend-line { width: 28px; height: 3px; border-radius: 2px; }
+
+    /* ── HEURISTIC CARDS ── */
+    .heuristics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .heuristics-grid { grid-template-columns: 1fr; } }
+    .h-card {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+    }
+    .h-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .h-card-title { font-size: 1rem; font-weight: 700; color: var(--slate-800); }
+    .h-card-num { font-size: .75rem; color: var(--slate-400); margin-top: 2px; }
+    .score-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: .85rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .score-badge.good   { background: var(--green-100); color: var(--green-600); }
+    .score-badge.medium { background: var(--amber-100); color: var(--amber-600); }
+    .score-badge.low    { background: var(--red-100);   color: var(--red-600); }
+    .score-badge small { font-size: .75rem; font-weight: 400; opacity: .7; }
+
+    .score-bar-track { height: 6px; background: var(--slate-200); border-radius: 3px; margin-bottom: 14px; }
+    .score-bar-fill  { height: 6px; border-radius: 3px; transition: width .5s; }
+    .fill-good   { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .fill-medium { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .fill-low    { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+    .h-card-body { font-size: .88rem; color: var(--slate-600); line-height: 1.6; margin-bottom: 14px; }
+
+    .item-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+    .item-list li { font-size: .82rem; display: flex; align-items: flex-start; gap: 6px; }
+    .item-list li::before { content: "✓"; color: var(--green-500); font-weight: 700; flex-shrink: 0; }
+    .item-list.open li::before { content: "•"; color: var(--slate-400); }
+    .item-list.new li::before { content: "★"; color: #f59e0b; flex-shrink: 0; }
+    .item-list li span { color: var(--slate-600); }
+
+    .list-section-label {
+      font-size: .73rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--slate-400);
+      margin: 10px 0 5px;
+    }
+
+    /* ── PRIORITIES ── */
+    .priority-cards { display: flex; flex-direction: column; gap: 14px; }
+    .priority-card {
+      background: #fff;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .priority-badge {
+      font-size: .75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .priority-badge.high   { background: var(--red-100);   color: var(--red-600); }
+    .priority-badge.medium { background: var(--amber-100); color: var(--amber-600); }
+    .priority-badge.low    { background: var(--green-100); color: var(--green-600); }
+    .priority-card h4 { font-size: .95rem; font-weight: 700; margin-bottom: 4px; }
+    .priority-card p  { font-size: .83rem; color: var(--slate-600); }
+
+    /* ── STAKEHOLDER ── */
+    .stakeholder-box {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 28px 32px;
+    }
+    .stakeholder-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
+    .stakeholder-box p  { font-size: .9rem; color: var(--slate-700); line-height: 1.7; }
+
+    /* ── TIMELINE ── */
+    .history-row { display: flex; gap: 20px; align-items: stretch; margin-bottom: 20px; }
+    .history-dot-col { display: flex; flex-direction: column; align-items: center; }
+    .history-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+    .history-line { width: 2px; flex: 1; background: var(--slate-200); margin-top: 4px; }
+    .history-content { flex: 1; padding-bottom: 4px; }
+    .history-content h4 { font-size: .92rem; font-weight: 700; margin-bottom: 4px; }
+    .history-content p  { font-size: .82rem; color: var(--slate-500); }
+
+    /* ── SECTION HEADINGS ── */
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--slate-800);
+      margin-bottom: 8px;
+    }
+    .section-sub { font-size: .9rem; color: var(--slate-500); margin-bottom: 28px; }
+
+    /* ── UTILS ── */
+    .text-green { color: var(--green-600); }
+    .text-amber { color: var(--amber-600); }
+    .text-red   { color: var(--red-600); }
+    .fw-700 { font-weight: 700; }
+    .tag {
+      display: inline-block;
+      font-size: .72rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 4px;
+      margin-bottom: 2px;
+    }
+    .tag-blue   { background: #dbeafe; color: #1d4ed8; }
+    .tag-green  { background: #dcfce7; color: #15803d; }
+    .tag-amber  { background: #fef9c3; color: #92400e; }
+    .tag-purple { background: #f3e8ff; color: #6b21a8; }
+
+    @media (max-width: 600px) {
+      .hero { padding: 40px 16px 40px; }
+      .section { padding: 32px 0; }
+      .container { padding: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ████████████████  HERO  ████████████████ -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Heuristic UX Evaluation · v3 · March 2026</div>
+    <h1>Auto Wiki — <span>UX Report v3</span></h1>
+    <p class="hero-sub">
+      Third heuristic evaluation of <strong style="color:#e2e8f0">carwikibeta.onrender.com</strong> using
+      Nielsen's 10 Usability Heuristics. Reflects all improvements committed through March 2026.
+    </p>
+
+    <div class="hero-score">81.0</div>
+    <div class="hero-score-label">Overall score / 100 — <strong style="color:#86efac">✓ Good UX threshold (80) reached</strong></div>
+
+    <div class="hero-pills">
+      <div class="pill">📅 Evaluated: March 12, 2026</div>
+      <div class="pill">🔬 Method: Nielsen's 10 Heuristics</div>
+      <div class="pill">📦 Repo: jakov1108/carwiki</div>
+      <div class="pill improved">📈 v1 baseline: 68.6</div>
+      <div class="pill improved">📈 v2 score: 75.6</div>
+      <div class="pill threshold">🏆 v3 score: 81.0 (+5.4 pts)</div>
+    </div>
+  </div>
+</header>
+
+<!-- ████████████████  DELTA BANNER — v2→v3  ████████████████ -->
+<div class="delta-banner">
+  <div class="delta-banner-inner">
+    <h3>✦ New since v2 (March 8 → March 12, 2026)</h3>
+    <div class="delta-chips">
+      <span class="delta-chip">ConfirmDialog component — type-to-confirm, Escape dismiss, pending state</span>
+      <span class="delta-chip">Blog carousel — touch swipe, auto-play 6s, pause on interaction, dot indicators</span>
+      <span class="delta-chip">Responsive images — srcSet, sizes, fetchPriority="low", decoding="async"</span>
+      <span class="delta-chip">About page FAQ — 5 accordion Q&amp;A items</span>
+      <span class="delta-chip">About page Glossary — 13 automotive terms in Croatian</span>
+      <span class="delta-chip">Login — contextual error messages (3 distinct scenarios)</span>
+      <span class="delta-chip">Register — contextual errors + benefit copy explaining why to sign up</span>
+      <span class="delta-chip">Compare deep-link — ?variantId= preloads a car for instant comparison</span>
+      <span class="delta-chip">Compare 4-step progress pills — green ✓ completed, blue active, grey pending</span>
+      <span class="delta-chip">Compare "Obriši sve" + contextual hints + comparison suggestions</span>
+      <span class="delta-chip">Blog editing UI improvements</span>
+      <span class="delta-chip">Blog post card redesign</span>
+      <span class="delta-chip">Admin editing scheme improvements</span>
+      <span class="delta-chip">Performance optimisations — lazy loading, photo load order</span>
+    </div>
+  </div>
+</div>
+
+<!-- ████████████████  EXEC SUMMARY  ████████████████ -->
+<section class="section" style="background:#fff; border-bottom:1px solid #e2e8f0;">
+  <div class="container">
+    <h2 class="section-title">Executive Summary</h2>
+    <p class="section-sub">Third-generation evaluation — all three sprint results compared</p>
+
+    <div class="exec-summary">
+      <h3>What this report covers</h3>
+      <p>
+        This is the third heuristic evaluation of Auto Wiki (carwikibeta.onrender.com), a Croatian automotive
+        encyclopedia built with React + TypeScript + PostgreSQL for the FESB HCI course. The evaluation
+        applies Nielsen's 10 usability heuristics, scoring each 0–100.
+      </p>
+      <p>
+        <strong>Key milestone:</strong> v3 reaches an overall score of <strong class="text-green">81.0</strong>,
+        crossing the "Good UX" threshold of 80 for the first time. The most significant gains this sprint
+        came from Help &amp; Documentation (+11), Match/Real World (+7), Error Prevention (+6), and
+        Error Recovery (+6).
+      </p>
+      <ul>
+        <li>Overall score improved from 75.6 (v2) to <strong class="text-green">81.0 (v3)</strong> — a gain of +5.4 points.</li>
+        <li>Two heuristics now score 86–87: User Control &amp; Freedom and Recognition vs. Recall.</li>
+        <li>Error Prevention (74) remains the only heuristic below 75 — inline form validation is the clearest remaining gap.</li>
+        <li>Flexibility &amp; Efficiency (70) is the second-lowest but improved significantly (+8) due to deep-links and slug URLs.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ████████████████  SCORE HISTORY TIMELINE  ████████████████ -->
+<section class="section" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+  <div class="container">
+    <h2 class="section-title">Score History</h2>
+    <p class="section-sub">Three evaluation sprints across ~6 weeks of development</p>
+
+    <div style="max-width:540px; margin:0 auto;">
+      <div class="history-row">
+        <div class="history-dot-col">
+          <div class="history-dot" style="background:#ef4444;"></div>
+          <div class="history-line"></div>
+        </div>
+        <div class="history-content">
+          <h4>v1 — Baseline &nbsp;<span class="tag tag-amber">68.6 / 100</span></h4>
+          <p>Initial evaluation. Core catalogue functional; no skeleton loaders, no breadcrumbs, no tooltips, no 404 page, basic submission form without wizard.</p>
+        </div>
+      </div>
+      <div class="history-row">
+        <div class="history-dot-col">
+          <div class="history-dot" style="background:#f59e0b;"></div>
+          <div class="history-line"></div>
+        </div>
+        <div class="history-content">
+          <h4>v2 — March 8, 2026 &nbsp;<span class="tag tag-amber">75.6 / 100</span></h4>
+          <p>Skeleton loaders, breadcrumbs, Tooltip/glossary system, submission wizard with My Submissions dashboard, 404 page, slug-based URLs, system theme preference.</p>
+        </div>
+      </div>
+      <div class="history-row">
+        <div class="history-dot-col">
+          <div class="history-dot" style="background:#22c55e;"></div>
+        </div>
+        <div class="history-content">
+          <h4>v3 — March 12, 2026 &nbsp;<span class="tag tag-green">81.0 / 100 🏆</span></h4>
+          <p>ConfirmDialog, blog carousel with swipe, responsive images, About FAQ+Glossary, contextual error messages, Compare deep-link, 4-step progress pills, UI refinements, performance optimisations.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ████████████████  SCORE COMPARISON TABLE  ████████████████ -->
+<section class="section" style="background:#fff; border-bottom:1px solid #e2e8f0;">
+  <div class="container">
+    <h2 class="section-title">Three-Version Score Comparison</h2>
+    <p class="section-sub">All 10 heuristics across v1 baseline → v2 → v3</p>
+
+    <div class="compare-grid">
+      <div class="compare-box before">
+        <h4>🔴 v1 Scores (baseline — before improvements)</h4>
+        <div class="score-diff-row"><span class="score-diff-name">1. Visibility of System Status</span><span class="score-diff-val score-before-val">65</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">2. Match: System &amp; Real World</span><span class="score-diff-val score-before-val">72</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">3. User Control &amp; Freedom</span><span class="score-diff-val score-before-val">76</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">4. Consistency &amp; Standards</span><span class="score-diff-val score-before-val">70</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">5. Error Prevention</span><span class="score-diff-val score-before-val">67</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">6. Recognition vs. Recall</span><span class="score-diff-val score-before-val">75</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">7. Flexibility &amp; Efficiency</span><span class="score-diff-val score-before-val">58</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">8. Aesthetic &amp; Minimalist Design</span><span class="score-diff-val score-before-val">80</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">9. Error Recovery &amp; Handling</span><span class="score-diff-val score-before-val">68</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">10. Help &amp; Documentation</span><span class="score-diff-val score-before-val">55</span></div>
+        <div class="score-diff-row" style="margin-top:6px;font-weight:700;"><span class="score-diff-name">Overall average</span><span class="score-diff-val" style="color:#dc2626;font-size:1.1rem;">68.6</span></div>
+      </div>
+
+      <div class="compare-box middle">
+        <h4>🟡 v2 Scores (March 8, 2026)</h4>
+        <div class="score-diff-row"><span class="score-diff-name">1. Visibility of System Status</span><span class="score-diff-val score-middle-val">80</span><span class="score-diff-arrow arr-up">+15 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">2. Match: System &amp; Real World</span><span class="score-diff-val score-middle-val">74</span><span class="score-diff-arrow arr-up">+2 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">3. User Control &amp; Freedom</span><span class="score-diff-val score-middle-val">83</span><span class="score-diff-arrow arr-up">+7 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">4. Consistency &amp; Standards</span><span class="score-diff-val score-middle-val">79</span><span class="score-diff-arrow arr-up">+9 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">5. Error Prevention</span><span class="score-diff-val score-middle-val">68</span><span class="score-diff-arrow arr-up">+1 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">6. Recognition vs. Recall</span><span class="score-diff-val score-middle-val">83</span><span class="score-diff-arrow arr-up">+8 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">7. Flexibility &amp; Efficiency</span><span class="score-diff-val score-middle-val">62</span><span class="score-diff-arrow arr-up">+4 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">8. Aesthetic &amp; Minimalist Design</span><span class="score-diff-val score-middle-val">83</span><span class="score-diff-arrow arr-up">+3 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">9. Error Recovery &amp; Handling</span><span class="score-diff-val score-middle-val">73</span><span class="score-diff-arrow arr-up">+5 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">10. Help &amp; Documentation</span><span class="score-diff-val score-middle-val">71</span><span class="score-diff-arrow arr-up">+16 ⬆</span></div>
+        <div class="score-diff-row" style="margin-top:6px;font-weight:700;"><span class="score-diff-name">Overall average</span><span class="score-diff-val" style="color:#d97706;font-size:1.1rem;">75.6</span><span class="score-diff-arrow arr-up">+7 pts ⬆</span></div>
+      </div>
+
+      <div class="compare-box after">
+        <h4>🟢 v3 Scores (March 12, 2026)</h4>
+        <div class="score-diff-row"><span class="score-diff-name">1. Visibility of System Status</span><span class="score-diff-val score-after-val">82</span><span class="score-diff-arrow arr-up">+2 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">2. Match: System &amp; Real World</span><span class="score-diff-val score-after-val">81</span><span class="score-diff-arrow arr-up">+7 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">3. User Control &amp; Freedom</span><span class="score-diff-val score-after-val">86</span><span class="score-diff-arrow arr-up">+3 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">4. Consistency &amp; Standards</span><span class="score-diff-val score-after-val">83</span><span class="score-diff-arrow arr-same">= →</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">5. Error Prevention</span><span class="score-diff-val score-after-val">74</span><span class="score-diff-arrow arr-up">+6 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">6. Recognition vs. Recall</span><span class="score-diff-val score-after-val">87</span><span class="score-diff-arrow arr-up">+4 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">7. Flexibility &amp; Efficiency</span><span class="score-diff-val score-after-val">70</span><span class="score-diff-arrow arr-up">+8 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">8. Aesthetic &amp; Minimalist Design</span><span class="score-diff-val score-after-val">86</span><span class="score-diff-arrow arr-up">+3 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">9. Error Recovery &amp; Handling</span><span class="score-diff-val score-after-val">79</span><span class="score-diff-arrow arr-up">+6 ⬆</span></div>
+        <div class="score-diff-row"><span class="score-diff-name">10. Help &amp; Documentation</span><span class="score-diff-val score-after-val">82</span><span class="score-diff-arrow arr-up">+11 ⬆</span></div>
+        <div class="score-diff-row" style="margin-top:6px;font-weight:700;"><span class="score-diff-name">Overall average</span><span class="score-diff-val" style="color:#15803d;font-size:1.1rem;">81.0</span><span class="score-diff-arrow arr-up">+5.4 pts ⬆</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ████████████████  RADAR CHART  ████████████████ -->
+<section class="section" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+  <div class="container">
+    <h2 class="section-title">Radar Chart — All Three Versions</h2>
+    <p class="section-sub">10 heuristics plotted 0–100; outer ring = 100, dashed ring = 80 ("Good UX" threshold)</p>
+    <div class="radar-wrap">
+      <svg id="radar" viewBox="0 0 500 480" width="460" height="460" style="max-width:100%;">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Background rings -->
+        <g id="rings"></g>
+        <!-- Axis lines -->
+        <g id="axes"></g>
+        <!-- v1 polygon -->
+        <polygon id="poly-v1" fill="rgba(239,68,68,0.08)" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3" />
+        <!-- v2 polygon -->
+        <polygon id="poly-v2" fill="rgba(245,158,11,0.10)" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,3" />
+        <!-- v3 polygon -->
+        <polygon id="poly-v3" fill="rgba(34,197,94,0.15)" stroke="#22c55e" stroke-width="2.5" />
+        <!-- ideal 80% polygon -->
+        <polygon id="poly-ideal" fill="none" stroke="#60a5fa" stroke-width="1" stroke-dasharray="3,4" opacity="0.5" />
+        <!-- Labels -->
+        <g id="labels"></g>
+        <!-- Score dots v3 -->
+        <g id="dots-v3"></g>
+      </svg>
+
+      <div class="radar-legend">
+        <div class="radar-legend-item">
+          <div class="radar-legend-line" style="background:#ef4444; height:2px; border-style:dashed;"></div>
+          <span>v1 baseline (68.6)</span>
+        </div>
+        <div class="radar-legend-item">
+          <div class="radar-legend-line" style="background:#f59e0b; height:2px; border-style:dashed;"></div>
+          <span>v2 (75.6)</span>
+        </div>
+        <div class="radar-legend-item">
+          <div class="radar-legend-line" style="background:#22c55e; height:3px;"></div>
+          <span><strong>v3 (81.0) ✓</strong></span>
+        </div>
+        <div class="radar-legend-item">
+          <div class="radar-legend-line" style="background:#60a5fa; height:1px; border-style:dashed;"></div>
+          <span style="color:#64748b">Ideal 80% target</span>
+        </div>
+        <div style="margin-top:12px; font-size:.78rem; color:#64748b; line-height:1.5;">
+          Outer ring = 100<br>
+          Inner rings at 20, 40, 60, 80
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ████████████████  HEURISTICS  ████████████████ -->
+<section class="section" style="background:#fff; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0;">
+  <div class="container">
+    <h2 class="section-title">Detailed Heuristic Cards — v3</h2>
+    <p class="section-sub">Each card shows v3 score, what improved this sprint (★), older improvements (✓), and remaining issues (•)</p>
+
+    <div class="heuristics-grid">
+
+      <!-- H1: Visibility -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 1</div>
+            <div class="h-card-title">Visibility of System Status</div>
+          </div>
+          <div class="score-badge good">82 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-good" style="width:82%"></div></div>
+        <div class="h-card-body">
+          System keeps users informed about what is happening through timely, appropriate feedback.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>Compare page 4-step progress pills — visual state: green ✓ done / blue active / grey pending</span></li>
+          <li><span>ConfirmDialog <code>isPending</code> state changes button label to "Učitavam..."</span></li>
+          <li><span>Blog carousel dot indicators — active dot widens to show current position</span></li>
+          <li><span>Responsive images with lazy loading — faster perceived load time</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>Skeleton loaders for ModelDetail, GenerationDetail, VariantDetail, Blog</span></li>
+          <li><span>Submission wizard breadcrumb shows current step</span></li>
+          <li><span>BreadcrumbSkeleton during navigation transitions</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span>Cars page still uses plain text "Učitavam..." — no skeleton</span></li>
+          <li><span>No global toast/snackbar for mutation success (e.g. submission sent)</span></li>
+        </ul>
+      </div>
+
+      <!-- H2: Match -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 2</div>
+            <div class="h-card-title">Match: System &amp; Real World</div>
+          </div>
+          <div class="score-badge good">81 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-good" style="width:81%"></div></div>
+        <div class="h-card-body">
+          System should speak the users' language — words, phrases, and concepts familiar to the user.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>About page FAQ (5 accordion items) — explains Marka/Model/Generacija/Varijanta in plain Croatian</span></li>
+          <li><span>About page Glossary — 13 automotive abbreviations translated (FWD, DSG, PHEV, KS, Nm…)</span></li>
+          <li><span>Login page benefit copy — explains what registered users can do in plain language</span></li>
+          <li><span>Register page benefit copy — explains the value of creating an account</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>SpecValue component auto-detects abbreviations in variant specs and shows inline Croatian tooltip</span></li>
+          <li><span>HelpTooltip on all spec rows in VariantDetail</span></li>
+          <li><span>Croatian UI language throughout</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span>Category labels still in English on Cars page: "Compact", "Sedan", "Sports" — quick win to localise</span></li>
+          <li><span>Some admin-only UI strings remain in English</span></li>
+        </ul>
+      </div>
+
+      <!-- H3: User Control -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 3</div>
+            <div class="h-card-title">User Control &amp; Freedom</div>
+          </div>
+          <div class="score-badge good">86 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-good" style="width:86%"></div></div>
+        <div class="h-card-body">
+          Users often choose system functions by mistake — they need clearly marked "emergency exits".
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>ConfirmDialog — Cancel button + Escape key closes any confirmation modal</span></li>
+          <li><span>Compare page "Obriši sve" — removes all selected vehicles at once</span></li>
+          <li><span>Compare variant selector — X button closes selector and resets selection</span></li>
+          <li><span>Blog carousel — auto-play pauses on user interaction, resumes after 10 s</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>Submission wizard "Natrag" buttons on every step</span></li>
+          <li><span>Compare single-vehicle remove button (X on each card)</span></li>
+          <li><span>Compare "Resetiraj" per-selection reset</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span>No undo for submission — once sent, only admin can act on it</span></li>
+        </ul>
+      </div>
+
+      <!-- H4: Consistency -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 4</div>
+            <div class="h-card-title">Consistency &amp; Standards</div>
+          </div>
+          <div class="score-badge good">83 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-good" style="width:83%"></div></div>
+        <div class="h-card-body">
+          Users should not have to wonder whether different words, situations, or actions mean the same thing.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>ConfirmDialog — single, reusable destructive-action component used across admin/delete flows</span></li>
+          <li><span>Compare step-indicator pills reuse same design language as SubmitCar wizard</span></li>
+          <li><span>Blog card redesign brings visual parity with Home carousel cards</span></li>
+          <li><span>Admin editing scheme improvements — consistent inline edit UX</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>Skeleton token system (7 variants) eliminates ad-hoc spinners</span></li>
+          <li><span>Breadcrumb pattern identical across ModelDetail / GenerationDetail / VariantDetail</span></li>
+          <li><span>Slug URL scheme consistent at all depth levels</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span>English category labels on Cars page break Croatian-first convention</span></li>
+        </ul>
+      </div>
+
+      <!-- H5: Error Prevention -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 5</div>
+            <div class="h-card-title">Error Prevention</div>
+          </div>
+          <div class="score-badge medium">74 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-medium" style="width:74%"></div></div>
+        <div class="h-card-body">
+          Better than good error messages — carefully design to prevent problems from occurring first.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>ConfirmDialog <code>typeToConfirm</code> pattern — user must type the exact keyword before destructive confirm is enabled</span></li>
+          <li><span>Compare variant: already-selected motor is disabled (no duplicate entries)</span></li>
+          <li><span>Compare "Maksimalan broj vozila odabran" hint prevents 4th addition attempt</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>SubmitCar wizard per-step validation (canProceedFromBrand / canProceedFromModel / canProceedFromGeneration / canSubmitVariant)</span></li>
+          <li><span>Required fields enforced by HTML5 <code>required</code> and <code>minLength</code></span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span><strong>No inline real-time validation</strong> on Register/Login forms — errors only appear after submit</span></li>
+          <li><span>No duplicate submission detection (user can submit same car twice)</span></li>
+        </ul>
+      </div>
+
+      <!-- H6: Recognition vs Recall -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 6</div>
+            <div class="h-card-title">Recognition vs. Recall</div>
+          </div>
+          <div class="score-badge good">87 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-good" style="width:87%"></div></div>
+        <div class="h-card-body">
+          Minimise user's memory load — make objects, actions, and options visible.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>Compare 4-step pills always visible — shows full Brand→Model→Generation→Engine path</span></li>
+          <li><span>Compare legend bar: "Legenda: ✓ Najbolja vrijednost" shown when ≥ 2 vehicles selected</span></li>
+          <li><span>Compare quick suggestions when no vehicle selected ("VW Golf GTI vs BMW 335i" etc.)</span></li>
+          <li><span>About Glossary — reference page for all abbreviations, no memorisation required</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>Breadcrumbs at all catalogue depth levels</span></li>
+          <li><span>SpecValue auto-detects abbreviations inline on VariantDetail</span></li>
+          <li><span>Submission wizard breadcrumb shows current path</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span>Recently viewed cars not persisted (no history)</span></li>
+        </ul>
+      </div>
+
+      <!-- H7: Flexibility -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 7</div>
+            <div class="h-card-title">Flexibility &amp; Efficiency of Use</div>
+          </div>
+          <div class="score-badge medium">70 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-medium" style="width:70%"></div></div>
+        <div class="h-card-body">
+          Accelerators — unseen by novice users — may speed up interaction for expert users.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>Compare deep-link — <code>/usporedi?variantId=xyz</code> preloads a car for instant comparison</span></li>
+          <li><span>Blog carousel touch swipe — mobile users can swipe left/right naturally</span></li>
+          <li><span>Home Page carousel: auto-play resumes automatically — passive users get a tour without interaction</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>Slug-based URLs — human-readable, shareable, bookmarkable direct links</span></li>
+          <li><span>Home search preloads models/generations on each selection</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span><strong>No spec-based filter</strong> on Cars/Models pages (fuel type, year range, power) — highest remaining gap</span></li>
+          <li><span>No keyboard shortcuts for power users</span></li>
+          <li><span>No "share variant" CTA on VariantDetail (though URLs are shareable)</span></li>
+        </ul>
+      </div>
+
+      <!-- H8: Aesthetic -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 8</div>
+            <div class="h-card-title">Aesthetic &amp; Minimalist Design</div>
+          </div>
+          <div class="score-badge good">86 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-good" style="width:86%"></div></div>
+        <div class="h-card-body">
+          Dialogues should not contain irrelevant or rarely needed information — every extra unit of information competes with relevant information.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>Blog post cards redesigned — full-bleed image with gradient overlay, title on image, clean hover</span></li>
+          <li><span>Blog editing UI improved — richer toolbar, cleaner layout</span></li>
+          <li><span>UI colour refinements — better contrast ratios across components</span></li>
+          <li><span>Compare legend bar minimal design — info icon + concise text, no visual clutter</span></li>
+          <li><span>Admin editing scheme — cleaner inline edit presentation</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>Consistent dark-slate palette across all pages</span></li>
+          <li><span>Gradient hero banners with light noise texture</span></li>
+          <li><span>Image carousel with aspect-ratio-preserved containers</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span>Some variant spec cards have many empty "–" fields — could be collapsed</span></li>
+        </ul>
+      </div>
+
+      <!-- H9: Error Recovery -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 9</div>
+            <div class="h-card-title">Error Recovery &amp; Handling</div>
+          </div>
+          <div class="score-badge medium">79 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-medium" style="width:79%"></div></div>
+        <div class="h-card-body">
+          Error messages should be expressed in plain language, precisely indicate the problem, and constructively suggest a solution.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>Login: 3 distinct error messages — wrong credentials / no account found / generic — each with recovery hint</span></li>
+          <li><span>Register: separate messages for "email already exists" vs "password too short"</span></li>
+          <li><span>ConfirmDialog prevents accidental irreversible deletions — user must explicitly choose to proceed</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>404 page with quick navigation links and styled background</span></li>
+          <li><span>Submission wizard shows inline error string below the form</span></li>
+          <li><span>API errors caught and surfaced to the user</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span>Network error during submission not retried — user must manually re-submit</span></li>
+          <li><span>No "contact support" link on error states</span></li>
+        </ul>
+      </div>
+
+      <!-- H10: Help -->
+      <div class="h-card">
+        <div class="h-card-header">
+          <div>
+            <div class="h-card-num">Heuristic 10</div>
+            <div class="h-card-title">Help &amp; Documentation</div>
+          </div>
+          <div class="score-badge good">82 <small>/100</small></div>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill fill-good" style="width:82%"></div></div>
+        <div class="h-card-body">
+          Even though it is better if the system can be used without documentation, it may be necessary to provide help — focused on the user's task.
+        </div>
+        <div class="list-section-label">★ New this sprint</div>
+        <ul class="item-list new">
+          <li><span>About page FAQ — 5 accordion Q&amp;As covering platform purpose, terminology, submission process, comparison, and error reporting</span></li>
+          <li><span>About page Glossary — 13 terms: FWD/RWD/AWD, KS/kW/Nm, TSI/TDI/CDI, DSG/CVT, PHEV/BEV/HEV</span></li>
+          <li><span>Login page micro-copy — bullet list of what a registered account enables</span></li>
+          <li><span>Register page micro-copy — explains submission + status tracking benefits</span></li>
+        </ul>
+        <div class="list-section-label">✓ Already applied (v2)</div>
+        <ul class="item-list">
+          <li><span>SpecValue — 20+ inline tooltips auto-triggered on abbreviation detection in VariantDetail</span></li>
+          <li><span>HelpTooltip component on all spec row labels</span></li>
+          <li><span>Submission wizard step-by-step instructions at each step</span></li>
+        </ul>
+        <div class="list-section-label">• Still open</div>
+        <ul class="item-list open">
+          <li><span>No tooltips on comparison spec labels (Compare page only has icon, no label tooltip)</span></li>
+          <li><span>No onboarding walkthrough for first-time users</span></li>
+        </ul>
+      </div>
+
+    </div><!-- /heuristics-grid -->
+  </div>
+</section>
+
+<!-- ████████████████  TOP PRIORITIES  ████████████████ -->
+<section class="section" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+  <div class="container">
+    <h2 class="section-title">Top Remaining Priorities</h2>
+    <p class="section-sub">Issues still open — ranked by UX impact and implementation effort</p>
+
+    <div class="priority-cards">
+
+      <div class="priority-card">
+        <span class="priority-badge high">🔴 High</span>
+        <div>
+          <h4>Spec-based search / filter on Cars &amp; Models pages</h4>
+          <p>
+            No way to filter by fuel type, power range, or year. A user looking for "all diesel cars under 120 kW" must scan manually.
+            This is the single biggest remaining gap — directly addressed by Heuristic 7 (Flexibility). A filter sidebar or inline
+            dropdowns above the grid would fix this.
+          </p>
+          <div style="margin-top:8px;">
+            <span class="tag tag-blue">Heuristic 7</span>
+            <span class="tag tag-amber">Effort: medium</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="priority-card">
+        <span class="priority-badge high">🔴 High</span>
+        <div>
+          <h4>Inline real-time form validation on Register &amp; Login</h4>
+          <p>
+            Currently both forms only validate on submit. Password length, email format, and "required" errors
+            are only shown after the button is pressed. Adding <code>onBlur</code> or <code>onChange</code>
+            validation with inline error messages under each field would fix Heuristic 5 (Error Prevention).
+          </p>
+          <div style="margin-top:8px;">
+            <span class="tag tag-blue">Heuristic 5</span>
+            <span class="tag tag-green">Effort: low</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="priority-card">
+        <span class="priority-badge medium">🟠 Medium</span>
+        <div>
+          <h4>Localise category labels on Cars page</h4>
+          <p>
+            Filter buttons use English: "Compact", "Sedan", "SUV", "Sports", "Electric". All other UI is in Croatian.
+            Replace with: "Kompaktni", "Limuzina", "SUV", "Sportski", "Električni". A 5-minute change that brings
+            full consistency (Heuristic 4).
+          </p>
+          <div style="margin-top:8px;">
+            <span class="tag tag-blue">Heuristic 4</span>
+            <span class="tag tag-blue">Heuristic 2</span>
+            <span class="tag tag-green">Effort: trivial</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="priority-card">
+        <span class="priority-badge medium">🟠 Medium</span>
+        <div>
+          <h4>Skeleton / loading state on Cars page</h4>
+          <p>
+            The /automobili route still shows a plain "Učitavam..." text while data loads. Replace with the
+            existing <code>CardGridSkeleton</code> component that is already used elsewhere. One-line change.
+          </p>
+          <div style="margin-top:8px;">
+            <span class="tag tag-blue">Heuristic 1</span>
+            <span class="tag tag-green">Effort: trivial</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="priority-card">
+        <span class="priority-badge low">🟢 Low</span>
+        <div>
+          <h4>Tooltips on Compare spec labels</h4>
+          <p>
+            VariantDetail already has <code>SpecValue</code> auto-tooltips. The Compare page shows the same spec
+            labels (Gorivo, Snaga, Okretni moment…) but without any tooltip. Reusing <code>HelpTooltip</code>
+            on each spec label would complete Heuristic 10.
+          </p>
+          <div style="margin-top:8px;">
+            <span class="tag tag-blue">Heuristic 10</span>
+            <span class="tag tag-green">Effort: low</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ████████████████  STAKEHOLDER SUMMARY  ████████████████ -->
+<section class="section" style="background:#fff;">
+  <div class="container">
+    <h2 class="section-title">Stakeholder Summary</h2>
+    <p class="section-sub">For supervisors and reviewers of the FESB HCI project</p>
+
+    <div class="stakeholder-box">
+      <h3>🎓 Academic Summary — March 12, 2026</h3>
+      <p>
+        Auto Wiki has reached a UX score of <strong>81.0 / 100</strong> — crossing the "Good UX" threshold (80) for the first time.
+        This is the result of three focused improvement sprints over approximately six weeks, lifting the score from a baseline of 68.6.
+      </p>
+      <p style="margin-top:12px;">
+        The most significant v3 improvements this sprint are the <strong>ConfirmDialog system</strong> (prevents accidental destructive actions),
+        the <strong>About page FAQ and Glossary</strong> (reduces cognitive load for non-technical users), <strong>contextual login/register
+        error messages</strong> (guides users toward recovery rather than leaving them confused), and the <strong>blog carousel with touch
+        support</strong> (improves mobile engagement).
+      </p>
+      <p style="margin-top:12px;">
+        The three remaining priorities are: (1) spec-based search/filter — the most impactful missing feature;
+        (2) inline form validation on auth pages — a low-effort, high-impact win; and (3) localising the English category
+        labels — a trivial one-line change. Completing even one of these would push the score above 82.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer style="background:var(--slate-800); color:var(--slate-400); text-align:center; padding:24px; font-size:.8rem;">
+  Auto Wiki · Heuristic UX Evaluation v3 · March 12, 2026 · Nielsen's 10 Usability Heuristics · FESB HCI Project
+</footer>
+
+<script>
+// ── Radar chart ──
+(function() {
+  const CX = 250, CY = 240, R = 190;
+  const labels = [
+    "1. Visibility",
+    "2. Real World",
+    "3. Control",
+    "4. Consistency",
+    "5. Err. Prevention",
+    "6. Recognition",
+    "7. Flexibility",
+    "8. Aesthetic",
+    "9. Err. Recovery",
+    "10. Help & Docs"
+  ];
+  const v1 = [65, 72, 76, 70, 67, 75, 58, 80, 68, 55];
+  const v2 = [80, 74, 83, 79, 68, 83, 62, 83, 73, 71];
+  const v3 = [82, 81, 86, 83, 74, 87, 70, 86, 79, 82];
+  const N = labels.length;
+
+  function angle(i) { return (Math.PI * 2 * i / N) - Math.PI / 2; }
+  function toXY(i, score) {
+    const a = angle(i);
+    const r = (score / 100) * R;
+    return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
+  }
+  function ringXY(i, pct) {
+    const a = angle(i);
+    const r = pct * R;
+    return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
+  }
+  function polyPoints(scores) {
+    return scores.map((s, i) => { const p = toXY(i, s); return `${p.x},${p.y}`; }).join(" ");
+  }
+
+  // Background rings
+  const ringsSvg = document.getElementById("rings");
+  [20, 40, 60, 80, 100].forEach(pct => {
+    const pts = Array.from({length: N}, (_, i) => ringXY(i, pct/100));
+    const d = pts.map((p, idx) => `${idx === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(" ") + " Z";
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", pct === 80 ? "#cbd5e1" : "#e2e8f0");
+    path.setAttribute("stroke-width", pct === 80 ? "1.5" : "1");
+    if (pct === 80) path.setAttribute("stroke-dasharray", "4,3");
+    ringsSvg.appendChild(path);
+  });
+
+  // Axis lines
+  const axesSvg = document.getElementById("axes");
+  for (let i = 0; i < N; i++) {
+    const outer = ringXY(i, 1);
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", CX); line.setAttribute("y1", CY);
+    line.setAttribute("x2", outer.x); line.setAttribute("y2", outer.y);
+    line.setAttribute("stroke", "#e2e8f0"); line.setAttribute("stroke-width", "1");
+    axesSvg.appendChild(line);
+  }
+
+  // Polygons
+  document.getElementById("poly-v1").setAttribute("points", polyPoints(v1));
+  document.getElementById("poly-v2").setAttribute("points", polyPoints(v2));
+  document.getElementById("poly-v3").setAttribute("points", polyPoints(v3));
+  document.getElementById("poly-ideal").setAttribute("points",
+    Array.from({length: N}, (_, i) => { const p = ringXY(i, 0.8); return `${p.x},${p.y}`; }).join(" ")
+  );
+
+  // Labels
+  const labelsSvg = document.getElementById("labels");
+  labels.forEach((label, i) => {
+    const a = angle(i);
+    const r = R + 22;
+    const lx = CX + r * Math.cos(a);
+    const ly = CY + r * Math.sin(a);
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", lx);
+    text.setAttribute("y", ly);
+    text.setAttribute("text-anchor", Math.abs(Math.cos(a)) < 0.1 ? "middle" : Math.cos(a) < 0 ? "end" : "start");
+    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("font-size", "10");
+    text.setAttribute("fill", "#475569");
+    text.setAttribute("font-family", "system-ui, sans-serif");
+    text.textContent = label;
+    labelsSvg.appendChild(text);
+  });
+
+  // Score dots for v3
+  const dotsSvg = document.getElementById("dots-v3");
+  v3.forEach((score, i) => {
+    const p = toXY(i, score);
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", p.x); circle.setAttribute("cy", p.y);
+    circle.setAttribute("r", "4");
+    circle.setAttribute("fill", "#22c55e");
+    circle.setAttribute("stroke", "#fff");
+    circle.setAttribute("stroke-width", "1.5");
+    dotsSvg.appendChild(circle);
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", p.x + (Math.cos(angle(i)) >= 0 ? 8 : -8));
+    text.setAttribute("y", p.y);
+    text.setAttribute("text-anchor", Math.cos(angle(i)) >= 0 ? "start" : "end");
+    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("font-size", "9");
+    text.setAttribute("font-weight", "700");
+    text.setAttribute("fill", "#15803d");
+    text.setAttribute("font-family", "system-ui, sans-serif");
+    text.textContent = score;
+    dotsSvg.appendChild(text);
+  });
+})();
+</script>
+</body>
+</html>
