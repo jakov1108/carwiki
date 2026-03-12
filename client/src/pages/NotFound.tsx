@@ -67,6 +67,18 @@ export default function NotFound() {
                 Automobili
               </a>
               <a
+                href="/pretraga"
+                className="text-slate-800 dark:text-white bg-white/70 dark:bg-black/40 hover:bg-white/90 dark:hover:bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full transition-all duration-200 hover:scale-105 border border-slate-300 dark:border-white/20"
+              >
+                Pretraga
+              </a>
+              <a
+                href="/usporedi"
+                className="text-slate-800 dark:text-white bg-white/70 dark:bg-black/40 hover:bg-white/90 dark:hover:bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full transition-all duration-200 hover:scale-105 border border-slate-300 dark:border-white/20"
+              >
+                Usporedi
+              </a>
+              <a
                 href="/blog"
                 className="text-slate-800 dark:text-white bg-white/70 dark:bg-black/40 hover:bg-white/90 dark:hover:bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full transition-all duration-200 hover:scale-105 border border-slate-300 dark:border-white/20"
               >

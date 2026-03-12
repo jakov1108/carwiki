@@ -87,7 +87,18 @@ export default function Cars() {
   // Available fuel types from results
   const fuelTypes = ["Benzin", "Dizel", "Hibrid", "Električni"];
   const driveTypes = ["FWD", "RWD", "AWD"];
-  const categories = ["Compact", "Sedan", "SUV", "Sports", "Electric"];
+  const categories = [
+    { value: "Compact", label: "Kompaktni" },
+    { value: "Sedan", label: "Limuzina" },
+    { value: "SUV", label: "SUV / Crossover" },
+    { value: "Sports", label: "Sportski" },
+    { value: "Electric", label: "Električni" },
+    { value: "Hatchback", label: "Hatchback" },
+    { value: "Coupe", label: "Coupe" },
+    { value: "Wagon", label: "Karavan" },
+    { value: "Van", label: "Kombi" },
+    { value: "Pickup", label: "Pickup" },
+  ];
 
   const hasActiveFilters = useMemo(() => {
     return Object.entries(filters).some(([key, val]) => key !== "search" && val !== "");
@@ -202,8 +213,8 @@ export default function Cars() {
               className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-blue-500"
             >
               <option value="name">Ime (A-Z)</option>
-              <option value="power-desc">Snaga (highest)</option>
-              <option value="power-asc">Snaga (lowest)</option>
+              <option value="power-desc">Snaga (najviša)</option>
+              <option value="power-asc">Snaga (najniža)</option>
               <option value="year-desc">Godina (najnovije)</option>
               <option value="year-asc">Godina (najstarije)</option>
             </select>
@@ -248,7 +259,7 @@ export default function Cars() {
                 >
                   <option value="">Sve kategorije</option>
                   {categories.map(c => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
                 </select>
               </div>
@@ -363,7 +374,7 @@ export default function Cars() {
               <FilterTag label={`Marka: ${brands.find(b => b.slug === filters.brand)?.name || filters.brand}`} onClear={() => updateFilter("brand", "")} />
             )}
             {filters.category && (
-              <FilterTag label={`Kategorija: ${filters.category}`} onClear={() => updateFilter("category", "")} />
+              <FilterTag label={`Kategorija: ${categories.find(c => c.value === filters.category)?.label || filters.category}`} onClear={() => updateFilter("category", "")} />
             )}
             {filters.fuelType && (
               <FilterTag label={`Gorivo: ${filters.fuelType}`} onClear={() => updateFilter("fuelType", "")} />

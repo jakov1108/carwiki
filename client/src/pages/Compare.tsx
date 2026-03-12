@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Check, ChevronRight, Fuel, Gauge, Zap, Settings, Car, Scale, Package, RotateCcw, Info } from "lucide-react";
 import type { CarModel, CarGeneration, CarVariant } from "@shared/schema";
+import { useToast } from "../components/Toast";
 
 interface VariantWithDetails extends CarVariant {
   generation?: CarGeneration;
@@ -11,6 +12,7 @@ interface VariantWithDetails extends CarVariant {
 export default function Compare() {
   const [selectedVariants, setSelectedVariants] = useState<VariantWithDetails[]>([]);
   const preloadedRef = useRef(false);
+  const { toast } = useToast();
 
   // Auto-load variant from URL query param (e.g. /usporedi?variantId=abc)
   useEffect(() => {
@@ -88,7 +90,10 @@ export default function Compare() {
   const selectedGeneration = generations.find(g => g.id === selectedGenerationId);
 
   const addVariant = (variant: CarVariant) => {
-    if (selectedVariants.length >= 3) return;
+    if (selectedVariants.length >= 3) {
+      toast("Maksimalno 3 vozila mogu biti odabrana za usporedbu.", "warning");
+      return;
+    }
     if (selectedVariants.find(v => v.id === variant.id)) return;
     
     const variantWithDetails: VariantWithDetails = {
@@ -552,9 +557,18 @@ export default function Compare() {
           <div className="text-center py-12">
             <Car className="w-16 h-16 text-slate-600 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-white mb-2">Započnite usporedbu</h3>
-            <p className="text-slate-400 mb-6">
-              Kliknite na gumb iznad da dodate automobile koje želite usporediti
+            <p className="text-slate-400 mb-4">
+              Usporedite do 3 varijante automobila kako biste vidjeli razlike u specifikacijama.
             </p>
+            <div className="max-w-md mx-auto text-left mb-6 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+              <p className="text-sm text-slate-300 font-medium mb-2">Kako usporediti:</p>
+              <ol className="text-sm text-slate-400 space-y-1 list-decimal list-inside">
+                <li>Kliknite gumb <span className="text-white">"+ Dodaj automobil za usporedbu"</span> iznad</li>
+                <li>Odaberite marku, model, generaciju i motor</li>
+                <li>Ponovite za još 1–2 vozila</li>
+                <li>Najbolje vrijednosti bit će automatski označene zelenom bojom</li>
+              </ol>
+            </div>
             <div className="flex flex-wrap justify-center gap-2 text-sm text-slate-500">
               <span className="px-3 py-1 bg-slate-800 rounded-full">VW Golf GTI vs BMW 335i</span>
               <span className="px-3 py-1 bg-slate-800 rounded-full">Audi A4 vs Mercedes C-Class</span>

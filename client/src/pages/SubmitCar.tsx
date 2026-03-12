@@ -357,6 +357,50 @@ export default function SubmitCar() {
 
         {currentStep !== "success" && (
           <>
+            {/* Step Progress Bar */}
+            {(() => {
+              const steps: { key: Step; label: string; icon: typeof Car }[] = [
+                { key: "brand", label: "Marka", icon: Car },
+                { key: "model", label: "Model", icon: Layers },
+                { key: "generation", label: "Generacija", icon: Settings },
+                { key: "variant", label: "Varijanta", icon: Upload },
+              ];
+              const currentIdx = steps.findIndex(s => s.key === currentStep);
+              return (
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-slate-400">Korak {currentIdx + 1} od {steps.length}</span>
+                    <span className="text-sm text-slate-500">{Math.round(((currentIdx + 1) / steps.length) * 100)}% dovršeno</span>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-2 mb-4">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${((currentIdx + 1) / steps.length) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    {steps.map((step, idx) => {
+                      const StepIcon = step.icon;
+                      const isCompleted = idx < currentIdx;
+                      const isCurrent = idx === currentIdx;
+                      return (
+                        <div key={step.key} className="flex flex-col items-center gap-1 flex-1">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition ${
+                            isCompleted ? 'bg-green-600 text-white' : isCurrent ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'
+                          }`}>
+                            {isCompleted ? <Check className="w-4 h-4" /> : idx + 1}
+                          </div>
+                          <span className={`text-xs hidden sm:block ${isCurrent ? 'text-blue-400 font-medium' : isCompleted ? 'text-green-400' : 'text-slate-500'}`}>
+                            {step.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Breadcrumb / Progress */}
             <div className="flex items-center gap-2 mb-8 text-sm flex-wrap bg-slate-800/50 p-4 rounded-lg">
               <button 
@@ -572,16 +616,16 @@ export default function SubmitCar() {
                           onChange={(e) => setNewModelData({ ...newModelData, category: e.target.value })}
                           className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
                         >
-                          <option>Compact</option>
-                          <option>Sedan</option>
-                          <option>SUV</option>
-                          <option>Sports</option>
-                          <option>Electric</option>
-                          <option>Hatchback</option>
-                          <option>Coupe</option>
-                          <option>Wagon</option>
-                          <option>Van</option>
-                          <option>Pickup</option>
+                          <option value="Compact">Kompaktni</option>
+                          <option value="Sedan">Limuzina</option>
+                          <option value="SUV">SUV / Crossover</option>
+                          <option value="Sports">Sportski</option>
+                          <option value="Electric">Električni</option>
+                          <option value="Hatchback">Hatchback</option>
+                          <option value="Coupe">Coupe</option>
+                          <option value="Wagon">Karavan</option>
+                          <option value="Van">Kombi</option>
+                          <option value="Pickup">Pickup</option>
                         </select>
                       </div>
                     </div>
@@ -828,9 +872,9 @@ export default function SubmitCar() {
                         className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
                       >
                         <option value="Benzin">Benzin</option>
-                        <option value="Diesel">Diesel</option>
-                        <option value="Hybrid">Hibrid</option>
-                        <option value="Electric">Električni</option>
+                        <option value="Dizel">Dizel</option>
+                        <option value="Hibrid">Hibrid</option>
+                        <option value="Električni">Električni</option>
                         <option value="LPG">LPG</option>
                       </select>
                     </div>
@@ -847,6 +891,7 @@ export default function SubmitCar() {
                         placeholder="npr. 150 KS"
                         className={variantFieldClass("power")}
                       />
+                      <p className="text-xs text-slate-500 mt-1">Format: broj + KS (konjske snage)</p>
                       {variantTouched.power && variantErrors.power && (
                         <p className="text-red-400 text-sm mt-1">{variantErrors.power}</p>
                       )}
@@ -874,6 +919,7 @@ export default function SubmitCar() {
                         placeholder="npr. 8.6s"
                         className={variantFieldClass("acceleration")}
                       />
+                      <p className="text-xs text-slate-500 mt-1">Format: broj + s (sekunde)</p>
                       {variantTouched.acceleration && variantErrors.acceleration && (
                         <p className="text-red-400 text-sm mt-1">{variantErrors.acceleration}</p>
                       )}
@@ -901,6 +947,7 @@ export default function SubmitCar() {
                         placeholder="npr. 4.5 L/100km"
                         className={variantFieldClass("consumption")}
                       />
+                      <p className="text-xs text-slate-500 mt-1">Format: broj + L/100km</p>
                       {variantTouched.consumption && variantErrors.consumption && (
                         <p className="text-red-400 text-sm mt-1">{variantErrors.consumption}</p>
                       )}
@@ -915,6 +962,7 @@ export default function SubmitCar() {
                         placeholder="npr. 6-brzinski ručni, 7-DSG"
                         className={variantFieldClass("transmission")}
                       />
+                      <p className="text-xs text-slate-500 mt-1">npr. "6-brzinski ručni" ili "7-stupanjski DSG"</p>
                       {variantTouched.transmission && variantErrors.transmission && (
                         <p className="text-red-400 text-sm mt-1">{variantErrors.transmission}</p>
                       )}
@@ -1118,7 +1166,10 @@ export default function SubmitCar() {
                       className="flex-1 px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg font-semibold text-lg flex items-center justify-center gap-2"
                     >
                       {submitCar.isPending ? (
-                        "Šaljem..."
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Šaljem prijedlog...
+                        </>
                       ) : (
                         <>
                           <Upload className="w-5 h-5" />

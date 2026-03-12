@@ -214,8 +214,16 @@
   .light .text-green-300 { color: #16a34a; }
   .light .text-red-400 { color: #dc2626; }
   .light .text-red-300 { color: #dc2626; }
+  .light .text-yellow-300 { color: #92400e; }
   .light .text-yellow-400 { color: #a16207; }
+  .light .text-yellow-400\/80 { color: rgba(161,98,7,0.8); }
   .light .text-yellow-500 { color: #a16207; }
+  .light .bg-yellow-500\/5 { background-color: rgba(234,179,8,0.08); }
+  .light .bg-yellow-500\/10 { background-color: rgba(234,179,8,0.1); }
+  .light .bg-yellow-900\/30 { background-color: rgba(234,179,8,0.1); }
+  .light .border-yellow-500\/20 { border-color: rgba(202,138,4,0.3); }
+  .light .border-yellow-500\/30 { border-color: rgba(202,138,4,0.35); }
+  .light .border-yellow-700\/50 { border-color: rgba(161,98,7,0.4); }
 
   /* Fix hover text color variants */
   .light .hover\:text-blue-300:hover { color: #1d4ed8; }
