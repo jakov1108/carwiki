@@ -1,0 +1,124 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+  workflow_dispatch:
+
+jobs:
+  build-ipa:
+    name: Build iOS IPA (fesb-companion-ios)
+    runs-on: macos-15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout fesb-companion-ios
+        uses: actions/checkout@v4
+        with:
+          repository: vexonius/fesb-companion-ios
+
+      - name: Enable Xcode macro fingerprint validation bypass
+        run: |
+          defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
+
+      - name: Fetch shared.xcframework from fesb-companion-shared
+        uses: dsaltares/fetch-gh-release-asset@1.1.2
+        with:
+          repo: "vexonius/fesb-companion-shared"
+          version: "latest"
+          file: "shared.xcframework.zip"
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Unzip shared.xcframework
+        run: |
+          unzip -o "${{ github.workspace }}/shared.xcframework.zip" -d "${{ github.workspace }}"
+
+      - name: Install Tuist
+        run: |
+          brew install tuist
+
+      - name: Generate Xcode project with Tuist
+        run: |
+          tuist generate --no-open
+
+      - name: Install five-swiftlint
+        run: |
+          brew tap fiveagency/five-swiftlint
+          brew install five-swiftlint
+
+      - name: Import code signing certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+      - name: Import provisioning profile
+        env:
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+        run: |
+          PP_PATH="$RUNNER_TEMP/build_pp.mobileprovision"
+          INSTALLED_PP="$HOME/Library/MobileDevice/Provisioning Profiles/build_pp.mobileprovision"
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PP_PATH" "$INSTALLED_PP"
+
+      - name: Archive app
+        run: |
+          xcodebuild archive \
+            -workspace FESBCompanion.xcworkspace \
+            -scheme FESBCompanion \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/FESBCompanion.xcarchive" \
+            CODE_SIGN_STYLE=Manual
+
+      - name: Create ExportOptions.plist
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>ad-hoc</string>
+            <key>thinning</key>
+            <string>&lt;none&gt;</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/FESBCompanion.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FESBCompanion-IPA
+          path: ${{ runner.temp }}/export/*.ipa
+          retention-days: 30
+
+      - name: Clean up keychain and provisioning profile
+        if: ${{ always() }}
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" || true
+          rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/build_pp.mobileprovision" || true
