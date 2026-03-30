@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
+import { authClient } from "../lib/auth-client";
 import { useLocation, Link } from "wouter";
 import { UserPlus } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -9,6 +11,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { register } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -38,6 +41,20 @@ export default function Register() {
       } else {
         setError(msg);
       }
+    }
+  };
+
+  const handleGoogleRegister = async () => {
+    setIsGoogleLoading(true);
+    setError("");
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+    } catch (err: any) {
+      setError("Google registracija nije uspjela. Pokušajte ponovno.");
+      setIsGoogleLoading(false);
     }
   };
 
@@ -71,6 +88,26 @@ export default function Register() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+            {/* Google Register Button */}
+            <button
+              type="button"
+              onClick={handleGoogleRegister}
+              disabled={isGoogleLoading}
+              className="w-full bg-white hover:bg-gray-100 text-gray-800 px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center space-x-3 border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FcGoogle className="w-5 h-5" />
+              <span>{isGoogleLoading ? "Registracija..." : "Nastavi s Google računom"}</span>
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-slate-800 text-slate-400">ili</span>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2">Ime</label>
               <input
