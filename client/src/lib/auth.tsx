@@ -36,6 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.error) {
       throw new Error(result.error.message || "Registracija neuspješna");
     }
+    
+    // Return success so we can show verification message
+    return result;
   };
 
   const logout = async () => {

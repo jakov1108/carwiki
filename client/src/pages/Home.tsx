@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Car, BookOpen, Shield, Search, ChevronRight, ChevronLeft } from "lucide-react";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost } from "@shared/schema";
+import { useToast } from "../components/Toast";
 
 // Generate responsive image URL at a specific width
 function getResponsiveImageUrl(url: string, width: number): string {
@@ -29,10 +30,22 @@ function getImageSrcSet(url: string): string {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(useSearch());
+  const { success } = useToast();
   const [searchBrand, setSearchBrand] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
   const [selectedGenerationId, setSelectedGenerationId] = useState("");
   const [isDesktop, setIsDesktop] = useState(false);
+
+  // Show success toast if coming from email verification
+  useEffect(() => {
+    const verified = searchParams.get("verified");
+    if (verified === "success") {
+      success("✅ Email uspješno verificiran! Dobrodošli na CarWiki.");
+      // Clean up URL
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
 
   // Track screen size for carousel
   useEffect(() => {

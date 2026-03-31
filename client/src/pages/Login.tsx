@@ -9,6 +9,9 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showResendLink, setShowResendLink] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login } = useAuth();
@@ -35,6 +38,8 @@ export default function Login() {
     setTouched({ email: true, password: true });
     if (!isFormValid) return;
     setError("");
+    setShowResendLink(false);
+    setResendSuccess(false);
     try {
       await login(email, password);
       setLocation("/");
@@ -44,9 +49,39 @@ export default function Login() {
         setError("Neispravna email adresa ili lozinka. Provjerite podatke i pokušajte ponovno.");
       } else if (msg.includes("not found") || msg.includes("No user")) {
         setError("Ne postoji račun s ovom email adresom. Možda se trebate registrirati?");
+      } else if (msg.includes("Email not verified") || msg.includes("not verified")) {
+        setError("Email adresa nije verificirana. Provjerite svoju poštu i potvrdite email prije prijave.");
+        setShowResendLink(true);
       } else {
         setError(msg);
       }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setIsResending(true);
+    setResendSuccess(false);
+    try {
+      const response = await fetch("/api/auth/send-verification-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        setResendSuccess(true);
+        setError("Verification email poslan! Provjerite svoju poštu.");
+        setShowResendLink(false);
+      } else {
+        setError("Greška prilikom slanja emaila. Pokušajte kasnije.");
+      }
+    } catch (error) {
+      setError("Greška prilikom slanja emaila. Pokušajte kasnije.");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -79,8 +114,17 @@ export default function Login() {
           </div>
 
           {error && (
-            <div className="mb-6 bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded">
-              {error}
+            <div className="mb-6 bg-red-100 border border-red-500 text-red-800 px-4 py-3 rounded dark:bg-red-900/50 dark:border-red-700 dark:text-red-300">
+              <p>{error}</p>
+              {showResendLink && (
+                <button
+                  onClick={handleResendVerification}
+                  disabled={isResending}
+                  className="mt-3 text-sm underline hover:no-underline disabled:opacity-50"
+                >
+                  {isResending ? "Slanje..." : "Pošalji verification email ponovno"}
+                </button>
+              )}
             </div>
           )}
 

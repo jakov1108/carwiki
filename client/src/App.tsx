@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
 import ErrorBoundary from "./components/ErrorBoundary";
+import EmailVerificationBanner from "./components/EmailVerificationBanner";
 import { ToastProvider } from "./components/Toast";
 
 // Lazy-load all route pages to reduce critical request chain
@@ -18,6 +19,7 @@ const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Contact = lazy(() => import("./pages/Contact"));
 const About = lazy(() => import("./pages/About"));
@@ -40,6 +42,7 @@ function App() {
         <ToastProvider>
         <div className="min-h-screen flex flex-col bg-slate-950 text-white">
           <Navbar />
+          <EmailVerificationBanner />
           <main className="flex-1">
             <Router>
               <ScrollToTop />
@@ -62,6 +65,7 @@ function App() {
               <Route path="/blog/:id" component={BlogPost} />
               <Route path="/prijava" component={Login} />
               <Route path="/registracija" component={Register} />
+              <Route path="/verify-email" component={VerifyEmail} />
               <Route path="/admin" component={Admin} />
               <Route path="/kontakt" component={Contact} />
               <Route path="/o-nama" component={About} />

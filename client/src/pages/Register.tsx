@@ -10,6 +10,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { register } = useAuth();
@@ -29,9 +30,11 @@ export default function Register() {
     setTouched({ name: true, email: true, password: true });
     if (!isFormValid) return;
     setError("");
+    setSuccess("");
     try {
       await register(email, password, name);
-      setLocation("/");
+      setSuccess("Registracija uspješna! Provjerite email za verifikaciju.");
+      setTimeout(() => setLocation("/"), 3000);
     } catch (err: any) {
       const msg = err.message || "Registracija neuspješna";
       if (msg.includes("already") || msg.includes("exists") || msg.includes("duplicate")) {
@@ -82,8 +85,14 @@ export default function Register() {
           </div>
 
           {error && (
-            <div className="mb-6 bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded">
+            <div className="mb-6 bg-red-100 border border-red-500 text-red-800 px-4 py-3 rounded dark:bg-red-900/50 dark:border-red-700 dark:text-red-300">
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 bg-green-100 border border-green-500 text-green-800 px-4 py-3 rounded dark:bg-green-900/50 dark:border-green-700 dark:text-green-300">
+              {success}
             </div>
           )}
 
