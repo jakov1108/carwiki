@@ -10,12 +10,17 @@ if (!process.env.BETTER_AUTH_SECRET) {
 
 // Configure Brevo email sending
 const sendEmail = async (to: string, subject: string, htmlContent: string) => {
+  console.log("📧 Attempting to send email to:", to);
+  console.log("📧 BREVO_API_KEY exists:", !!process.env.BREVO_API_KEY);
+  console.log("📧 EMAIL_FROM:", process.env.EMAIL_FROM);
+  
   if (!process.env.BREVO_API_KEY) {
-    console.warn("Brevo not configured, skipping email");
+    console.warn("⚠️ Brevo not configured, skipping email");
     return;
   }
 
   try {
+    console.log("📧 Sending email via Brevo API...");
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -36,11 +41,13 @@ const sendEmail = async (to: string, subject: string, htmlContent: string) => {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("Brevo email error:", error);
+      console.error("❌ Brevo email error:", error);
       throw new Error(`Failed to send email: ${response.status}`);
     }
+    
+    console.log("✅ Email sent successfully to:", to);
   } catch (error) {
-    console.error("Failed to send email:", error);
+    console.error("❌ Failed to send email:", error);
     throw error;
   }
 };
