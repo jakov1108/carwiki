@@ -1,5 +1,10 @@
 import { QueryClient } from "@tanstack/react-query";
 
+export const STATIC_QUERY_STALE_TIME = 10 * 60 * 1000;
+export const STATIC_QUERY_GC_TIME = 60 * 60 * 1000;
+export const LIVE_QUERY_STALE_TIME = 30 * 1000;
+export const LIVE_QUERY_GC_TIME = 5 * 60 * 1000;
+
 async function defaultQueryFn({ queryKey }: { queryKey: readonly unknown[] }): Promise<unknown> {
   const url = queryKey[0] as string;
   const res = await fetch(url);
@@ -13,8 +18,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: defaultQueryFn,
-      staleTime: 1000 * 60,
+      staleTime: STATIC_QUERY_STALE_TIME,
+      gcTime: STATIC_QUERY_GC_TIME,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
     },
   },
 });

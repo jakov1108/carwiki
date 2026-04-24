@@ -204,7 +204,7 @@ export default function MultiImageUploader({
             </div>
 
             {/* Order badge */}
-            <div className="absolute top-2 left-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
+            <div className="absolute top-2 left-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-xs font-bold text-white keep-white">
               {index + 1}
             </div>
 
@@ -212,14 +212,14 @@ export default function MultiImageUploader({
             <button
               type="button"
               onClick={() => removeImage(index)}
-              className="absolute top-2 right-2 p-1 bg-red-600 hover:bg-red-700 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-2 right-2 p-1 bg-red-600 hover:bg-red-700 rounded-full text-white keep-white opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* New badge */}
             {image.isNew && (
-              <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-green-600 rounded text-xs text-white">
+              <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-green-600 rounded text-xs text-white keep-white">
                 Nova
               </div>
             )}

@@ -10,29 +10,8 @@ import MultiImageUploader from "../components/MultiImageUploader";
 import RichTextEditor from "../components/RichTextEditor";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
-
-interface ImageItem {
-  id?: string;
-  url: string;
-  isNew?: boolean;
-}
-
-interface CarSubmission {
-  id: string;
-  submittedBy: string;
-  submittedByName: string;
-  status: string;
-  mode: string;
-  modelId: string | null;
-  generationId: string | null;
-  modelData: string | null;
-  generationData: string | null;
-  variantData: string;
-  adminNotes: string | null;
-  createdAt: string;
-}
-
-type Tab = "cars" | "pending" | "submissions" | "blog" | "messages";
+import { LIVE_QUERY_GC_TIME, LIVE_QUERY_STALE_TIME } from "../lib/queryClient";
+import type { AdminCarSubmission as CarSubmission, AdminImageItem as ImageItem, AdminTab as Tab } from "./admin/types";
 
 export default function Admin() {
   const { user, isLoading } = useAuth();
@@ -40,6 +19,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("cars");
   const queryClient = useQueryClient();
   const { success: toastSuccess, error: toastError } = useToast();
+  const isAdminUser = user?.role === "admin";
 
   // Hierarchical navigation state
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
@@ -77,13 +57,14 @@ export default function Admin() {
   const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
 
   // Data queries
-  const { data: models } = useQuery<CarModel[]>({ queryKey: ["/api/models"] });
-  const { data: generations } = useQuery<CarGenerationWithModel[]>({ queryKey: ["/api/generations"] });
-  const { data: variants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/all"] });
-  const { data: pendingVariants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/pending"] });
-  const { data: posts } = useQuery<BlogPost[]>({ queryKey: ["/api/blog"] });
-  const { data: messages } = useQuery<ContactMessage[]>({ queryKey: ["/api/contact"] });
-  const { data: submissions } = useQuery<CarSubmission[]>({ queryKey: ["/api/submissions"] });
+  const adminQueryOptions = { enabled: isAdminUser, staleTime: LIVE_QUERY_STALE_TIME, gcTime: LIVE_QUERY_GC_TIME };
+  const { data: models } = useQuery<CarModel[]>({ queryKey: ["/api/models"], ...adminQueryOptions });
+  const { data: generations } = useQuery<CarGenerationWithModel[]>({ queryKey: ["/api/generations"], ...adminQueryOptions });
+  const { data: variants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/all"], ...adminQueryOptions });
+  const { data: pendingVariants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/pending"], ...adminQueryOptions });
+  const { data: posts } = useQuery<BlogPost[]>({ queryKey: ["/api/blog"], ...adminQueryOptions });
+  const { data: messages } = useQuery<ContactMessage[]>({ queryKey: ["/api/contact"], ...adminQueryOptions });
+  const { data: submissions } = useQuery<CarSubmission[]>({ queryKey: ["/api/submissions"], ...adminQueryOptions });
   
   // Filter pending submissions
   const pendingSubmissions = submissions?.filter(s => s.status === "pending") || [];
@@ -353,7 +334,7 @@ export default function Admin() {
                         <button
                           onClick={() => updateVariantStatus.mutate({ id: variant.id, status: "approved" })}
                           disabled={updateVariantStatus.isPending}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded flex items-center space-x-2 disabled:opacity-50"
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white keep-white rounded flex items-center space-x-2 disabled:opacity-50"
                         >
                           <Check className="w-5 h-5" />
                           <span>Odobri</span>
@@ -361,7 +342,7 @@ export default function Admin() {
                         <button
                           onClick={() => updateVariantStatus.mutate({ id: variant.id, status: "rejected" })}
                           disabled={updateVariantStatus.isPending}
-                          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center space-x-2 disabled:opacity-50"
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white keep-white rounded flex items-center space-x-2 disabled:opacity-50"
                         >
                           <XCircle className="w-5 h-5" />
                           <span>Odbij</span>
@@ -371,7 +352,7 @@ export default function Admin() {
                             setEditingVariant(variant);
                             setShowVariantForm(true);
                           }}
-                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded flex items-center space-x-2"
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white keep-white rounded flex items-center space-x-2"
                         >
                           <Edit className="w-5 h-5" />
                           <span>Uredi</span>
@@ -424,8 +405,8 @@ export default function Admin() {
                           <div className="flex items-center gap-2 mb-2">
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
                               submission.mode === "new" 
-                                ? "bg-blue-600 text-white" 
-                                : "bg-purple-600 text-white"
+                                ? "bg-blue-600 text-white keep-white" 
+                                : "bg-purple-600 text-white keep-white"
                             }`}>
                               {submission.mode === "new" ? "Novi auto" : "Nadogradnja"}
                             </span>
@@ -531,7 +512,7 @@ export default function Admin() {
                               });
                             }}
                             disabled={approveSubmission.isPending}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white keep-white rounded flex items-center justify-center gap-2 disabled:opacity-50"
                           >
                             <Check className="w-5 h-5" />
                             <span>Odobri</span>
@@ -539,7 +520,7 @@ export default function Admin() {
                           <button
                             onClick={() => setRejectDialog({ open: true, submissionId: submission.id, notes: "" })}
                             disabled={rejectSubmission.isPending}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white keep-white rounded flex items-center justify-center gap-2 disabled:opacity-50"
                           >
                             <XCircle className="w-5 h-5" />
                             <span>Odbij</span>
@@ -672,7 +653,7 @@ export default function Admin() {
                         <ChevronRight className="w-5 h-5 text-slate-500 ml-auto" />
                       </button>
                       <div className="flex gap-2 ml-4">
-                        <button onClick={() => { setEditingModel(model); setShowModelForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
+                        <button onClick={() => { setEditingModel(model); setShowModelForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button onClick={() => showConfirm({
@@ -681,7 +662,7 @@ export default function Admin() {
                           onConfirm: () => deleteModel.mutate(model.id),
                           typeToConfirm: "OBRIŠI",
                           variant: "danger",
-                        })} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                        })} className="p-2 bg-red-600 hover:bg-red-700 text-white keep-white rounded">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -726,7 +707,7 @@ export default function Admin() {
                         <ChevronRight className="w-5 h-5 text-slate-500 ml-auto" />
                       </button>
                       <div className="flex gap-2 ml-4">
-                        <button onClick={() => { setEditingGeneration(gen); setShowGenerationForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
+                        <button onClick={() => { setEditingGeneration(gen); setShowGenerationForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button onClick={() => showConfirm({
@@ -735,7 +716,7 @@ export default function Admin() {
                           onConfirm: () => deleteGeneration.mutate(gen.id),
                           typeToConfirm: "OBRIŠI",
                           variant: "danger",
-                        })} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                        })} className="p-2 bg-red-600 hover:bg-red-700 text-white keep-white rounded">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -792,7 +773,7 @@ export default function Admin() {
                         <p className="text-slate-400 text-sm">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => { setEditingVariant(variant); setShowVariantForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 rounded">
+                        <button onClick={() => { setEditingVariant(variant); setShowVariantForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded">
                           <Edit className="w-4 h-4" />
                         </button>
                         <button onClick={() => showConfirm({
@@ -800,7 +781,7 @@ export default function Admin() {
                           description: `Jeste li sigurni da želite obrisati varijantu "${variant.engineName}"?\n\nOva radnja se ne može poništiti.`,
                           onConfirm: () => deleteVariant.mutate(variant.id),
                           variant: "danger",
-                        })} className="p-2 bg-red-600 hover:bg-red-700 rounded">
+                        })} className="p-2 bg-red-600 hover:bg-red-700 text-white keep-white rounded">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -851,7 +832,7 @@ export default function Admin() {
                           setEditingBlog(post);
                           setShowBlogForm(true);
                         }}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded"
+                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded"
                       >
                         <Edit className="w-5 h-5" />
                       </button>
@@ -862,7 +843,7 @@ export default function Admin() {
                           onConfirm: () => deleteBlog.mutate(post.id),
                           variant: "danger",
                         })}
-                        className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                        className="p-2 bg-red-600 hover:bg-red-700 text-white keep-white rounded"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -897,7 +878,7 @@ export default function Admin() {
                         onConfirm: () => deleteMessage.mutate(message.id),
                         variant: "danger",
                       })}
-                      className="p-2 bg-red-600 hover:bg-red-700 rounded"
+                      className="p-2 bg-red-600 hover:bg-red-700 text-white keep-white rounded"
                       title="Obriši poruku"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -1019,7 +1000,7 @@ export default function Admin() {
                     setRejectDialog({ open: false, submissionId: "", notes: "" });
                   }}
                   disabled={rejectSubmission.isPending}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white keep-white rounded-lg text-sm font-medium transition"
                 >
                   {rejectSubmission.isPending ? "Učitavam..." : "Odbij prijedlog"}
                 </button>
@@ -1145,14 +1126,14 @@ function ModelForm({ model, models, preselectedBrand, onClose }: { model: CarMod
               <button
                 type="button"
                 onClick={() => { setUseNewBrand(false); setFormData({ ...formData, brand: "" }); }}
-                className={`px-3 py-1 rounded text-sm ${!useNewBrand ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+                className={`px-3 py-1 rounded text-sm ${!useNewBrand ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300'}`}
               >
                 Postojeća
               </button>
               <button
                 type="button"
                 onClick={() => { setUseNewBrand(true); setFormData({ ...formData, brand: "" }); }}
-                className={`px-3 py-1 rounded text-sm ${useNewBrand ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+                className={`px-3 py-1 rounded text-sm ${useNewBrand ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300'}`}
               >
                 Nova marka
               </button>

@@ -10,6 +10,9 @@ import {
   insertBlogPostSchema,
   insertContactMessageSchema,
   insertImageSchema,
+  type GenerationPagePayload,
+  type ModelPagePayload,
+  type VariantPagePayload,
 } from "../shared/schema";
 import { fromError } from "zod-validation-error";
 import { handleImageUpload, serveUploadedImage } from "./imageUpload";
@@ -39,12 +42,35 @@ async function isAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ message: "Unauthorized" });
   }
   
-  if (session.user.role !== "admin") {
+  const user = session.user as typeof session.user & { role?: string };
+
+  if (user.role !== "admin") {
     return res.status(403).json({ message: "Forbidden: Admin access required" });
   }
   
   (req as any).session = session;
   next();
+}
+
+const PUBLIC_CACHE_PROFILES = {
+  catalog: "public, max-age=600, s-maxage=3600, stale-while-revalidate=86400",
+  detail: "public, max-age=300, s-maxage=1800, stale-while-revalidate=86400",
+  search: "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
+} as const;
+
+type PublicCacheProfile = keyof typeof PUBLIC_CACHE_PROFILES;
+
+function setPublicCache(res: Response, profile: PublicCacheProfile = "detail") {
+  res.setHeader("Cache-Control", PUBLIC_CACHE_PROFILES[profile]);
+}
+
+function buildGalleryImages(primaryImage: string | null | undefined, imageList: Array<{ url: string }>) {
+  const urls = [
+    primaryImage,
+    ...imageList.map((image) => image.url),
+  ].filter((url): url is string => typeof url === "string" && url.length > 0);
+
+  return Array.from(new Set(urls));
 }
 
 export function registerRoutes(app: Express) {
@@ -65,6 +91,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/models", async (_req: Request, res: Response) => {
     try {
       const models = await storage.getCarModels();
+      setPublicCache(res, "catalog");
       res.json(models);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car models" });
@@ -75,6 +102,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/brands", async (_req: Request, res: Response) => {
     try {
       const brands = await storage.getBrands();
+      setPublicCache(res, "catalog");
       res.json(brands);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch brands" });
@@ -85,6 +113,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/brands/:brandSlug/models", async (req: Request, res: Response) => {
     try {
       const models = await storage.getModelsByBrand(req.params.brandSlug);
+      setPublicCache(res, "detail");
       res.json(models);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch models" });
@@ -97,9 +126,60 @@ export function registerRoutes(app: Express) {
       if (!model) {
         return res.status(404).json({ message: "Car model not found" });
       }
+      setPublicCache(res, "detail");
       res.json(model);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car model" });
+    }
+  });
+
+  app.get("/api/page/model/:id", async (req: Request, res: Response) => {
+    try {
+      const model = await storage.getCarModelById(req.params.id);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+
+      const [generations, imageList] = await Promise.all([
+        storage.getCarGenerationsByModelId(model.id),
+        storage.getImagesByEntity("model", model.id),
+      ]);
+
+      const payload: ModelPagePayload = {
+        model,
+        generations,
+        galleryImages: buildGalleryImages(model.image, imageList),
+      };
+
+      setPublicCache(res, "detail");
+      res.json(payload);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch model page data" });
+    }
+  });
+
+  app.get("/api/page/car/:brandSlug/:modelSlug", async (req: Request, res: Response) => {
+    try {
+      const model = await storage.getCarModelBySlug(req.params.brandSlug, req.params.modelSlug);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+
+      const [generations, imageList] = await Promise.all([
+        storage.getCarGenerationsByModelId(model.id),
+        storage.getImagesByEntity("model", model.id),
+      ]);
+
+      const payload: ModelPagePayload = {
+        model,
+        generations,
+        galleryImages: buildGalleryImages(model.image, imageList),
+      };
+
+      setPublicCache(res, "detail");
+      res.json(payload);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch model page data" });
     }
   });
 
@@ -110,9 +190,65 @@ export function registerRoutes(app: Express) {
       if (!model) {
         return res.status(404).json({ message: "Car model not found" });
       }
+      setPublicCache(res, "detail");
       res.json(model);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car model" });
+    }
+  });
+
+  app.get("/api/page/generation/:id", async (req: Request, res: Response) => {
+    try {
+      const generation = await storage.getCarGenerationById(req.params.id);
+      if (!generation) {
+        return res.status(404).json({ message: "Car generation not found" });
+      }
+
+      const [variants, imageList] = await Promise.all([
+        storage.getCarVariantsByGenerationId(generation.id),
+        storage.getImagesByEntity("generation", generation.id),
+      ]);
+
+      const payload: GenerationPagePayload = {
+        generation,
+        variants,
+        galleryImages: buildGalleryImages(generation.image, imageList),
+      };
+
+      setPublicCache(res, "detail");
+      res.json(payload);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch generation page data" });
+    }
+  });
+
+  app.get("/api/page/car/:brandSlug/:modelSlug/:generationSlug", async (req: Request, res: Response) => {
+    try {
+      const model = await storage.getCarModelBySlug(req.params.brandSlug, req.params.modelSlug);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+
+      const generation = await storage.getCarGenerationBySlug(model.id, req.params.generationSlug);
+      if (!generation) {
+        return res.status(404).json({ message: "Car generation not found" });
+      }
+
+      const [variants, imageList] = await Promise.all([
+        storage.getCarVariantsByGenerationId(generation.id),
+        storage.getImagesByEntity("generation", generation.id),
+      ]);
+
+      const payload: GenerationPagePayload = {
+        generation,
+        variants,
+        galleryImages: buildGalleryImages(generation.image, imageList),
+      };
+
+      setPublicCache(res, "detail");
+      res.json(payload);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch generation page data" });
     }
   });
 
@@ -127,9 +263,60 @@ export function registerRoutes(app: Express) {
       if (!generation) {
         return res.status(404).json({ message: "Car generation not found" });
       }
+      setPublicCache(res, "detail");
       res.json(generation);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car generation" });
+    }
+  });
+
+  app.get("/api/page/variant/:id", async (req: Request, res: Response) => {
+    try {
+      const variant = await storage.getCarVariantById(req.params.id);
+      if (!variant) {
+        return res.status(404).json({ message: "Car variant not found" });
+      }
+
+      const imageList = await storage.getImagesByEntity("variant", variant.id);
+      const payload: VariantPagePayload = {
+        variant,
+        galleryImages: buildGalleryImages(variant.generation?.image, imageList),
+      };
+
+      setPublicCache(res, "detail");
+      res.json(payload);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch variant page data" });
+    }
+  });
+
+  app.get("/api/page/car/:brandSlug/:modelSlug/:generationSlug/:variantSlug", async (req: Request, res: Response) => {
+    try {
+      const model = await storage.getCarModelBySlug(req.params.brandSlug, req.params.modelSlug);
+      if (!model) {
+        return res.status(404).json({ message: "Car model not found" });
+      }
+
+      const generation = await storage.getCarGenerationBySlug(model.id, req.params.generationSlug);
+      if (!generation) {
+        return res.status(404).json({ message: "Car generation not found" });
+      }
+
+      const variant = await storage.getCarVariantBySlug(generation.id, req.params.variantSlug);
+      if (!variant) {
+        return res.status(404).json({ message: "Car variant not found" });
+      }
+
+      const imageList = await storage.getImagesByEntity("variant", variant.id);
+      const payload: VariantPagePayload = {
+        variant,
+        galleryImages: buildGalleryImages(variant.generation?.image, imageList),
+      };
+
+      setPublicCache(res, "detail");
+      res.json(payload);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch variant page data" });
     }
   });
 
@@ -148,6 +335,7 @@ export function registerRoutes(app: Express) {
       if (!variant) {
         return res.status(404).json({ message: "Car variant not found" });
       }
+      setPublicCache(res, "detail");
       res.json(variant);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car variant" });
@@ -202,6 +390,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/generations", async (_req: Request, res: Response) => {
     try {
       const generations = await storage.getCarGenerations();
+      setPublicCache(res, "catalog");
       res.json(generations);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car generations" });
@@ -211,6 +400,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/models/:modelId/generations", async (req: Request, res: Response) => {
     try {
       const generations = await storage.getCarGenerationsByModelId(req.params.modelId);
+      setPublicCache(res, "detail");
       res.json(generations);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car generations" });
@@ -223,6 +413,7 @@ export function registerRoutes(app: Express) {
       if (!generation) {
         return res.status(404).json({ message: "Car generation not found" });
       }
+      setPublicCache(res, "detail");
       res.json(generation);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car generation" });
@@ -275,6 +466,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/variants", async (_req: Request, res: Response) => {
     try {
       const variants = await storage.getCarVariants();
+      setPublicCache(res, "catalog");
       res.json(variants);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car variants" });
@@ -296,6 +488,7 @@ export function registerRoutes(app: Express) {
       if (req.query.yearMin) { const n = Number(req.query.yearMin); if (!isNaN(n)) filters.yearMin = n; }
       if (req.query.yearMax) { const n = Number(req.query.yearMax); if (!isNaN(n)) filters.yearMax = n; }
       const results = await storage.searchVariants(filters);
+      setPublicCache(res, "search");
       res.json(results);
     } catch (error) {
       res.status(500).json({ message: "Failed to search variants" });
@@ -323,6 +516,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/generations/:generationId/variants", async (req: Request, res: Response) => {
     try {
       const variants = await storage.getCarVariantsByGenerationId(req.params.generationId);
+      setPublicCache(res, "detail");
       res.json(variants);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car variants" });
@@ -335,6 +529,7 @@ export function registerRoutes(app: Express) {
       if (!variant) {
         return res.status(404).json({ message: "Car variant not found" });
       }
+      setPublicCache(res, "detail");
       res.json(variant);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car variant" });
@@ -425,6 +620,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/cars", async (_req: Request, res: Response) => {
     try {
       const allCars = await storage.getCars(); // Returns only approved cars
+      setPublicCache(res, "catalog");
       res.json(allCars);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch cars" });
@@ -457,6 +653,7 @@ export function registerRoutes(app: Express) {
       if (!car) {
         return res.status(404).json({ message: "Car not found" });
       }
+      setPublicCache(res, "detail");
       res.json(car);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch car" });
@@ -536,6 +733,7 @@ export function registerRoutes(app: Express) {
   app.get("/api/blog", async (_req: Request, res: Response) => {
     try {
       const posts = await storage.getBlogPosts();
+      setPublicCache(res, "catalog");
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch blog posts" });
@@ -552,6 +750,7 @@ export function registerRoutes(app: Express) {
       if (!post) {
         return res.status(404).json({ message: "Blog post not found" });
       }
+      setPublicCache(res, "detail");
       res.json(post);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch blog post" });
@@ -632,6 +831,7 @@ export function registerRoutes(app: Express) {
     try {
       const { entityType, entityId } = req.params;
       const imageList = await storage.getImagesByEntity(entityType, entityId);
+      setPublicCache(res, "detail");
       res.json(imageList);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch images" });

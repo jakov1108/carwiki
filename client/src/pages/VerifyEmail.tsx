@@ -69,7 +69,7 @@ export default function VerifyEmail() {
               <p className="text-slate-400 mb-6">{message}</p>
               <button
                 onClick={() => setLocation("/")}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
+                className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-6 py-2 rounded-lg transition"
               >
                 Povratak na početnu
               </button>

@@ -22,7 +22,7 @@ export default function CarDetail() {
         <div className="text-center">
           <p className="text-red-400 text-lg font-semibold mb-2">Greška pri učitavanju automobila</p>
           <p className="text-slate-400 text-sm">Provjerite internetsku vezu i pokušajte ponovo.</p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition">Pokušaj ponovo</button>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded-lg text-sm transition">Pokušaj ponovo</button>
         </div>
       </div>
     );

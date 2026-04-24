@@ -89,7 +89,7 @@ export function ObjectUploader({ onUploadComplete, currentImage }: ObjectUploade
             />
             {isUploading && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
-                <Loader2 className="w-8 h-8 animate-spin text-white" />
+                <Loader2 className="w-8 h-8 animate-spin text-white keep-white" />
               </div>
             )}
           </div>

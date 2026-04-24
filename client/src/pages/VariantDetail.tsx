@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import type { CarVariantWithDetails, Image } from "@shared/schema";
+import type { VariantPagePayload } from "@shared/schema";
 import { ArrowLeft, Gauge, Zap, Fuel, Settings, Calendar, Play, ChevronRight, Scale, Ruler, Package, ThumbsUp, ThumbsDown } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
 import { DetailHeaderSkeleton, BreadcrumbSkeleton, SpecCardSkeleton } from "../components/Skeleton";
 import { SpecValue } from "../components/Tooltip";
+import { getOptimizedGalleryImages } from "../lib/images";
+import { usePageMeta } from "../lib/seo";
 
 export default function VariantDetail() {
   // Get params from URL
@@ -17,36 +19,37 @@ export default function VariantDetail() {
   const variantId = params.id;
   const isSlugRoute = !!(brandSlug && modelSlug && generationSlug && variantSlug);
 
-  const { data: variant, isLoading, isError } = useQuery<CarVariantWithDetails>({
+  const { data: pageData, isLoading, isError } = useQuery<VariantPagePayload>({
     queryKey: isSlugRoute 
-      ? ["/api/car", brandSlug, modelSlug, generationSlug, variantSlug] 
-      : ["/api/variants", variantId],
+      ? ["/api/page/car", brandSlug, modelSlug, generationSlug, variantSlug] 
+      : ["/api/page/variant", variantId],
     queryFn: async () => {
       const url = isSlugRoute 
-        ? `/api/car/${brandSlug}/${modelSlug}/${generationSlug}/${variantSlug}`
-        : `/api/variants/${variantId}`;
+        ? `/api/page/car/${brandSlug}/${modelSlug}/${generationSlug}/${variantSlug}`
+        : `/api/page/variant/${variantId}`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch variant");
+      if (!res.ok) throw new Error("Failed to fetch variant page data");
       return res.json();
     },
     enabled: isSlugRoute ? !!(brandSlug && modelSlug && generationSlug && variantSlug) : !!variantId,
   });
 
-  const { data: variantImages } = useQuery<Image[]>({
-    queryKey: ["/api/images/variant", variant?.id],
-    queryFn: async () => {
-      const res = await fetch(`/api/images/variant/${variant?.id}`);
-      if (!res.ok) throw new Error("Failed to fetch images");
-      return res.json();
-    },
-    enabled: !!variant?.id,
+  const variant = pageData?.variant;
+  const allImages = getOptimizedGalleryImages(pageData?.galleryImages ?? [], {
+    width: 1600,
+    quality: 80,
+    resize: "cover",
   });
 
-  // Combine generation image with variant-specific images, filtering out duplicates
-  const additionalVarImages = variantImages?.map(img => img.url).filter(url => url !== variant?.generation?.image) || [];
-  const allImages = variant?.generation?.image 
-    ? [variant.generation.image, ...additionalVarImages] 
-    : additionalVarImages;
+  usePageMeta({
+    title: variant
+      ? `${variant.model.brand} ${variant.model.model} ${variant.engineName} - Auto Wiki`
+      : "Motorna varijanta - Auto Wiki",
+    description: variant
+      ? `${variant.generation.name}, ${variant.power}, ${variant.fuelType}, ${variant.transmission}. Specifikacije, potrošnja i detalji varijante.`
+      : "Pregledajte specifikacije motorne varijante automobila.",
+    image: variant?.generation?.image,
+  });
 
   if (isError) {
     return (
@@ -54,7 +57,7 @@ export default function VariantDetail() {
         <div className="text-center">
           <p className="text-red-400 text-lg font-semibold mb-2">Greška pri učitavanju varijante</p>
           <p className="text-slate-400 text-sm">Provjerite internetsku vezu i pokušajte ponovo.</p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition">Pokušaj ponovo</button>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded-lg text-sm transition">Pokušaj ponovo</button>
         </div>
       </div>
     );

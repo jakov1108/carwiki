@@ -19,7 +19,7 @@ import {
   type CarVariantWithDetails,
   type CarGenerationWithModel,
 } from "../shared/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, asc, ilike, or, sql, type SQL } from "drizzle-orm";
 
 // Helper function to generate URL-friendly slugs
 export function generateSlug(text: string): string {
@@ -32,6 +32,39 @@ export function generateSlug(text: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/--+/g, '-');
+}
+
+type GenerationRow = {
+  generation: typeof carGenerations.$inferSelect;
+  model: typeof carModels.$inferSelect;
+};
+
+type VariantRow = {
+  variant: typeof carVariants.$inferSelect;
+  generation: typeof carGenerations.$inferSelect;
+  model: typeof carModels.$inferSelect;
+};
+
+function mapGenerationRows(rows: GenerationRow[]): CarGenerationWithModel[] {
+  return rows.map(({ generation, model }) => ({
+    ...generation,
+    model,
+  }));
+}
+
+function mapVariantRows(rows: VariantRow[]): CarVariantWithDetails[] {
+  return rows.map(({ variant, generation, model }) => ({
+    ...variant,
+    generation,
+    model,
+  }));
+}
+
+function combineConditions(conditions: Array<SQL<unknown> | undefined>) {
+  const filtered = conditions.filter((condition): condition is SQL<unknown> => condition !== undefined);
+  if (filtered.length === 0) return undefined;
+  if (filtered.length === 1) return filtered[0];
+  return and(...filtered);
 }
 
 export const storage = {
@@ -52,8 +85,10 @@ export const storage = {
   },
 
   async getModelsByBrand(brandSlug: string) {
-    const allModels = await db.select().from(carModels).orderBy(carModels.model);
-    return allModels.filter(m => m.brandSlug === brandSlug);
+    return await db.select()
+      .from(carModels)
+      .where(eq(carModels.brandSlug, brandSlug))
+      .orderBy(carModels.model);
   },
 
   async getCarModelById(id: string) {
@@ -62,8 +97,14 @@ export const storage = {
   },
 
   async getCarModelBySlug(brandSlug: string, modelSlug: string) {
-    const allModels = await db.select().from(carModels);
-    return allModels.find(m => m.brandSlug === brandSlug && m.modelSlug === modelSlug) || null;
+    const [model] = await db.select()
+      .from(carModels)
+      .where(and(
+        eq(carModels.brandSlug, brandSlug),
+        eq(carModels.modelSlug, modelSlug),
+      ))
+      .limit(1);
+    return model ?? null;
   },
 
   async createCarModel(data: InsertCarModel) {
@@ -82,43 +123,57 @@ export const storage = {
 
   // ========== CAR GENERATIONS ==========
   async getCarGenerations() {
-    const generations = await db.select().from(carGenerations).orderBy(desc(carGenerations.yearStart));
-    const models = await db.select().from(carModels);
-    
-    return generations.map(gen => ({
-      ...gen,
-      model: models.find(m => m.id === gen.modelId)!
-    })) as CarGenerationWithModel[];
+    const rows = await db.select({
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carGenerations)
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
+      .orderBy(desc(carGenerations.yearStart));
+
+    return mapGenerationRows(rows);
   },
 
   async getCarGenerationsByModelId(modelId: string) {
-    const generations = await db.select().from(carGenerations)
+    const rows = await db.select({
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carGenerations)
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
       .where(eq(carGenerations.modelId, modelId))
       .orderBy(desc(carGenerations.yearStart));
-    
-    const [model] = await db.select().from(carModels).where(eq(carModels.id, modelId)).limit(1);
-    
-    return generations.map(gen => ({
-      ...gen,
-      model
-    })) as CarGenerationWithModel[];
+
+    return mapGenerationRows(rows);
   },
 
   async getCarGenerationById(id: string) {
-    const [generation] = await db.select().from(carGenerations).where(eq(carGenerations.id, id)).limit(1);
-    if (!generation) return null;
-    
-    const [model] = await db.select().from(carModels).where(eq(carModels.id, generation.modelId)).limit(1);
-    return { ...generation, model } as CarGenerationWithModel;
+    const [row] = await db.select({
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carGenerations)
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
+      .where(eq(carGenerations.id, id))
+      .limit(1);
+
+    return row ? { ...row.generation, model: row.model } : null;
   },
 
   async getCarGenerationBySlug(modelId: string, generationSlug: string) {
-    const generations = await db.select().from(carGenerations).where(eq(carGenerations.modelId, modelId));
-    const generation = generations.find(g => g.slug === generationSlug);
-    if (!generation) return null;
-    
-    const [model] = await db.select().from(carModels).where(eq(carModels.id, generation.modelId)).limit(1);
-    return { ...generation, model } as CarGenerationWithModel;
+    const [row] = await db.select({
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carGenerations)
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
+      .where(and(
+        eq(carGenerations.modelId, modelId),
+        eq(carGenerations.slug, generationSlug),
+      ))
+      .limit(1);
+
+    return row ? { ...row.generation, model: row.model } : null;
   },
 
   async createCarGeneration(data: InsertCarGeneration) {
@@ -137,57 +192,99 @@ export const storage = {
 
   // ========== CAR VARIANTS ==========
   async getCarVariants() {
-    const variants = await db.select().from(carVariants)
+    const rows = await db.select({
+      variant: carVariants,
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carVariants)
+      .innerJoin(carGenerations, eq(carVariants.generationId, carGenerations.id))
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
       .where(eq(carVariants.status, "approved"))
       .orderBy(desc(carVariants.createdAt));
-    
-    return await this.enrichVariants(variants);
+
+    return mapVariantRows(rows);
   },
 
   async getAllCarVariants() {
-    const variants = await db.select().from(carVariants).orderBy(desc(carVariants.createdAt));
-    return await this.enrichVariants(variants);
+    const rows = await db.select({
+      variant: carVariants,
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carVariants)
+      .innerJoin(carGenerations, eq(carVariants.generationId, carGenerations.id))
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
+      .orderBy(desc(carVariants.createdAt));
+
+    return mapVariantRows(rows);
   },
 
   async getPendingCarVariants() {
-    const variants = await db.select().from(carVariants)
+    const rows = await db.select({
+      variant: carVariants,
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carVariants)
+      .innerJoin(carGenerations, eq(carVariants.generationId, carGenerations.id))
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
       .where(eq(carVariants.status, "pending"))
       .orderBy(desc(carVariants.createdAt));
-    
-    return await this.enrichVariants(variants);
+
+    return mapVariantRows(rows);
   },
 
   async getCarVariantsByGenerationId(generationId: string) {
-    const variants = await db.select().from(carVariants)
+    const rows = await db.select({
+      variant: carVariants,
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carVariants)
+      .innerJoin(carGenerations, eq(carVariants.generationId, carGenerations.id))
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
       .where(and(
         eq(carVariants.generationId, generationId),
         eq(carVariants.status, "approved")
       ))
-      .orderBy(carVariants.engineName);
-    
-    return await this.enrichVariants(variants);
+      .orderBy(asc(carVariants.engineName));
+
+    return mapVariantRows(rows);
   },
 
   async getCarVariantById(id: string) {
-    const [variant] = await db.select().from(carVariants).where(eq(carVariants.id, id)).limit(1);
-    if (!variant) return null;
-    
-    const [generation] = await db.select().from(carGenerations).where(eq(carGenerations.id, variant.generationId)).limit(1);
-    const [model] = await db.select().from(carModels).where(eq(carModels.id, generation?.modelId || '')).limit(1);
-    
-    return { ...variant, generation, model } as CarVariantWithDetails;
+    const [row] = await db.select({
+      variant: carVariants,
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carVariants)
+      .innerJoin(carGenerations, eq(carVariants.generationId, carGenerations.id))
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
+      .where(eq(carVariants.id, id))
+      .limit(1);
+
+    return row ? { ...row.variant, generation: row.generation, model: row.model } : null;
   },
 
   async getCarVariantBySlug(generationId: string, variantSlug: string) {
-    const variants = await db.select().from(carVariants)
-      .where(and(eq(carVariants.generationId, generationId), eq(carVariants.status, "approved")));
-    const variant = variants.find(v => v.slug === variantSlug);
-    if (!variant) return null;
-    
-    const [generation] = await db.select().from(carGenerations).where(eq(carGenerations.id, variant.generationId)).limit(1);
-    const [model] = await db.select().from(carModels).where(eq(carModels.id, generation?.modelId || '')).limit(1);
-    
-    return { ...variant, generation, model } as CarVariantWithDetails;
+    const [row] = await db.select({
+      variant: carVariants,
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carVariants)
+      .innerJoin(carGenerations, eq(carVariants.generationId, carGenerations.id))
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id))
+      .where(and(
+        eq(carVariants.generationId, generationId),
+        eq(carVariants.slug, variantSlug),
+        eq(carVariants.status, "approved"),
+      ))
+      .limit(1);
+
+    return row ? { ...row.variant, generation: row.generation, model: row.model } : null;
   },
 
   async createCarVariant(data: InsertCarVariant) {
@@ -209,18 +306,6 @@ export const storage = {
     await db.delete(carVariants).where(eq(carVariants.id, id));
   },
 
-  // Helper to enrich variants with generation and model data
-  async enrichVariants(variants: typeof carVariants.$inferSelect[]): Promise<CarVariantWithDetails[]> {
-    const generations = await db.select().from(carGenerations);
-    const models = await db.select().from(carModels);
-    
-    return variants.map(variant => {
-      const generation = generations.find(g => g.id === variant.generationId)!;
-      const model = models.find(m => m.id === generation?.modelId)!;
-      return { ...variant, generation, model };
-    });
-  },
-
   // ========== ADVANCED SEARCH ==========
   async searchVariants(filters: {
     search?: string;
@@ -234,54 +319,54 @@ export const storage = {
     yearMin?: number;
     yearMax?: number;
   }): Promise<CarVariantWithDetails[]> {
-    const variants = await db.select().from(carVariants)
-      .where(eq(carVariants.status, "approved"));
-    const generations = await db.select().from(carGenerations);
-    const models = await db.select().from(carModels);
+    const searchTerm = filters.search?.trim();
+    const whereClause = combineConditions([
+      eq(carVariants.status, "approved"),
+      filters.brand ? eq(carModels.brandSlug, filters.brand) : undefined,
+      filters.category ? eq(carModels.category, filters.category) : undefined,
+      filters.fuelType ? eq(carVariants.fuelType, filters.fuelType) : undefined,
+      filters.driveType ? eq(carVariants.driveType, filters.driveType) : undefined,
+      searchTerm
+        ? or(
+            ilike(carModels.brand, `%${searchTerm}%`),
+            ilike(carModels.model, `%${searchTerm}%`),
+            ilike(carVariants.engineName, `%${searchTerm}%`),
+            ilike(carGenerations.name, `%${searchTerm}%`),
+          )
+        : undefined,
+      filters.transmission === "manual"
+        ? sql`(LOWER(${carVariants.transmission}) LIKE '%ručni%' OR LOWER(${carVariants.transmission}) LIKE '%manual%')`
+        : undefined,
+      filters.transmission === "automatic"
+        ? sql`(LOWER(${carVariants.transmission}) NOT LIKE '%ručni%' AND LOWER(${carVariants.transmission}) NOT LIKE '%manual%')`
+        : undefined,
+      filters.powerMin !== undefined
+        ? sql`CAST(NULLIF(regexp_replace(${carVariants.power}, '[^0-9]', '', 'g'), '') AS integer) >= ${filters.powerMin}`
+        : undefined,
+      filters.powerMax !== undefined
+        ? sql`CAST(NULLIF(regexp_replace(${carVariants.power}, '[^0-9]', '', 'g'), '') AS integer) <= ${filters.powerMax}`
+        : undefined,
+      filters.yearMin !== undefined
+        ? sql`COALESCE(${carGenerations.yearEnd}, EXTRACT(YEAR FROM NOW())::integer) >= ${filters.yearMin}`
+        : undefined,
+      filters.yearMax !== undefined
+        ? sql`${carGenerations.yearStart} <= ${filters.yearMax}`
+        : undefined,
+    ]);
 
-    const enriched = variants.map(variant => {
-      const generation = generations.find(g => g.id === variant.generationId);
-      const model = generation ? models.find(m => m.id === generation.modelId) : undefined;
-      return { ...variant, generation: generation!, model: model! };
-    }).filter(v => v.generation && v.model) as CarVariantWithDetails[];
+    const baseQuery = db.select({
+      variant: carVariants,
+      generation: carGenerations,
+      model: carModels,
+    })
+      .from(carVariants)
+      .innerJoin(carGenerations, eq(carVariants.generationId, carGenerations.id))
+      .innerJoin(carModels, eq(carGenerations.modelId, carModels.id));
 
-    return enriched.filter(v => {
-      // Text search across brand, model, engine name
-      if (filters.search) {
-        const term = filters.search.toLowerCase();
-        const haystack = `${v.model.brand} ${v.model.model} ${v.engineName} ${v.generation.name}`.toLowerCase();
-        if (!haystack.includes(term)) return false;
-      }
-      // Brand filter
-      if (filters.brand && v.model.brandSlug !== filters.brand) return false;
-      // Category filter
-      if (filters.category && v.model.category !== filters.category) return false;
-      // Fuel type filter
-      if (filters.fuelType && v.fuelType !== filters.fuelType) return false;
-      // Drive type filter
-      if (filters.driveType && v.driveType !== filters.driveType) return false;
-      // Transmission type filter (manual/automatic detection)
-      if (filters.transmission) {
-        const trans = v.transmission.toLowerCase();
-        if (filters.transmission === 'manual' && !trans.includes('ručni') && !trans.includes('manual')) return false;
-        if (filters.transmission === 'automatic' && trans.includes('ručni')) return false;
-      }
-      // Power range filter - parse number from strings like "150 KS"
-      if (filters.powerMin !== undefined || filters.powerMax !== undefined) {
-        const powerNum = parseInt(v.power.replace(/[^0-9]/g, ''), 10);
-        if (isNaN(powerNum)) return false;
-        if (filters.powerMin !== undefined && powerNum < filters.powerMin) return false;
-        if (filters.powerMax !== undefined && powerNum > filters.powerMax) return false;
-      }
-      // Year range filter - uses generation yearStart/yearEnd
-      if (filters.yearMin !== undefined || filters.yearMax !== undefined) {
-        const genStart = v.generation.yearStart;
-        const genEnd = v.generation.yearEnd ?? new Date().getFullYear();
-        if (filters.yearMin !== undefined && genEnd < filters.yearMin) return false;
-        if (filters.yearMax !== undefined && genStart > filters.yearMax) return false;
-      }
-      return true;
-    });
+    const rows = whereClause
+      ? await baseQuery.where(whereClause).orderBy(desc(carVariants.createdAt))
+      : await baseQuery.orderBy(desc(carVariants.createdAt));
+    return mapVariantRows(rows);
   },
 
   // ========== LEGACY CAR FUNCTIONS (for backward compatibility) ==========

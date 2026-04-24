@@ -3,8 +3,16 @@ import { Link } from "wouter";
 import type { BlogPost } from "@shared/schema";
 import { Calendar, User } from "lucide-react";
 import { BlogCardSkeleton } from "../components/Skeleton";
+import { getImageSrcSet, getOptimizedImageUrl } from "../lib/images";
+import { usePageMeta } from "../lib/seo";
 
 export default function Blog() {
+  usePageMeta({
+    title: "Auto Wiki Blog",
+    description: "Čitajte članke o automobilima, tehnologiji, povijesti modela i trendovima u auto industriji.",
+    type: "article",
+  });
+
   const { data: posts, isLoading, isError } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog"],
   });
@@ -15,7 +23,7 @@ export default function Blog() {
         <div className="text-center">
           <p className="text-red-400 text-lg font-semibold mb-2">Greška pri učitavanju bloga</p>
           <p className="text-slate-400 text-sm">Provjerite internetsku vezu i pokušajte ponovo.</p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition">Pokušaj ponovo</button>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded-lg text-sm transition">Pokušaj ponovo</button>
         </div>
       </div>
     );
@@ -45,7 +53,9 @@ export default function Blog() {
           {posts?.map((post) => (
             <Link key={post.id} href={`/blog/${post.slug || post.id}`} className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition">
               <img
-                src={post.image}
+                src={getOptimizedImageUrl(post.image, { width: 960, quality: 78, resize: "cover" })}
+                srcSet={getImageSrcSet(post.image, [400, 640, 960, 1280], { quality: 78, resize: "cover" })}
+                sizes="(max-width: 768px) 100vw, 50vw"
                 alt={post.title}
                 className="w-full h-48 object-cover"
                 loading="lazy"

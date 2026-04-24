@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import type { CarGenerationWithModel, CarVariantWithDetails, Image } from "@shared/schema";
+import type { GenerationPagePayload } from "@shared/schema";
 import { ArrowLeft, Calendar, Fuel, Gauge, Zap, Settings, ChevronRight, PlusCircle } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
 import { DetailHeaderSkeleton, BreadcrumbSkeleton, VariantCardSkeleton } from "../components/Skeleton";
+import { getOptimizedGalleryImages } from "../lib/images";
+import { usePageMeta } from "../lib/seo";
 
 export default function GenerationDetail() {
   // Get params from the URL - wouter passes these through Route
@@ -15,47 +17,38 @@ export default function GenerationDetail() {
   const generationId = params.id;
   const isSlugRoute = !!(brandSlug && modelSlug && generationSlug);
 
-  // Fetch generation by slug or ID
-  const { data: generation, isLoading: generationLoading } = useQuery<CarGenerationWithModel>({
+  const { data: pageData, isLoading } = useQuery<GenerationPagePayload>({
     queryKey: isSlugRoute 
-      ? ["/api/car", brandSlug, modelSlug, generationSlug] 
-      : ["/api/generations", generationId],
+      ? ["/api/page/car", brandSlug, modelSlug, generationSlug] 
+      : ["/api/page/generation", generationId],
     queryFn: async () => {
       const url = isSlugRoute 
-        ? `/api/car/${brandSlug}/${modelSlug}/${generationSlug}`
-        : `/api/generations/${generationId}`;
+        ? `/api/page/car/${brandSlug}/${modelSlug}/${generationSlug}`
+        : `/api/page/generation/${generationId}`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch generation");
+      if (!res.ok) throw new Error("Failed to fetch generation page data");
       return res.json();
     },
     enabled: isSlugRoute ? !!(brandSlug && modelSlug && generationSlug) : !!generationId,
   });
 
-  const { data: variants, isLoading: variantsLoading } = useQuery<CarVariantWithDetails[]>({
-    queryKey: ["/api/generations", generation?.id, "variants"],
-    queryFn: async () => {
-      const res = await fetch(`/api/generations/${generation?.id}/variants`);
-      if (!res.ok) throw new Error("Failed to fetch variants");
-      return res.json();
-    },
-    enabled: !!generation?.id,
+  const generation = pageData?.generation;
+  const variants = pageData?.variants;
+  const allImages = getOptimizedGalleryImages(pageData?.galleryImages ?? [], {
+    width: 1600,
+    quality: 80,
+    resize: "cover",
   });
 
-  const { data: generationImages } = useQuery<Image[]>({
-    queryKey: ["/api/images/generation", generation?.id],
-    queryFn: async () => {
-      const res = await fetch(`/api/images/generation/${generation?.id}`);
-      if (!res.ok) throw new Error("Failed to fetch images");
-      return res.json();
-    },
-    enabled: !!generation?.id,
+  usePageMeta({
+    title: generation
+      ? `${generation.model.brand} ${generation.model.model} ${generation.name} - Auto Wiki`
+      : "Generacija automobila - Auto Wiki",
+    description: generation?.description || "Pregledajte generaciju automobila i dostupne motorne varijante.",
+    image: generation?.image,
   });
 
-  // Combine main image with additional images, filtering out duplicates
-  const additionalGenImages = generationImages?.map(img => img.url).filter(url => url !== generation?.image) || [];
-  const allImages = generation ? [generation.image, ...additionalGenImages] : [];
-
-  if (generationLoading || variantsLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen py-12">
         <div className="container mx-auto px-4 max-w-6xl">
@@ -98,7 +91,7 @@ export default function GenerationDetail() {
     }
     acc[fuel].push(variant);
     return acc;
-  }, {} as Record<string, CarVariantWithDetails[]>);
+  }, {} as Record<string, GenerationPagePayload["variants"]>);
 
   const fuelTypeOrder = ["Benzin", "Diesel", "Dizel", "Hybrid", "Hibrid", "Electric", "Električni"];
 
@@ -180,7 +173,7 @@ export default function GenerationDetail() {
             </p>
             <Link
               href="/predlozi-auto"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white keep-white rounded-lg font-medium transition"
             >
               <PlusCircle className="w-4 h-4" />
               Dodaj varijantu
@@ -260,7 +253,7 @@ export default function GenerationDetail() {
           </p>
           <Link
             href="/predlozi-auto"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded-lg font-medium text-sm transition"
           >
             <PlusCircle className="w-4 h-4" />
             Predloži novu varijantu

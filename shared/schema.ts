@@ -138,6 +138,23 @@ export type CarVariantWithDetails = CarVariant & {
   model: CarModel;
 };
 
+export type ModelPagePayload = {
+  model: CarModel;
+  generations: CarGenerationWithModel[];
+  galleryImages: string[];
+};
+
+export type GenerationPagePayload = {
+  generation: CarGenerationWithModel;
+  variants: CarVariantWithDetails[];
+  galleryImages: string[];
+};
+
+export type VariantPagePayload = {
+  variant: CarVariantWithDetails;
+  galleryImages: string[];
+};
+
 export const blogPosts = pgTable("blog_posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),

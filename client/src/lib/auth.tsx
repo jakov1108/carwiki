@@ -5,7 +5,7 @@ import type { SafeUser } from "../../../shared/auth-schema";
 interface AuthContextType {
   user: SafeUser | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<unknown>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }

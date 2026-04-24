@@ -67,7 +67,7 @@ export default function RichTextEditor({
   useEffect(() => {
     if (editor && value !== lastValueRef.current) {
       lastValueRef.current = value;
-      editor.commands.setContent(value || "", false);
+      editor.commands.setContent(value || "", { emitUpdate: false });
     }
   }, [value, editor]);
 
@@ -237,7 +237,7 @@ function ToolbarButton({
       title={title}
       className={`p-2 rounded transition-colors ${
         active
-          ? "bg-blue-600 text-white"
+          ? "bg-blue-600 text-white keep-white"
           : "text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >

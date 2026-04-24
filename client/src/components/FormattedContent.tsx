@@ -4,6 +4,8 @@ export function renderFormattedContent(content: string): React.ReactNode {
   if (!content) return null;
 
   if (isHtmlContent(content)) {
+    const safeContent = sanitizeHtmlContent(content);
+
     return (
       <div
         className="prose dark:prose-invert prose-slate max-w-none
@@ -15,7 +17,7 @@ export function renderFormattedContent(content: string): React.ReactNode {
           prose-hr:border-slate-300 dark:prose-hr:border-slate-600
           prose-li:text-slate-700 dark:prose-li:text-slate-300
           prose-ul:list-disc prose-ol:list-decimal"
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: safeContent }}
       />
     );
   }
@@ -26,6 +28,80 @@ export function renderFormattedContent(content: string): React.ReactNode {
 function isHtmlContent(content: string): boolean {
   const trimmed = content.trim();
   return trimmed.startsWith("<") && /<\/?[a-z][\s\S]*>/i.test(trimmed);
+}
+
+const allowedTags = new Set([
+  "a",
+  "blockquote",
+  "br",
+  "em",
+  "h2",
+  "h3",
+  "hr",
+  "li",
+  "ol",
+  "p",
+  "strong",
+  "u",
+  "ul",
+]);
+
+const allowedAttributes: Record<string, Set<string>> = {
+  a: new Set(["href", "title", "target", "rel"]),
+};
+
+const dangerousTags = new Set(["script", "style", "iframe", "object", "embed", "svg", "math"]);
+
+function sanitizeHtmlContent(content: string): string {
+  if (typeof window === "undefined") return "";
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(content, "text/html");
+  const elements = Array.from(doc.body.querySelectorAll("*")).reverse();
+
+  for (const element of elements) {
+    const tagName = element.tagName.toLowerCase();
+
+    if (dangerousTags.has(tagName)) {
+      element.remove();
+      continue;
+    }
+
+    if (!allowedTags.has(tagName)) {
+      element.replaceWith(...Array.from(element.childNodes));
+      continue;
+    }
+
+    const allowedForTag = allowedAttributes[tagName] ?? new Set<string>();
+    for (const attr of Array.from(element.attributes)) {
+      const name = attr.name.toLowerCase();
+
+      if (!allowedForTag.has(name)) {
+        element.removeAttribute(attr.name);
+        continue;
+      }
+
+      if (tagName === "a" && name === "href" && !isSafeLink(attr.value)) {
+        element.removeAttribute(attr.name);
+      }
+    }
+
+    if (tagName === "a") {
+      element.setAttribute("rel", "noopener noreferrer");
+      element.setAttribute("target", "_blank");
+    }
+  }
+
+  return doc.body.innerHTML;
+}
+
+function isSafeLink(value: string): boolean {
+  try {
+    const url = new URL(value, window.location.origin);
+    return ["http:", "https:", "mailto:", "tel:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
 }
 
 function renderLegacyContent(content: string): React.ReactNode {

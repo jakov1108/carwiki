@@ -14,33 +14,92 @@ function getSupabaseClient() {
 }
 
 const BUCKET_NAME = "car-images";
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10 MB
+
+type DetectedImage = {
+  extension: "jpg" | "png" | "gif" | "webp";
+  contentType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+};
+
+function detectImageType(buffer: Buffer): DetectedImage | null {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return { extension: "jpg", contentType: "image/jpeg" };
+  }
+
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  ) {
+    return { extension: "png", contentType: "image/png" };
+  }
+
+  if (buffer.length >= 6) {
+    const signature = buffer.subarray(0, 6).toString("ascii");
+    if (signature === "GIF87a" || signature === "GIF89a") {
+      return { extension: "gif", contentType: "image/gif" };
+    }
+  }
+
+  if (
+    buffer.length >= 12 &&
+    buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+    buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
+    return { extension: "webp", contentType: "image/webp" };
+  }
+
+  return null;
+}
 
 export async function handleImageUpload(req: Request, res: Response) {
   try {
     const supabase = getSupabaseClient();
     const chunks: Buffer[] = [];
+    let totalSize = 0;
+    let requestTooLarge = false;
+    const declaredContentType = String(req.headers["content-type"] || "").toLowerCase();
+
+    if (!declaredContentType.startsWith("image/") || declaredContentType.includes("svg")) {
+      return res.status(415).json({ message: "Upload podržava samo JPG, PNG, GIF i WebP slike" });
+    }
     
     req.on("data", (chunk: Buffer) => {
+      totalSize += chunk.length;
+      if (totalSize > MAX_UPLOAD_SIZE) {
+        requestTooLarge = true;
+        req.destroy();
+        return;
+      }
       chunks.push(chunk);
     });
 
     req.on("end", async () => {
       try {
-        const buffer = Buffer.concat(chunks);
-        const contentType = req.headers["content-type"] || "image/jpeg";
-        
-        let extension = "jpg";
-        if (contentType.includes("png")) extension = "png";
-        else if (contentType.includes("gif")) extension = "gif";
-        else if (contentType.includes("webp")) extension = "webp";
+        if (requestTooLarge) {
+          return;
+        }
 
-        const filename = `${randomUUID()}.${extension}`;
+        const buffer = Buffer.concat(chunks);
+        const detected = detectImageType(buffer);
+
+        if (!detected) {
+          return res.status(415).json({ message: "Neispravan ili nepodržan format slike" });
+        }
+
+        const filename = `${randomUUID()}.${detected.extension}`;
 
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
           .from(BUCKET_NAME)
           .upload(filename, buffer, {
-            contentType,
+            contentType: detected.contentType,
             upsert: false,
           });
 
@@ -65,6 +124,9 @@ export async function handleImageUpload(req: Request, res: Response) {
     });
 
     req.on("error", (err) => {
+      if (requestTooLarge) {
+        return res.status(413).json({ message: "Slika mora biti manja od 10MB" });
+      }
       console.error("Upload error:", err);
       res.status(500).json({ message: "Upload failed" });
     });

@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import type { CarModel, CarGenerationWithModel, Image } from "@shared/schema";
+import type { ModelPagePayload } from "@shared/schema";
 import { ArrowLeft, Calendar, ChevronRight } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
 import { DetailHeaderSkeleton, BreadcrumbSkeleton, CardGridSkeleton } from "../components/Skeleton";
+import { getOptimizedGalleryImages, getOptimizedImageUrl } from "../lib/images";
+import { usePageMeta } from "../lib/seo";
 
 export default function ModelDetail() {
   // Get params from URL
@@ -14,47 +16,36 @@ export default function ModelDetail() {
   const modelId = params.id;
   const isSlugRoute = !!(brandSlug && modelSlug);
 
-  // Fetch model by slug or ID
-  const { data: model, isLoading: modelLoading } = useQuery<CarModel>({
+  const { data: pageData, isLoading } = useQuery<ModelPagePayload>({
     queryKey: isSlugRoute 
-      ? ["/api/car", brandSlug, modelSlug] 
-      : ["/api/models", modelId],
+      ? ["/api/page/car", brandSlug, modelSlug] 
+      : ["/api/page/model", modelId],
     queryFn: async () => {
       const url = isSlugRoute 
-        ? `/api/car/${brandSlug}/${modelSlug}`
-        : `/api/models/${modelId}`;
+        ? `/api/page/car/${brandSlug}/${modelSlug}`
+        : `/api/page/model/${modelId}`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch model");
+      if (!res.ok) throw new Error("Failed to fetch model page data");
       return res.json();
     },
     enabled: isSlugRoute ? !!(brandSlug && modelSlug) : !!modelId,
   });
 
-  const { data: generations, isLoading: generationsLoading } = useQuery<CarGenerationWithModel[]>({
-    queryKey: ["/api/models", model?.id, "generations"],
-    queryFn: async () => {
-      const res = await fetch(`/api/models/${model?.id}/generations`);
-      if (!res.ok) throw new Error("Failed to fetch generations");
-      return res.json();
-    },
-    enabled: !!model?.id,
+  const model = pageData?.model;
+  const generations = pageData?.generations;
+  const allImages = getOptimizedGalleryImages(pageData?.galleryImages ?? [], {
+    width: 1600,
+    quality: 80,
+    resize: "cover",
   });
 
-  const { data: modelImages } = useQuery<Image[]>({
-    queryKey: ["/api/images/model", model?.id],
-    queryFn: async () => {
-      const res = await fetch(`/api/images/model/${model?.id}`);
-      if (!res.ok) throw new Error("Failed to fetch images");
-      return res.json();
-    },
-    enabled: !!model?.id,
+  usePageMeta({
+    title: model ? `${model.brand} ${model.model} - Auto Wiki` : "Model automobila - Auto Wiki",
+    description: model?.description || "Pregledajte model automobila, generacije i dostupne motorne varijante.",
+    image: model?.image,
   });
 
-  // Combine main image with additional images, filtering out duplicates
-  const additionalModelImages = modelImages?.map(img => img.url).filter(url => url !== model?.image) || [];
-  const allImages = model ? [model.image, ...additionalModelImages] : [];
-
-  if (modelLoading || generationsLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen py-12">
         <div className="container mx-auto px-4 max-w-6xl">
@@ -150,8 +141,8 @@ export default function ModelDetail() {
                   className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition group"
                 >
                   <div className="relative overflow-hidden">
-                    <img
-                      src={generation.image}
+                      <img
+                      src={getOptimizedImageUrl(generation.image, { width: 720, quality: 78, resize: "cover" })}
                       alt={`${model.brand} ${model.model} ${generation.name}`}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"

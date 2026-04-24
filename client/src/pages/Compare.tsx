@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X, Check, ChevronRight, Fuel, Gauge, Zap, Settings, Car, Scale, Package, RotateCcw, Info } from "lucide-react";
 import type { CarModel, CarGeneration, CarVariant } from "@shared/schema";
+import { getOptimizedImageUrl } from "../lib/images";
 import { useToast } from "../components/Toast";
 
 interface VariantWithDetails extends CarVariant {
@@ -235,7 +236,7 @@ export default function Compare() {
                     
                     {(variant.generation?.image || variant.model?.image) && (
                       <img
-                        src={variant.generation?.image || variant.model?.image}
+                        src={getOptimizedImageUrl(variant.generation?.image || variant.model?.image, { width: 800, quality: 78, resize: "cover" })}
                         alt={`${variant.model?.brand} ${variant.model?.model}`}
                         className="w-full h-40 object-cover rounded-lg mb-3"
                       />
@@ -308,7 +309,7 @@ export default function Compare() {
                         
                         {(variant.generation?.image || variant.model?.image) && (
                           <img
-                            src={variant.generation?.image || variant.model?.image}
+                            src={getOptimizedImageUrl(variant.generation?.image || variant.model?.image, { width: 640, quality: 78, resize: "cover" })}
                             alt={`${variant.model?.brand} ${variant.model?.model}`}
                             className="w-full h-28 object-cover rounded-lg mb-3"
                           />

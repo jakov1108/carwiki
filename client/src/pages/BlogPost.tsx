@@ -4,6 +4,8 @@ import type { BlogPost, Image } from "@shared/schema";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
 import { renderFormattedContent } from "../components/FormattedContent";
+import { getOptimizedGalleryImages } from "../lib/images";
+import { usePageMeta } from "../lib/seo";
 
 export default function BlogPostPage() {
   const [, params] = useRoute("/blog/:slug");
@@ -28,9 +30,20 @@ export default function BlogPostPage() {
     enabled: !!post?.id,
   });
 
+  usePageMeta({
+    title: post ? `${post.title} - Auto Wiki` : "Auto Wiki Blog",
+    description: post?.excerpt || "Čitajte Auto Wiki blog članke o automobilima i auto industriji.",
+    image: post?.image,
+    type: "article",
+  });
+
   // Combine main image with additional images, filtering out duplicates
-  const additionalImages = images?.map(img => img.url).filter(url => url !== post?.image) || [];
-  const allImages = post ? [post.image, ...additionalImages] : [];
+  const additionalImages = images?.map((img) => img.url) || [];
+  const allImages = getOptimizedGalleryImages(post ? [post.image, ...additionalImages] : [], {
+    width: 1600,
+    quality: 80,
+    resize: "cover",
+  });
 
   if (isError) {
     return (
@@ -38,7 +51,7 @@ export default function BlogPostPage() {
         <div className="text-center">
           <p className="text-red-400 text-lg font-semibold mb-2">Greška pri učitavanju članka</p>
           <p className="text-slate-400 text-sm">Provjerite internetsku vezu i pokušajte ponovo.</p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition">Pokušaj ponovo</button>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded-lg text-sm transition">Pokušaj ponovo</button>
         </div>
       </div>
     );

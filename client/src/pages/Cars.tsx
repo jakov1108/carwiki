@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import type { CarVariantWithDetails, CarModel } from "@shared/schema";
 import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Fuel, Gauge, Calendar, Cog } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
+import { usePageMeta } from "../lib/seo";
 
 interface SearchFilters {
   search: string;
@@ -39,6 +40,11 @@ function buildQueryString(filters: SearchFilters): string {
 }
 
 export default function Cars() {
+  usePageMeta({
+    title: "Napredna pretraga automobila - Auto Wiki",
+    description: "Filtrirajte automobile po marki, kategoriji, gorivu, pogonu, mjenjaču, snazi i godini proizvodnje.",
+  });
+
   const [filters, setFilters] = useState<SearchFilters>(() => {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -193,7 +199,7 @@ export default function Cars() {
             onClick={() => setFiltersOpen(!filtersOpen)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
               hasActiveFilters
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-600 text-white keep-white"
                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
             }`}
           >
@@ -460,7 +466,7 @@ export default function Cars() {
                       <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition">
                         {variant.model.brand} {variant.model.model}
                       </h3>
-                      <span className="text-xs bg-blue-600/80 px-2 py-0.5 rounded text-white shrink-0 ml-2">
+                      <span className="text-xs bg-blue-600/80 px-2 py-0.5 rounded text-white keep-white shrink-0 ml-2">
                         {yearRange}
                       </span>
                     </div>

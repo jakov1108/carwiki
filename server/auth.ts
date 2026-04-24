@@ -80,9 +80,6 @@ export const auth = betterAuth({
       );
     },
   },
-  advanced: {
-    disableSignUpOnEmailNotVerified: true,
-  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || "",

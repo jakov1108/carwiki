@@ -70,7 +70,7 @@ export default function EmailVerificationBanner() {
             <button
               onClick={handleResendEmail}
               disabled={isResending}
-              className="text-xs bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              className="text-xs bg-yellow-600 hover:bg-yellow-700 text-white keep-white px-4 py-2 rounded transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
             >
               {isResending ? "Slanje..." : "Pošalji ponovno"}
             </button>

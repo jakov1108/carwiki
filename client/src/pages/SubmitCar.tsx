@@ -7,6 +7,7 @@ import type { CarModel, CarGenerationWithModel } from "@shared/schema";
 import { Plus, X, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Check, Car, Layers, Settings, Upload, Clock, CheckCircle, XCircle, FileText, HelpCircle, Info, Lightbulb } from "lucide-react";
 import { Link } from "wouter";
 import MultiImageUploader from "../components/MultiImageUploader";
+import { LIVE_QUERY_GC_TIME, LIVE_QUERY_STALE_TIME } from "../lib/queryClient";
 
 interface CarSubmissionUser {
   id: string;
@@ -121,6 +122,8 @@ export default function SubmitCar() {
   const { data: mySubmissions } = useQuery<CarSubmissionUser[]>({
     queryKey: ["/api/my-submissions"],
     enabled: !!user,
+    staleTime: LIVE_QUERY_STALE_TIME,
+    gcTime: LIVE_QUERY_GC_TIME,
   });
 
   // Derived data
@@ -310,7 +313,7 @@ export default function SubmitCar() {
         {currentStep === "success" && (
           <div className="bg-slate-800 rounded-lg p-12 text-center border border-green-500/50">
             <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Check className="w-10 h-10 text-white" />
+              <Check className="w-10 h-10 text-white keep-white" />
             </div>
             <h2 className="text-3xl font-bold text-green-400 mb-4">Prijedlog poslan!</h2>
             <p className="text-slate-300 mb-8 max-w-md mx-auto">
@@ -341,7 +344,7 @@ export default function SubmitCar() {
                     trunkCapacity: "", fuelTankCapacity: "", detailedDescription: "", pros: "", cons: "",
                   });
                 }}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded-lg font-semibold"
               >
                 Dodaj još jedan
               </button>
@@ -386,7 +389,7 @@ export default function SubmitCar() {
                       return (
                         <div key={step.key} className="flex flex-col items-center gap-1 flex-1">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition ${
-                            isCompleted ? 'bg-green-600 text-white' : isCurrent ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'
+                            isCompleted ? 'bg-green-600 text-white keep-white' : isCurrent ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-400'
                           }`}>
                             {isCompleted ? <Check className="w-4 h-4" /> : idx + 1}
                           </div>
@@ -405,7 +408,7 @@ export default function SubmitCar() {
             <div className="flex items-center gap-2 mb-8 text-sm flex-wrap bg-slate-800/50 p-4 rounded-lg">
               <button 
                 onClick={() => setCurrentStep("brand")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "brand" ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "brand" ? 'bg-blue-600 text-white keep-white' : 'text-slate-400 hover:text-white'}`}
               >
                 <Car className="w-4 h-4" />
                 Marka
@@ -416,7 +419,7 @@ export default function SubmitCar() {
                   <ChevronRight className="w-4 h-4 text-slate-600" />
                   <button 
                     onClick={() => setCurrentStep("model")}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "model" ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "model" ? 'bg-blue-600 text-white keep-white' : 'text-slate-400 hover:text-white'}`}
                   >
                     <Layers className="w-4 h-4" />
                     {effectiveBrand} {effectiveModelName && `- ${effectiveModelName}`}
@@ -429,7 +432,7 @@ export default function SubmitCar() {
                   <ChevronRight className="w-4 h-4 text-slate-600" />
                   <button 
                     onClick={() => setCurrentStep("generation")}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "generation" ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "generation" ? 'bg-blue-600 text-white keep-white' : 'text-slate-400 hover:text-white'}`}
                   >
                     <Settings className="w-4 h-4" />
                     Generacija {effectiveGenerationName && `- ${effectiveGenerationName}`}
@@ -440,7 +443,7 @@ export default function SubmitCar() {
               {effectiveGenerationName && (
                 <>
                   <ChevronRight className="w-4 h-4 text-slate-600" />
-                  <span className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "variant" ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>
+                  <span className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "variant" ? 'bg-blue-600 text-white keep-white' : 'text-slate-400'}`}>
                     Motor/Varijanta
                   </span>
                 </>
@@ -459,13 +462,13 @@ export default function SubmitCar() {
                 <div className="flex gap-2 mb-6">
                   <button
                     onClick={() => { setIsNewBrand(false); setNewBrandName(""); }}
-                    className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewBrand ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewBrand ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                   >
                     Postojeća marka
                   </button>
                   <button
                     onClick={() => { setIsNewBrand(true); setSelectedBrand(null); }}
-                    className={`px-4 py-2 rounded-lg font-semibold transition ${isNewBrand ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    className={`px-4 py-2 rounded-lg font-semibold transition ${isNewBrand ? 'bg-green-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                   >
                     + Nova marka
                   </button>
@@ -520,7 +523,7 @@ export default function SubmitCar() {
                         setCurrentStep("model");
                       }}
                       disabled={!canProceedFromBrand}
-                      className="mt-6 w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg font-semibold"
+                      className="mt-6 w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white keep-white rounded-lg font-semibold"
                     >
                       Nastavi →
                     </button>
@@ -552,13 +555,13 @@ export default function SubmitCar() {
                   <div className="flex gap-2 mb-6">
                     <button
                       onClick={() => { setIsNewModel(false); }}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewModel ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewModel ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                     >
                       Postojeći model
                     </button>
                     <button
                       onClick={() => { setIsNewModel(true); setSelectedModelId(null); }}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${isNewModel ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      className={`px-4 py-2 rounded-lg font-semibold transition ${isNewModel ? 'bg-green-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                     >
                       + Novi model
                     </button>
@@ -656,7 +659,7 @@ export default function SubmitCar() {
                         setCurrentStep("generation");
                       }}
                       disabled={!canProceedFromModel}
-                      className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg font-semibold"
+                      className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white keep-white rounded-lg font-semibold"
                     >
                       Nastavi na generaciju →
                     </button>
@@ -689,13 +692,13 @@ export default function SubmitCar() {
                   <div className="flex gap-2 mb-6">
                     <button
                       onClick={() => { setIsNewGeneration(false); }}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewGeneration ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewGeneration ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                     >
                       Postojeća generacija
                     </button>
                     <button
                       onClick={() => { setIsNewGeneration(true); setSelectedGenerationId(null); }}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${isNewGeneration ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      className={`px-4 py-2 rounded-lg font-semibold transition ${isNewGeneration ? 'bg-green-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                     >
                       + Nova generacija
                     </button>
@@ -791,7 +794,7 @@ export default function SubmitCar() {
                     <button
                       onClick={() => setCurrentStep("variant")}
                       disabled={!canProceedFromGeneration}
-                      className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg font-semibold"
+                      className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white keep-white rounded-lg font-semibold"
                     >
                       Nastavi na varijantu →
                     </button>
@@ -1163,7 +1166,7 @@ export default function SubmitCar() {
                     <button
                       type="submit"
                       disabled={!canSubmitVariant || submitCar.isPending}
-                      className="flex-1 px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg font-semibold text-lg flex items-center justify-center gap-2"
+                      className="flex-1 px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white keep-white rounded-lg font-semibold text-lg flex items-center justify-center gap-2"
                     >
                       {submitCar.isPending ? (
                         <>

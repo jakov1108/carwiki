@@ -4,31 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Car, BookOpen, Shield, Search, ChevronRight, ChevronLeft } from "lucide-react";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost } from "@shared/schema";
 import { useToast } from "../components/Toast";
-
-// Generate responsive image URL at a specific width
-function getResponsiveImageUrl(url: string, width: number): string {
-  if (!url) return url;
-  // Unsplash: replace ?w=XXXX parameter
-  if (url.includes('images.unsplash.com')) {
-    return url.replace(/[?&]w=\d+/, `?w=${width}`);
-  }
-  // Wikimedia: replace /XXXXpx- thumbnail size
-  if (url.includes('wikimedia.org') && url.includes('/thumb/')) {
-    return url.replace(/\/\d+px-/, `/${width}px-`);
-  }
-  return url;
-}
-
-// Generate srcSet for responsive images
-function getImageSrcSet(url: string): string {
-  if (!url) return '';
-  const widths = [400, 640, 800, 1280];
-  return widths
-    .map(w => `${getResponsiveImageUrl(url, w)} ${w}w`)
-    .join(', ');
-}
+import { getImageSrcSet, getOptimizedImageUrl } from "../lib/images";
+import { usePageMeta } from "../lib/seo";
 
 export default function Home() {
+  usePageMeta({
+    title: "Auto Wiki - Enciklopedija automobila",
+    description: "Pretražite automobile po marki, modelu, generaciji i motoru te čitajte specifikacije i automobilske članke.",
+  });
+
   const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(useSearch());
   const { success } = useToast();
@@ -342,7 +326,7 @@ export default function Home() {
                         <div className="relative">
                           <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg blur opacity-40"></div>
                           <img 
-                            src={selectedModel.image} 
+                            src={getOptimizedImageUrl(selectedModel.image, { width: 320, quality: 75, resize: "cover" })} 
                             alt={`${selectedModel.brand} ${selectedModel.model}`}
                             className="relative w-20 h-14 object-cover rounded-lg"
                             decoding="async"
@@ -364,9 +348,9 @@ export default function Home() {
                     <div className="flex justify-end">
                       <button
                         onClick={clearSearch}
-                        className="bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white keep-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                        className="bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white hover:!text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
                       >
-                        <span className="w-4 h-4 rounded-full border-2 border-white flex items-center justify-center">
+                        <span className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center">
                           <span className="text-xs">×</span>
                         </span>
                         Kreni ispočetka
@@ -411,7 +395,7 @@ export default function Home() {
                   handleCarouselInteraction();
                   prevBlogSlide();
                 }}
-                className="absolute left-0 top-[calc(50%-25px)] -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 -translate-x-1/2 border border-slate-600 hover:border-blue-500"
+                className="absolute left-0 top-[calc(50%-25px)] -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-slate-900 dark:text-white hover:!text-white p-2 rounded-full shadow-lg transition-all duration-200 -translate-x-1/2 border border-slate-600 hover:border-blue-500"
                 aria-label="Prethodni članak"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -423,7 +407,7 @@ export default function Home() {
                   handleCarouselInteraction();
                   nextBlogSlide();
                 }}
-                className="absolute right-0 top-[calc(50%-25px)] -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 translate-x-1/2 border border-slate-600 hover:border-blue-500"
+                className="absolute right-0 top-[calc(50%-25px)] -translate-y-1/2 z-10 bg-slate-800/95 hover:bg-blue-600 text-slate-900 dark:text-white hover:!text-white p-2 rounded-full shadow-lg transition-all duration-200 translate-x-1/2 border border-slate-600 hover:border-blue-500"
                 aria-label="Sljedeći članak"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -455,8 +439,8 @@ export default function Home() {
                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500/50 transition-all duration-300 group/card">
                           <div className="relative w-full overflow-hidden" style={{ paddingBottom: '56%' }}>
                             <img
-                              src={getResponsiveImageUrl(post.image, 640)}
-                              srcSet={getImageSrcSet(post.image)}
+                              src={getOptimizedImageUrl(post.image, { width: 960, quality: 78, resize: "cover" })}
+                              srcSet={getImageSrcSet(post.image, [400, 640, 800, 1280], { quality: 78, resize: "cover" })}
                               sizes="(max-width: 768px) 100vw, 50vw"
                               alt={post.title}
                               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"

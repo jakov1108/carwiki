@@ -1,4 +1,5 @@
 import "dotenv/config";
+import compression from "compression";
 import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth";
@@ -13,6 +14,7 @@ app.set('trust proxy', 1);
 // Better Auth handler - must be before other middleware
 app.all("/api/auth/*", toNodeHandler(auth));
 
+app.use(compression({ threshold: 1024 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

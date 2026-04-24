@@ -3,7 +3,9 @@ import { Link, useParams } from "wouter";
 import type { CarModel } from "@shared/schema";
 import { Search, ChevronRight, ArrowLeft, Info, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { getOptimizedImageUrl } from "../lib/images";
 import { CardGridSkeleton, BreadcrumbSkeleton } from "../components/Skeleton";
+import { usePageMeta } from "../lib/seo";
 
 export default function Models() {
   const params = useParams<{ brandSlug?: string }>();
@@ -50,6 +52,15 @@ export default function Models() {
     ? brands.find((b: BrandInfo) => b.brandSlug === params.brandSlug) 
     : null;
 
+  usePageMeta({
+    title: selectedBrandInfo
+      ? `${selectedBrandInfo.brand} modeli - Auto Wiki`
+      : "Baza automobila - Auto Wiki",
+    description: selectedBrandInfo
+      ? `Pregledajte modele marke ${selectedBrandInfo.brand}, njihove generacije i motorne varijante.`
+      : "Pregledajte bazu automobila po markama, modelima, generacijama i motornim varijantama.",
+  });
+
   // Get models for selected brand
   const brandModels = params.brandSlug
     ? models?.filter(m => (m.brandSlug || m.brand.toLowerCase().replace(/\s+/g, '-')) === params.brandSlug)
@@ -83,7 +94,7 @@ export default function Models() {
           <p className="text-slate-400 text-sm">Provjerite internetsku vezu i pokušajte ponovo.</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
+            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded-lg text-sm transition"
           >
             Pokušaj ponovo
           </button>
@@ -262,11 +273,11 @@ export default function Models() {
                   >
                     <div className="relative overflow-hidden">
                       <img
-                        src={model.image}
+                        src={getOptimizedImageUrl(model.image, { width: 720, quality: 78, resize: "cover" })}
                         alt={`${model.brand} ${model.model}`}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      <span className="absolute top-3 right-3 bg-blue-600 px-2 py-1 rounded text-xs font-medium">
+                      <span className="absolute top-3 right-3 bg-blue-600 px-2 py-1 rounded text-xs font-medium text-white keep-white">
                         {model.category}
                       </span>
                     </div>
