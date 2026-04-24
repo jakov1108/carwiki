@@ -5,12 +5,29 @@ type ImageTransformOptions = {
   resize?: "cover" | "contain" | "fill";
 };
 
+type ResponsiveImageOptions = ImageTransformOptions & {
+  widths?: number[];
+  sizes?: string;
+};
+
 const DEFAULT_QUALITY = 80;
 const ENABLE_SUPABASE_IMAGE_TRANSFORMS =
   import.meta.env.VITE_ENABLE_SUPABASE_IMAGE_TRANSFORMS === "true";
 
 function isSupabaseStorageUrl(url: string) {
   return url.includes("/storage/v1/object/public/") || url.includes("/storage/v1/render/image/public/");
+}
+
+export function supportsResponsiveImageVariants(url?: string | null) {
+  if (!url) {
+    return false;
+  }
+
+  if (isSupabaseStorageUrl(url)) {
+    return ENABLE_SUPABASE_IMAGE_TRANSFORMS;
+  }
+
+  return url.includes("images.unsplash.com") || (url.includes("wikimedia.org") && url.includes("/thumb/"));
 }
 
 function buildSupabaseImageUrl(url: string, options: ImageTransformOptions) {
@@ -106,13 +123,32 @@ export function getImageSrcSet(
   widths: number[] = [400, 640, 800, 1280],
   options: Omit<ImageTransformOptions, "width"> = {},
 ) {
-  if (!url) {
+  if (!url || !supportsResponsiveImageVariants(url)) {
     return "";
   }
 
   return widths
     .map((width) => `${getOptimizedImageUrl(url, { ...options, width })} ${width}w`)
     .join(", ");
+}
+
+export function getResponsiveImageProps(
+  url?: string | null,
+  {
+    width,
+    widths = [400, 640, 800, 1280],
+    sizes,
+    ...options
+  }: ResponsiveImageOptions = {},
+) {
+  const src = getOptimizedImageUrl(url, { width, ...options });
+  const srcSet = getImageSrcSet(url, widths, options);
+
+  return {
+    src,
+    srcSet: srcSet || undefined,
+    sizes: srcSet ? sizes : undefined,
+  };
 }
 
 export function getOptimizedGalleryImages(

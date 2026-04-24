@@ -92,6 +92,16 @@ export default function SubmitCar() {
   const [showGuide, setShowGuide] = useState(true);
   const [variantTouched, setVariantTouched] = useState<Record<string, boolean>>({});
 
+  const fieldBaseClasses =
+    "w-full rounded-lg border border-slate-300 bg-white px-4 py-3.5 text-base leading-6 text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500";
+  const stepPanelClasses =
+    "submit-form rounded-xl border border-slate-200 bg-white/90 p-6 shadow-sm shadow-slate-900/5 dark:border-slate-700 dark:bg-slate-800 md:p-8 lg:p-10";
+  const helperCopyClasses = "mb-6 text-sm leading-6 text-slate-600 dark:text-slate-400 md:text-[15px]";
+  const selectionCardBaseClasses =
+    "submit-card rounded-xl border p-5 text-left transition-colors shadow-sm shadow-slate-900/5";
+  const stepHeadingClasses = "submit-step-title mb-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white";
+  const submissionsHeadingClasses = "mb-5 flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white";
+
   const markVariantTouched = (field: string) => setVariantTouched(prev => ({ ...prev, [field]: true }));
 
   // Per-field validation for required variant fields
@@ -104,12 +114,12 @@ export default function SubmitCar() {
   };
 
   const variantFieldClass = (field: string) =>
-    `w-full bg-slate-900 border rounded px-4 py-2 focus:outline-none transition ${
+    `${fieldBaseClasses} ${
       variantTouched[field] && variantErrors[field]
         ? "border-red-500 focus:border-red-400"
         : variantTouched[field] && !variantErrors[field]
           ? "border-green-600 focus:border-green-500"
-          : "border-slate-700 focus:border-blue-500"
+          : "border-slate-300 focus:border-blue-500 dark:border-slate-700"
     }`;
 
   // Data queries
@@ -242,6 +252,48 @@ export default function SubmitCar() {
     variantData.consumption.trim().length > 0 &&
     variantData.transmission.trim().length > 0;
 
+  const backButtonClasses = "mb-4 flex items-center gap-2 text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white";
+  const inactiveToggleButtonClasses = "bg-white/90 text-slate-700 hover:bg-blue-50 hover:text-slate-900 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-white";
+  const toggleButtonBaseClasses =
+    "rounded-xl border px-4 py-2.5 font-semibold shadow-sm transition-all duration-150";
+  const breadcrumbButtonClasses = (isActive: boolean) =>
+    `flex items-center gap-2 rounded-lg px-3 py-2 transition-colors ${
+      isActive
+        ? "bg-blue-600 text-white keep-white shadow-sm"
+        : "text-slate-600 hover:bg-blue-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
+    }`;
+
+  const guideSteps = [
+    {
+      step: "1",
+      title: "Marka",
+      desc: "Odaberite postojeću ili dodajte novu marku, npr. Volkswagen ili BMW.",
+      icon: Car,
+      badgeClass: "bg-blue-500/20 text-blue-400",
+    },
+    {
+      step: "2",
+      title: "Model",
+      desc: "Odaberite model unutar marke, npr. Golf ili 3 Series.",
+      icon: Layers,
+      badgeClass: "bg-cyan-500/20 text-cyan-400",
+    },
+    {
+      step: "3",
+      title: "Generacija",
+      desc: "Odaberite generaciju i godine proizvodnje, npr. MK7 ili E90.",
+      icon: Settings,
+      badgeClass: "bg-purple-500/20 text-purple-400",
+    },
+    {
+      step: "4",
+      title: "Varijanta",
+      desc: "Unesite konkretnu motornu izvedbu, npr. 2.0 TDI 150 KS.",
+      icon: Upload,
+      badgeClass: "bg-green-500/20 text-green-400",
+    },
+  ];
+
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -254,46 +306,48 @@ export default function SubmitCar() {
 
         {/* How It Works Guide */}
         {currentStep !== "success" && (
-          <div className="mb-8 bg-slate-800/50 border border-blue-500/20 rounded-xl overflow-hidden">
+          <div className="mb-8 overflow-hidden rounded-2xl border border-blue-500/20 bg-white/80 shadow-sm shadow-slate-900/5 dark:bg-slate-800/50">
             <button
               onClick={() => setShowGuide(!showGuide)}
-              className="w-full flex items-center justify-between p-4 hover:bg-slate-800/80 transition text-left"
+              className="w-full text-left transition-colors hover:bg-blue-50/90 dark:hover:bg-slate-800/80"
             >
-              <div className="flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-blue-400" />
-                <span className="font-semibold text-blue-300">Kako funkcionira dodavanje automobila?</span>
+              <div className="flex items-center justify-between gap-4 px-5 py-5 md:px-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10">
+                    <HelpCircle className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-blue-700 dark:text-blue-300">Kako funkcionira dodavanje automobila?</div>
+                    <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">Kratki pregled koraka i procesa odobravanja.</div>
+                  </div>
+                </div>
+                {showGuide ? <ChevronUp className="w-5 h-5 text-slate-500 dark:text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-500 dark:text-slate-400" />}
               </div>
-              {showGuide ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
             </button>
             {showGuide && (
-              <div className="px-4 pb-5 space-y-4">
+              <div className="space-y-5 px-5 pb-6 md:px-6">
                 {/* 4-step process */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  {[
-                    { step: "1", title: "Marka", desc: "Odaberite postojeću ili dodajte novu marku (npr. Volkswagen, BMW)", icon: Car, color: "blue" },
-                    { step: "2", title: "Model", desc: "Odaberite model automobila unutar marke (npr. Golf, 3 Series)", icon: Layers, color: "cyan" },
-                    { step: "3", title: "Generacija", desc: "Odaberite generaciju modela s godinama (npr. MK7, E90)", icon: Settings, color: "purple" },
-                    { step: "4", title: "Varijanta", desc: "Unesite specifikacije motorne varijante (npr. 2.0 TDI 150 KS)", icon: Upload, color: "green" },
-                  ].map(item => (
-                    <div key={item.step} className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-xs font-bold bg-${item.color}-500/20 text-${item.color}-400 px-1.5 py-0.5 rounded`}>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                  {guideSteps.map((item) => (
+                    <div key={item.step} className="rounded-xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/50 md:p-5">
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className={`rounded-md px-2 py-1 text-sm font-bold ${item.badgeClass}`}>
                           {item.step}
                         </span>
-                        <item.icon className="w-4 h-4 text-slate-400" />
-                        <span className="font-medium text-sm text-white">{item.title}</span>
+                        <item.icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        <span className="text-base font-semibold text-slate-900 dark:text-white">{item.title}</span>
                       </div>
-                      <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
+                      <p className="text-sm leading-6 text-slate-600 dark:text-slate-400">{item.desc}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Review process explanation */}
-                <div className="flex items-start gap-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3">
+                <div className="flex items-start gap-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4 md:p-5">
                   <Info className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
-                  <div className="text-sm">
+                  <div className="text-sm md:text-[15px]">
                     <p className="text-yellow-300 font-medium mb-1">Proces pregleda</p>
-                    <p className="text-slate-400">
+                    <p className="leading-6 text-slate-600 dark:text-slate-400">
                       Nakon slanja, vaš prijedlog dobiva status <span className="text-yellow-400">"Na čekanju"</span>. 
                       Administrator ga pregledava i može ga <span className="text-green-400">odobriti</span> ili <span className="text-red-400">odbiti</span> (s obrazloženjem). 
                       Status svih vaših prijedloga možete pratiti na dnu ove stranice.
@@ -301,7 +355,7 @@ export default function SubmitCar() {
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-500">
                   Trebate više informacija? Pogledajte <Link href="/o-nama" className="text-blue-400 hover:text-blue-300 underline">FAQ i pojmovnik</Link>.
                 </p>
               </div>
@@ -405,10 +459,10 @@ export default function SubmitCar() {
             })()}
 
             {/* Breadcrumb / Progress */}
-            <div className="flex items-center gap-2 mb-8 text-sm flex-wrap bg-slate-800/50 p-4 rounded-lg">
+            <div className="mb-8 flex flex-wrap items-center gap-2 rounded-xl bg-white/80 p-4 text-sm shadow-sm shadow-slate-900/5 dark:bg-slate-800/50">
               <button 
                 onClick={() => setCurrentStep("brand")}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "brand" ? 'bg-blue-600 text-white keep-white' : 'text-slate-400 hover:text-white'}`}
+                className={breadcrumbButtonClasses(currentStep === "brand")}
               >
                 <Car className="w-4 h-4" />
                 Marka
@@ -419,7 +473,7 @@ export default function SubmitCar() {
                   <ChevronRight className="w-4 h-4 text-slate-600" />
                   <button 
                     onClick={() => setCurrentStep("model")}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "model" ? 'bg-blue-600 text-white keep-white' : 'text-slate-400 hover:text-white'}`}
+                    className={breadcrumbButtonClasses(currentStep === "model")}
                   >
                     <Layers className="w-4 h-4" />
                     {effectiveBrand} {effectiveModelName && `- ${effectiveModelName}`}
@@ -432,7 +486,7 @@ export default function SubmitCar() {
                   <ChevronRight className="w-4 h-4 text-slate-600" />
                   <button 
                     onClick={() => setCurrentStep("generation")}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded ${currentStep === "generation" ? 'bg-blue-600 text-white keep-white' : 'text-slate-400 hover:text-white'}`}
+                    className={breadcrumbButtonClasses(currentStep === "generation")}
                   >
                     <Settings className="w-4 h-4" />
                     Generacija {effectiveGenerationName && `- ${effectiveGenerationName}`}
@@ -452,30 +506,30 @@ export default function SubmitCar() {
 
             {/* Step 1: Brand Selection */}
             {currentStep === "brand" && (
-              <div className="bg-slate-800 rounded-lg p-8 border border-slate-700">
-                <h2 className="text-2xl font-bold mb-2">Odaberi marku automobila</h2>
-                <p className="text-slate-400 text-sm mb-6">
+              <div className={stepPanelClasses}>
+                <h2 className={stepHeadingClasses}>Odaberi marku automobila</h2>
+                <p className={helperCopyClasses}>
                   Marka je proizvođač vozila. Odaberite postojeću marku iz baze, ili dodajte novu ako ne postoji.
                 </p>
                 
                 {/* Toggle: Existing or New */}
                 <div className="flex gap-2 mb-6">
-                  <button
-                    onClick={() => { setIsNewBrand(false); setNewBrandName(""); }}
-                    className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewBrand ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    <button
+                      onClick={() => { setIsNewBrand(false); setNewBrandName(""); }}
+                    className={`${toggleButtonBaseClasses} ${!isNewBrand ? 'border-blue-500 bg-blue-600 text-white keep-white shadow-blue-500/20' : `border-slate-300 dark:border-slate-600 ${inactiveToggleButtonClasses}`}`}
                   >
                     Postojeća marka
                   </button>
                   <button
                     onClick={() => { setIsNewBrand(true); setSelectedBrand(null); }}
-                    className={`px-4 py-2 rounded-lg font-semibold transition ${isNewBrand ? 'bg-green-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    className={`${toggleButtonBaseClasses} ${isNewBrand ? 'border-green-500 bg-green-600 text-white keep-white shadow-green-500/20' : `border-slate-300 dark:border-slate-600 ${inactiveToggleButtonClasses}`}`}
                   >
                     + Nova marka
                   </button>
                 </div>
 
                 {!isNewBrand ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {brands.map(brand => (
                       <button
                         key={brand}
@@ -485,14 +539,14 @@ export default function SubmitCar() {
                           setSelectedModelId(null);
                           setCurrentStep("model");
                         }}
-                        className={`p-6 rounded-lg border text-left transition ${
+                        className={`${selectionCardBaseClasses} ${
                           selectedBrand === brand 
-                            ? 'bg-blue-600/20 border-blue-500' 
-                            : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                            ? 'border-blue-500 bg-blue-600/20'
+                            : 'border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500 dark:hover:bg-slate-900/80'
                         }`}
                       >
                         <h3 className="text-xl font-bold">{brand}</h3>
-                        <p className="text-slate-400 text-sm mt-1">
+                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                           {models?.filter(m => m.brand === brand).length} modela
                         </p>
                       </button>
@@ -511,9 +565,9 @@ export default function SubmitCar() {
                       value={newBrandName}
                       onChange={(e) => setNewBrandName(e.target.value)}
                       placeholder="npr. Volkswagen, BMW, Toyota..."
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-3 text-lg"
+                      className={`${fieldBaseClasses} text-lg`}
                     />
-                    <p className="text-sm text-slate-500 mt-2">
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-500">
                       Unesite točan naziv proizvođača automobila.
                     </p>
                     
@@ -534,19 +588,19 @@ export default function SubmitCar() {
 
             {/* Step 2: Model Selection */}
             {currentStep === "model" && (
-              <div className="bg-slate-800 rounded-lg p-8 border border-slate-700">
+              <div className={stepPanelClasses}>
                 <button 
                   onClick={() => setCurrentStep("brand")}
-                  className="flex items-center gap-2 text-slate-400 hover:text-white mb-4"
+                  className={backButtonClasses}
                 >
                   <ArrowLeft className="w-4 h-4" /> Natrag na marke
                 </button>
                 
-                <h2 className="text-2xl font-bold mb-2">
+                <h2 className={stepHeadingClasses}>
                   {isNewBrand ? `Nova marka: ${newBrandName}` : selectedBrand} - Odaberi model
                 </h2>
-                <p className="text-slate-400 text-sm mb-6">
-                  Model je linija automobila unutar marke (npr. <span className="text-slate-300">Golf</span> za Volkswagen, <span className="text-slate-300">3 Series</span> za BMW). 
+                <p className={helperCopyClasses}>
+                  Model je linija automobila unutar marke (npr. <span className="text-slate-700 dark:text-slate-300">Golf</span> za Volkswagen, <span className="text-slate-700 dark:text-slate-300">3 Series</span> za BMW). 
                   Jedan model može imati više generacija.
                 </p>
 
@@ -555,13 +609,13 @@ export default function SubmitCar() {
                   <div className="flex gap-2 mb-6">
                     <button
                       onClick={() => { setIsNewModel(false); }}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewModel ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      className={`${toggleButtonBaseClasses} ${!isNewModel ? 'border-blue-500 bg-blue-600 text-white keep-white shadow-blue-500/20' : `border-slate-300 dark:border-slate-600 ${inactiveToggleButtonClasses}`}`}
                     >
                       Postojeći model
                     </button>
                     <button
                       onClick={() => { setIsNewModel(true); setSelectedModelId(null); }}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${isNewModel ? 'bg-green-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      className={`${toggleButtonBaseClasses} ${isNewModel ? 'border-green-500 bg-green-600 text-white keep-white shadow-green-500/20' : `border-slate-300 dark:border-slate-600 ${inactiveToggleButtonClasses}`}`}
                     >
                       + Novi model
                     </button>
@@ -569,7 +623,7 @@ export default function SubmitCar() {
                 )}
 
                 {!isNewModel && !isNewBrand ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {brandModels.map(model => (
                       <button
                         key={model.id}
@@ -579,15 +633,15 @@ export default function SubmitCar() {
                           setSelectedGenerationId(null);
                           setCurrentStep("generation");
                         }}
-                        className={`p-6 rounded-lg border text-left transition ${
+                        className={`${selectionCardBaseClasses} ${
                           selectedModelId === model.id 
-                            ? 'bg-blue-600/20 border-blue-500' 
-                            : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                            ? 'border-blue-500 bg-blue-600/20' 
+                            : 'border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500 dark:hover:bg-slate-900/80'
                         }`}
                       >
                         <h3 className="text-xl font-bold">{model.model}</h3>
-                        <p className="text-slate-400 text-sm mt-1">{model.category}</p>
-                        <p className="text-slate-500 text-xs mt-2">
+                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{model.category}</p>
+                        <p className="mt-3 text-sm text-slate-500 dark:text-slate-500">
                           {generations?.filter(g => g.modelId === model.id).length} generacija
                         </p>
                       </button>
@@ -601,7 +655,7 @@ export default function SubmitCar() {
                 ) : (
                   // New Model Form
                   <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
                         <label className="block text-sm font-medium mb-2">Naziv modela *</label>
                         <input
@@ -609,7 +663,7 @@ export default function SubmitCar() {
                           value={newModelData.model}
                           onChange={(e) => setNewModelData({ ...newModelData, model: e.target.value })}
                           placeholder="npr. Golf, 3 Series, Corolla..."
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                       <div>
@@ -617,7 +671,7 @@ export default function SubmitCar() {
                         <select
                           value={newModelData.category}
                           onChange={(e) => setNewModelData({ ...newModelData, category: e.target.value })}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         >
                           <option value="Compact">Kompaktni</option>
                           <option value="Sedan">Limuzina</option>
@@ -638,9 +692,9 @@ export default function SubmitCar() {
                       <textarea
                         value={newModelData.description}
                         onChange={(e) => setNewModelData({ ...newModelData, description: e.target.value })}
-                        rows={3}
+                        rows={4}
                         placeholder="Kratki opis ovog modela..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
 
@@ -670,20 +724,20 @@ export default function SubmitCar() {
 
             {/* Step 3: Generation Selection */}
             {currentStep === "generation" && (
-              <div className="bg-slate-800 rounded-lg p-8 border border-slate-700">
+              <div className={stepPanelClasses}>
                 <button 
                   onClick={() => setCurrentStep("model")}
-                  className="flex items-center gap-2 text-slate-400 hover:text-white mb-4"
+                  className={backButtonClasses}
                 >
                   <ArrowLeft className="w-4 h-4" /> Natrag na modele
                 </button>
                 
-                <h2 className="text-2xl font-bold mb-2">
+                <h2 className={stepHeadingClasses}>
                   {effectiveBrand} {effectiveModelName} - Odaberi generaciju
                 </h2>
-                <p className="text-slate-400 text-sm mb-6">
+                <p className={helperCopyClasses}>
                   Generacija je specifična verzija modela s definiranim godinama proizvodnje 
-                  (npr. <span className="text-slate-300">Golf MK7</span> = 2012–2019, <span className="text-slate-300">Golf MK8</span> = 2019–danas). 
+                  (npr. <span className="text-slate-700 dark:text-slate-300">Golf MK7</span> = 2012–2019, <span className="text-slate-700 dark:text-slate-300">Golf MK8</span> = 2019–danas). 
                   Svaka generacija može imati više motornih varijanti.
                 </p>
 
@@ -692,13 +746,13 @@ export default function SubmitCar() {
                   <div className="flex gap-2 mb-6">
                     <button
                       onClick={() => { setIsNewGeneration(false); }}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${!isNewGeneration ? 'bg-blue-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      className={`${toggleButtonBaseClasses} ${!isNewGeneration ? 'border-blue-500 bg-blue-600 text-white keep-white shadow-blue-500/20' : `border-slate-300 dark:border-slate-600 ${inactiveToggleButtonClasses}`}`}
                     >
                       Postojeća generacija
                     </button>
                     <button
                       onClick={() => { setIsNewGeneration(true); setSelectedGenerationId(null); }}
-                      className={`px-4 py-2 rounded-lg font-semibold transition ${isNewGeneration ? 'bg-green-600 text-white keep-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                      className={`${toggleButtonBaseClasses} ${isNewGeneration ? 'border-green-500 bg-green-600 text-white keep-white shadow-green-500/20' : `border-slate-300 dark:border-slate-600 ${inactiveToggleButtonClasses}`}`}
                     >
                       + Nova generacija
                     </button>
@@ -706,7 +760,7 @@ export default function SubmitCar() {
                 )}
 
                 {!isNewGeneration && !isNewModel ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {modelGenerations.map(gen => (
                       <button
                         key={gen.id}
@@ -714,14 +768,14 @@ export default function SubmitCar() {
                           setSelectedGenerationId(gen.id);
                           setCurrentStep("variant");
                         }}
-                        className={`p-6 rounded-lg border text-left transition ${
+                        className={`${selectionCardBaseClasses} ${
                           selectedGenerationId === gen.id 
-                            ? 'bg-blue-600/20 border-blue-500' 
-                            : 'bg-slate-900 border-slate-700 hover:border-slate-500'
+                            ? 'border-blue-500 bg-blue-600/20' 
+                            : 'border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500 dark:hover:bg-slate-900/80'
                         }`}
                       >
                         <h3 className="text-xl font-bold">{gen.name}</h3>
-                        <p className="text-slate-400 text-sm mt-1">
+                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                           {gen.yearStart} - {gen.yearEnd || "danas"}
                         </p>
                       </button>
@@ -742,11 +796,11 @@ export default function SubmitCar() {
                         value={newGenerationData.name}
                         onChange={(e) => setNewGenerationData({ ...newGenerationData, name: e.target.value })}
                         placeholder="npr. MK7, E90, B8..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
                         <label className="block text-sm font-medium mb-2">Godina početka proizvodnje *</label>
                         <input
@@ -755,7 +809,7 @@ export default function SubmitCar() {
                           onChange={(e) => setNewGenerationData({ ...newGenerationData, yearStart: parseInt(e.target.value) })}
                           min="1900"
                           max={new Date().getFullYear() + 2}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                       <div>
@@ -766,7 +820,7 @@ export default function SubmitCar() {
                           onChange={(e) => setNewGenerationData({ ...newGenerationData, yearEnd: e.target.value ? parseInt(e.target.value) : null })}
                           min="1900"
                           max={new Date().getFullYear() + 2}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                     </div>
@@ -776,9 +830,9 @@ export default function SubmitCar() {
                       <textarea
                         value={newGenerationData.description}
                         onChange={(e) => setNewGenerationData({ ...newGenerationData, description: e.target.value })}
-                        rows={3}
+                        rows={4}
                         placeholder="Kratki opis ove generacije..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
 
@@ -805,31 +859,31 @@ export default function SubmitCar() {
 
             {/* Step 4: Variant Form */}
             {currentStep === "variant" && (
-              <div className="bg-slate-800 rounded-lg p-8 border border-slate-700">
+              <div className={stepPanelClasses}>
                 <button 
                   onClick={() => setCurrentStep("generation")}
-                  className="flex items-center gap-2 text-slate-400 hover:text-white mb-4"
+                  className={backButtonClasses}
                 >
                   <ArrowLeft className="w-4 h-4" /> Natrag na generacije
                 </button>
                 
-                <h2 className="text-2xl font-bold mb-2">
+                <h2 className={stepHeadingClasses}>
                   {effectiveBrand} {effectiveModelName} {effectiveGenerationName}
                 </h2>
-                <p className="text-slate-400 mb-4">Unesite podatke o motoru/varijanti</p>
+                <p className="mb-4 text-sm leading-6 text-slate-600 dark:text-slate-400 md:text-[15px]">Unesite podatke o motoru i konkretnoj izvedbi vozila.</p>
                 
-                <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 mb-6">
+                <div className="mb-6 flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-50/80 p-4 shadow-sm dark:bg-blue-500/5 md:p-5">
                   <Lightbulb className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                  <p className="text-sm text-slate-400">
-                    Varijanta opisuje konkretnu motornu izvedbu (npr. <span className="text-slate-300">2.0 TDI 150 KS</span>). 
-                    Polja označena s <span className="text-white">*</span> su obavezna. 
+                  <p className="text-sm leading-6 text-slate-700 dark:text-slate-400 md:text-[15px]">
+                    Varijanta opisuje konkretnu motornu izvedbu (npr. <span className="text-slate-900 dark:text-slate-300">2.0 TDI 150 KS</span>). 
+                    Polja označena s <span className="text-slate-900 dark:text-white">*</span> su obavezna. 
                     Podatke o snazi, momentu i potrošnji možete pronaći na službenim stranicama proizvođača.
                   </p>
                 </div>
 
                 <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} noValidate className="space-y-6">
                   {/* Engine Info */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium mb-2">Oznaka motora *</label>
                       <input
@@ -851,12 +905,12 @@ export default function SubmitCar() {
                         value={variantData.engineCode}
                         onChange={(e) => setVariantData({ ...variantData, engineCode: e.target.value })}
                         placeholder="npr. CRLB, CZEA"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium mb-2">Zapremnina</label>
                       <input
@@ -864,7 +918,7 @@ export default function SubmitCar() {
                         value={variantData.displacement}
                         onChange={(e) => setVariantData({ ...variantData, displacement: e.target.value })}
                         placeholder="npr. 1968 ccm"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
                     <div>
@@ -872,7 +926,7 @@ export default function SubmitCar() {
                       <select
                         value={variantData.fuelType}
                         onChange={(e) => setVariantData({ ...variantData, fuelType: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       >
                         <option value="Benzin">Benzin</option>
                         <option value="Dizel">Dizel</option>
@@ -883,7 +937,7 @@ export default function SubmitCar() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium mb-2">Snaga *</label>
                       <input
@@ -894,7 +948,7 @@ export default function SubmitCar() {
                         placeholder="npr. 150 KS"
                         className={variantFieldClass("power")}
                       />
-                      <p className="text-xs text-slate-500 mt-1">Format: broj + KS (konjske snage)</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-500">Format: broj + KS (konjske snage)</p>
                       {variantTouched.power && variantErrors.power && (
                         <p className="text-red-400 text-sm mt-1">{variantErrors.power}</p>
                       )}
@@ -906,12 +960,12 @@ export default function SubmitCar() {
                         value={variantData.torque}
                         onChange={(e) => setVariantData({ ...variantData, torque: e.target.value })}
                         placeholder="npr. 340 Nm"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium mb-2">Ubrzanje 0-100 km/h *</label>
                       <input
@@ -922,7 +976,7 @@ export default function SubmitCar() {
                         placeholder="npr. 8.6s"
                         className={variantFieldClass("acceleration")}
                       />
-                      <p className="text-xs text-slate-500 mt-1">Format: broj + s (sekunde)</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-500">Format: broj + s (sekunde)</p>
                       {variantTouched.acceleration && variantErrors.acceleration && (
                         <p className="text-red-400 text-sm mt-1">{variantErrors.acceleration}</p>
                       )}
@@ -934,12 +988,12 @@ export default function SubmitCar() {
                         value={variantData.topSpeed}
                         onChange={(e) => setVariantData({ ...variantData, topSpeed: e.target.value })}
                         placeholder="npr. 216 km/h"
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium mb-2">Potrošnja *</label>
                       <input
@@ -950,7 +1004,7 @@ export default function SubmitCar() {
                         placeholder="npr. 4.5 L/100km"
                         className={variantFieldClass("consumption")}
                       />
-                      <p className="text-xs text-slate-500 mt-1">Format: broj + L/100km</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-500">Format: broj + L/100km</p>
                       {variantTouched.consumption && variantErrors.consumption && (
                         <p className="text-red-400 text-sm mt-1">{variantErrors.consumption}</p>
                       )}
@@ -965,20 +1019,20 @@ export default function SubmitCar() {
                         placeholder="npr. 6-brzinski ručni, 7-DSG"
                         className={variantFieldClass("transmission")}
                       />
-                      <p className="text-xs text-slate-500 mt-1">npr. "6-brzinski ručni" ili "7-stupanjski DSG"</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-500">npr. "6-brzinski ručni" ili "7-stupanjski DSG"</p>
                       {variantTouched.transmission && variantErrors.transmission && (
                         <p className="text-red-400 text-sm mt-1">{variantErrors.transmission}</p>
                       )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium mb-2">Pogon *</label>
                       <select
                         value={variantData.driveType}
                         onChange={(e) => setVariantData({ ...variantData, driveType: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       >
                         <option value="FWD">FWD (Prednji pogon)</option>
                         <option value="RWD">RWD (Stražnji pogon)</option>
@@ -990,7 +1044,7 @@ export default function SubmitCar() {
                       <select
                         value={variantData.reliability}
                         onChange={(e) => setVariantData({ ...variantData, reliability: parseInt(e.target.value) })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       >
                         <option value={1}>1 - Loše</option>
                         <option value={2}>2 - Ispod prosjeka</option>
@@ -1004,7 +1058,7 @@ export default function SubmitCar() {
                   {/* Dimensions Section */}
                   <div className="border-t border-slate-700 pt-6">
                     <h4 className="text-lg font-semibold mb-4 text-blue-400">Težina i dimenzije (opcionalno)</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                       <div>
                         <label className="block text-sm font-medium mb-2">Masa</label>
                         <input
@@ -1012,7 +1066,7 @@ export default function SubmitCar() {
                           value={variantData.weight}
                           onChange={(e) => setVariantData({ ...variantData, weight: e.target.value })}
                           placeholder="1350 kg"
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                       <div>
@@ -1022,7 +1076,7 @@ export default function SubmitCar() {
                           value={variantData.length}
                           onChange={(e) => setVariantData({ ...variantData, length: e.target.value })}
                           placeholder="4258 mm"
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                       <div>
@@ -1032,7 +1086,7 @@ export default function SubmitCar() {
                           value={variantData.width}
                           onChange={(e) => setVariantData({ ...variantData, width: e.target.value })}
                           placeholder="1799 mm"
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                       <div>
@@ -1042,11 +1096,11 @@ export default function SubmitCar() {
                           value={variantData.height}
                           onChange={(e) => setVariantData({ ...variantData, height: e.target.value })}
                           placeholder="1442 mm"
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-4 mt-4">
+                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                       <div>
                         <label className="block text-sm font-medium mb-2">Međuosovinski razmak</label>
                         <input
@@ -1054,7 +1108,7 @@ export default function SubmitCar() {
                           value={variantData.wheelbase}
                           onChange={(e) => setVariantData({ ...variantData, wheelbase: e.target.value })}
                           placeholder="2631 mm"
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                       <div>
@@ -1064,7 +1118,7 @@ export default function SubmitCar() {
                           value={variantData.trunkCapacity}
                           onChange={(e) => setVariantData({ ...variantData, trunkCapacity: e.target.value })}
                           placeholder="380 L"
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                       <div>
@@ -1074,7 +1128,7 @@ export default function SubmitCar() {
                           value={variantData.fuelTankCapacity}
                           onChange={(e) => setVariantData({ ...variantData, fuelTankCapacity: e.target.value })}
                           placeholder="50 L"
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                          className={fieldBaseClasses}
                         />
                       </div>
                     </div>
@@ -1092,7 +1146,7 @@ export default function SubmitCar() {
                         onChange={(e) => setVariantData({ ...variantData, videoUrl: e.target.value })}
                         onBlur={(e) => setVariantData({ ...variantData, videoUrl: toYouTubeEmbedUrl(e.target.value) })}
                         placeholder="https://youtube.com/watch?v=..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
 
@@ -1101,21 +1155,21 @@ export default function SubmitCar() {
                       <textarea
                         value={variantData.detailedDescription}
                         onChange={(e) => setVariantData({ ...variantData, detailedDescription: e.target.value })}
-                        rows={4}
+                        rows={5}
                         placeholder="Detaljniji opis ove varijante, iskustva s vozilom, savjeti za kupnju..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-4 py-2"
+                        className={fieldBaseClasses}
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
                         <label className="block text-sm font-medium mb-2 text-green-400">Prednosti (+)</label>
                         <textarea
                           value={variantData.pros}
                           onChange={(e) => setVariantData({ ...variantData, pros: e.target.value })}
-                          rows={3}
+                          rows={4}
                           placeholder="Svaku prednost u novi red..."
-                          className="w-full bg-slate-900 border border-green-700/50 rounded px-4 py-2"
+                          className={`${fieldBaseClasses} border-green-700/50`}
                         />
                       </div>
                       <div>
@@ -1123,9 +1177,9 @@ export default function SubmitCar() {
                         <textarea
                           value={variantData.cons}
                           onChange={(e) => setVariantData({ ...variantData, cons: e.target.value })}
-                          rows={3}
+                          rows={4}
                           placeholder="Svaki nedostatak u novi red..."
-                          className="w-full bg-slate-900 border border-red-700/50 rounded px-4 py-2"
+                          className={`${fieldBaseClasses} border-red-700/50`}
                         />
                       </div>
                     </div>
@@ -1190,7 +1244,7 @@ export default function SubmitCar() {
         {/* My Submissions History */}
         {mySubmissions && mySubmissions.length > 0 && currentStep !== "success" && (
           <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <h2 className={submissionsHeadingClasses}>
               <FileText className="w-6 h-6 text-blue-400" />
               Moji prijedlozi
             </h2>
@@ -1201,15 +1255,15 @@ export default function SubmitCar() {
                 const gData = sub.generationData ? JSON.parse(sub.generationData) : null;
 
                 const statusConfig = {
-                  pending: { icon: Clock, label: "Na čekanju", color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/30" },
-                  approved: { icon: CheckCircle, label: "Odobreno", color: "text-green-400", bg: "bg-green-500/10 border-green-500/30" },
-                  rejected: { icon: XCircle, label: "Odbijeno", color: "text-red-400", bg: "bg-red-500/10 border-red-500/30" },
-                }[sub.status] || { icon: Clock, label: sub.status, color: "text-slate-400", bg: "bg-slate-500/10 border-slate-500/30" };
+                  pending: { icon: Clock, label: "Na čekanju", color: "text-amber-700 dark:text-yellow-400", bg: "border-yellow-500/30 bg-yellow-50/90 dark:bg-yellow-500/10" },
+                  approved: { icon: CheckCircle, label: "Odobreno", color: "text-green-700 dark:text-green-400", bg: "border-green-500/30 bg-green-50/90 dark:bg-green-500/10" },
+                  rejected: { icon: XCircle, label: "Odbijeno", color: "text-red-700 dark:text-red-400", bg: "border-red-500/30 bg-red-50/90 dark:bg-red-500/10" },
+                }[sub.status] || { icon: Clock, label: sub.status, color: "text-slate-700 dark:text-slate-400", bg: "border-slate-300 bg-white/90 dark:border-slate-600 dark:bg-slate-800/80" };
 
                 const StatusIcon = statusConfig.icon;
 
                 return (
-                  <div key={sub.id} className={`p-4 rounded-lg border ${statusConfig.bg}`}>
+                  <div key={sub.id} className={`rounded-xl border p-5 shadow-sm shadow-slate-900/5 ${statusConfig.bg}`}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -1219,17 +1273,17 @@ export default function SubmitCar() {
                             {new Date(sub.createdAt).toLocaleDateString('hr-HR')}
                           </span>
                         </div>
-                        <p className="font-medium text-white">
+                        <p className="font-medium text-slate-900 dark:text-white">
                           {mData ? `${mData.brand} ${mData.model}` : ""} {gData?.name || ""} — {vData.engineName}
                         </p>
-                        <p className="text-sm text-slate-400">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
                           {vData.power} • {vData.fuelType} • {vData.transmission}
                         </p>
                       </div>
                       {sub.status === "rejected" && sub.adminNotes && (
-                        <div className="w-full mt-2 p-3 bg-red-900/20 rounded-lg border border-red-700/30">
-                          <p className="text-xs font-medium text-red-400 mb-1">Razlog odbijanja:</p>
-                          <p className="text-sm text-red-300">{sub.adminNotes}</p>
+                        <div className="mt-2 w-full rounded-lg border border-red-500/20 bg-red-50/90 p-3 dark:border-red-700/30 dark:bg-red-900/20">
+                          <p className="mb-1 text-xs font-medium text-red-700 dark:text-red-400">Razlog odbijanja:</p>
+                          <p className="text-sm text-red-800 dark:text-red-300">{sub.adminNotes}</p>
                         </div>
                       )}
                     </div>

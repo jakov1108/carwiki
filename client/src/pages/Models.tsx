@@ -3,7 +3,7 @@ import { Link, useParams } from "wouter";
 import type { CarModel } from "@shared/schema";
 import { Search, ChevronRight, ArrowLeft, Info, X } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getOptimizedImageUrl } from "../lib/images";
+import ResponsiveImage from "../components/ResponsiveImage";
 import { CardGridSkeleton, BreadcrumbSkeleton } from "../components/Skeleton";
 import { usePageMeta } from "../lib/seo";
 
@@ -131,10 +131,10 @@ export default function Models() {
 
         {/* Hierarchy explainer for first-time visitors */}
         {showHierarchyHelp && !params.brandSlug && (
-          <div className="mb-6 bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 max-w-3xl mx-auto relative">
+          <div className="relative mx-auto mb-6 max-w-4xl rounded-2xl border border-blue-500/20 bg-blue-50/80 p-5 shadow-sm shadow-slate-900/5 dark:bg-blue-500/5 md:p-6">
             <button
               onClick={() => { setShowHierarchyHelp(false); localStorage.setItem("hideHierarchyHelp", "1"); }}
-              className="absolute top-3 right-3 text-slate-500 hover:text-white"
+              className="absolute right-4 top-4 text-slate-500 transition-colors hover:text-slate-900 dark:hover:text-white"
               aria-label="Zatvori"
             >
               <X className="w-4 h-4" />
@@ -142,18 +142,18 @@ export default function Models() {
             <div className="flex items-start gap-3">
               <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-blue-300 font-medium mb-2">Kako je organizirana baza?</p>
-                <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-                  <span className="bg-slate-800 px-2 py-1 rounded font-medium text-slate-300">Marka</span>
+                <p className="mb-3 text-base font-medium text-blue-700 dark:text-blue-300">Kako je organizirana baza?</p>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                  <span className="rounded-md bg-white px-2.5 py-1.5 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">Marka</span>
                   <ChevronRight className="w-3 h-3" />
-                  <span className="bg-slate-800 px-2 py-1 rounded font-medium text-slate-300">Model</span>
+                  <span className="rounded-md bg-white px-2.5 py-1.5 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">Model</span>
                   <ChevronRight className="w-3 h-3" />
-                  <span className="bg-slate-800 px-2 py-1 rounded font-medium text-slate-300">Generacija</span>
+                  <span className="rounded-md bg-white px-2.5 py-1.5 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">Generacija</span>
                   <ChevronRight className="w-3 h-3" />
-                  <span className="bg-slate-800 px-2 py-1 rounded font-medium text-slate-300">Varijanta</span>
+                  <span className="rounded-md bg-white px-2.5 py-1.5 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">Varijanta</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  Npr. <span className="text-slate-400">Volkswagen</span> → <span className="text-slate-400">Golf</span> → <span className="text-slate-400">MK7 (2012–2019)</span> → <span className="text-slate-400">2.0 TDI 150 KS</span>. 
+                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-500">
+                  Npr. <span className="text-slate-700 dark:text-slate-400">Volkswagen</span> → <span className="text-slate-700 dark:text-slate-400">Golf</span> → <span className="text-slate-700 dark:text-slate-400">MK7 (2012–2019)</span> → <span className="text-slate-700 dark:text-slate-400">2.0 TDI 150 KS</span>. 
                   Odaberite marku za početak pregledavanja.
                 </p>
               </div>
@@ -272,10 +272,18 @@ export default function Models() {
                     className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition group"
                   >
                     <div className="relative overflow-hidden">
-                      <img
-                        src={getOptimizedImageUrl(model.image, { width: 720, quality: 78, resize: "cover" })}
+                      <ResponsiveImage
+                        src={model.image}
                         alt={`${model.brand} ${model.model}`}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        targetWidth={720}
+                        responsiveWidths={[400, 640, 720, 960]}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                        quality={78}
+                        resize="cover"
+                        loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
                       />
                       <span className="absolute top-3 right-3 bg-blue-600 px-2 py-1 rounded text-xs font-medium text-white keep-white">
                         {model.category}

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import type { Car } from "@shared/schema";
 import { ArrowLeft, Gauge, Zap, Fuel, Settings } from "lucide-react";
+import ResponsiveImage from "../components/ResponsiveImage";
 
 export default function CarDetail() {
   const [, params] = useRoute("/automobili/:id");
@@ -53,10 +54,16 @@ export default function CarDetail() {
         </Link>
 
         <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
-          <img
+          <ResponsiveImage
             src={car.image}
             alt={`${car.brand} ${car.model}`}
             className="w-full h-96 object-cover"
+            targetWidth={1600}
+            responsiveWidths={[640, 960, 1280, 1600, 1920]}
+            sizes="100vw"
+            quality={80}
+            resize="cover"
+            loading="eager"
             decoding="async"
             fetchPriority="high"
           />

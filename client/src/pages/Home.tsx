@@ -3,8 +3,8 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Car, BookOpen, Shield, Search, ChevronRight, ChevronLeft } from "lucide-react";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost } from "@shared/schema";
+import ResponsiveImage from "../components/ResponsiveImage";
 import { useToast } from "../components/Toast";
-import { getImageSrcSet, getOptimizedImageUrl } from "../lib/images";
 import { usePageMeta } from "../lib/seo";
 
 export default function Home() {
@@ -325,10 +325,16 @@ export default function Home() {
                       <div className="flex items-center gap-4">
                         <div className="relative">
                           <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg blur opacity-40"></div>
-                          <img 
-                            src={getOptimizedImageUrl(selectedModel.image, { width: 320, quality: 75, resize: "cover" })} 
+                          <ResponsiveImage 
+                            src={selectedModel.image}
                             alt={`${selectedModel.brand} ${selectedModel.model}`}
                             className="relative w-20 h-14 object-cover rounded-lg"
+                            targetWidth={320}
+                            responsiveWidths={[240, 320, 480]}
+                            sizes="80px"
+                            quality={75}
+                            resize="cover"
+                            loading="eager"
                             decoding="async"
                           />
                         </div>
@@ -438,12 +444,15 @@ export default function Home() {
                       >
                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500/50 transition-all duration-300 group/card">
                           <div className="relative w-full overflow-hidden" style={{ paddingBottom: '56%' }}>
-                            <img
-                              src={getOptimizedImageUrl(post.image, { width: 960, quality: 78, resize: "cover" })}
-                              srcSet={getImageSrcSet(post.image, [400, 640, 800, 1280], { quality: 78, resize: "cover" })}
-                              sizes="(max-width: 768px) 100vw, 50vw"
+                            <ResponsiveImage
+                              src={post.image}
                               alt={post.title}
                               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
+                              targetWidth={960}
+                              responsiveWidths={[400, 640, 800, 1280]}
+                              sizes="(max-width: 768px) 100vw, 50vw"
+                              quality={78}
+                              resize="cover"
                               loading="lazy"
                               decoding="async"
                               fetchPriority="low"

@@ -3,8 +3,9 @@ import { useParams, Link } from "wouter";
 import type { ModelPagePayload } from "@shared/schema";
 import { ArrowLeft, Calendar, ChevronRight } from "lucide-react";
 import ImageCarousel from "../components/ImageCarousel";
+import ResponsiveImage from "../components/ResponsiveImage";
 import { DetailHeaderSkeleton, BreadcrumbSkeleton, CardGridSkeleton } from "../components/Skeleton";
-import { getOptimizedGalleryImages, getOptimizedImageUrl } from "../lib/images";
+import { getOptimizedGalleryImages } from "../lib/images";
 import { usePageMeta } from "../lib/seo";
 
 export default function ModelDetail() {
@@ -141,10 +142,15 @@ export default function ModelDetail() {
                   className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition group"
                 >
                   <div className="relative overflow-hidden">
-                      <img
-                      src={getOptimizedImageUrl(generation.image, { width: 720, quality: 78, resize: "cover" })}
+                    <ResponsiveImage
+                      src={generation.image}
                       alt={`${model.brand} ${model.model} ${generation.name}`}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      targetWidth={720}
+                      responsiveWidths={[400, 640, 720, 960]}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                      quality={78}
+                      resize="cover"
                       loading="lazy"
                       decoding="async"
                       fetchPriority="low"

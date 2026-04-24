@@ -6,6 +6,12 @@ interface TooltipProps {
   children: React.ReactNode;
 }
 
+const tooltipBubbleClasses =
+  "pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-max max-w-[18rem] -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm leading-6 text-slate-700 shadow-xl shadow-slate-900/10 whitespace-normal dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100";
+
+const tooltipArrowClasses =
+  "pointer-events-none absolute left-1/2 top-full h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800";
+
 /** Inline tooltip that shows on hover/tap */
 export function Tooltip({ text, children }: TooltipProps) {
   const [show, setShow] = useState(false);
@@ -19,9 +25,9 @@ export function Tooltip({ text, children }: TooltipProps) {
     >
       {children}
       {show && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-700 text-white text-xs rounded-lg shadow-lg whitespace-nowrap z-50 border border-slate-600">
+        <span className={tooltipBubbleClasses}>
           {text}
-          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-700" />
+          <span className={tooltipArrowClasses} />
         </span>
       )}
     </span>
@@ -39,11 +45,11 @@ export function HelpTooltip({ text }: { text: string }) {
       onMouseLeave={() => setShow(false)}
       onClick={() => setShow(!show)}
     >
-      <HelpCircle className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 transition" />
+      <HelpCircle className="w-4 h-4 text-slate-500 transition hover:text-blue-600 dark:hover:text-blue-300" />
       {show && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-700 text-white text-xs rounded-lg shadow-lg whitespace-nowrap z-50 border border-slate-600 max-w-[200px] text-center leading-relaxed">
+        <span className={`${tooltipBubbleClasses} text-center`}>
           {text}
-          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-700" />
+          <span className={tooltipArrowClasses} />
         </span>
       )}
     </span>
@@ -94,7 +100,7 @@ export function SpecValue({ value }: { value: string | null | undefined }) {
     return (
       <Tooltip text={autoGlossary[cleanAbbr]}>
         <span className="text-white font-medium">{value}</span>
-        <HelpCircle className="w-3 h-3 text-slate-500" />
+        <HelpCircle className="w-3.5 h-3.5 text-slate-500 transition hover:text-blue-600 dark:hover:text-blue-300" />
       </Tooltip>
     );
   }

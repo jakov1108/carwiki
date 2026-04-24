@@ -229,7 +229,7 @@ export default function MultiImageUploader({
         {/* Add Button */}
         {images.length < maxImages && (
           <label
-            className={`aspect-video border-2 border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-slate-800/50 transition-all ${
+            className={`multi-image-add-tile aspect-video border-2 border-dashed border-slate-600 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-slate-800/50 transition-all ${
               isUploading ? "opacity-50 pointer-events-none" : ""
             }`}
           >

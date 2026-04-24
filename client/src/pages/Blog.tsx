@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import type { BlogPost } from "@shared/schema";
 import { Calendar, User } from "lucide-react";
+import ResponsiveImage from "../components/ResponsiveImage";
 import { BlogCardSkeleton } from "../components/Skeleton";
-import { getImageSrcSet, getOptimizedImageUrl } from "../lib/images";
 import { usePageMeta } from "../lib/seo";
 
 export default function Blog() {
@@ -52,12 +52,15 @@ export default function Blog() {
         <div className="grid md:grid-cols-2 gap-8">
           {posts?.map((post) => (
             <Link key={post.id} href={`/blog/${post.slug || post.id}`} className="block bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition">
-              <img
-                src={getOptimizedImageUrl(post.image, { width: 960, quality: 78, resize: "cover" })}
-                srcSet={getImageSrcSet(post.image, [400, 640, 960, 1280], { quality: 78, resize: "cover" })}
-                sizes="(max-width: 768px) 100vw, 50vw"
+              <ResponsiveImage
+                src={post.image}
                 alt={post.title}
                 className="w-full h-48 object-cover"
+                targetWidth={960}
+                responsiveWidths={[400, 640, 960, 1280]}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                quality={78}
+                resize="cover"
                 loading="lazy"
                 decoding="async"
                 fetchPriority="low"
