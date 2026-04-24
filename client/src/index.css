@@ -5,9 +5,9 @@
 @layer base {
   :root {
     /* Fonts */
-    --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-    --font-serif: "Georgia", serif;
-    --font-mono: "Consolas", "Monaco", monospace;
+    --font-sans: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-serif: "Georgia", "Times New Roman", serif;
+    --font-mono: "Cascadia Mono", "Consolas", "SFMono-Regular", "Menlo", "Monaco", monospace;
 
     /* Base colors (light mode - not used in this app, but required) */
     --background: 0 0% 100%;
@@ -131,6 +131,7 @@
   }
   
   html {
+    font-family: var(--font-sans);
     overscroll-behavior-x: none;
   }
   
@@ -144,11 +145,22 @@
   
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
     overflow-x: hidden;
     overflow-y: auto;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
   }
 }
 
