@@ -2,12 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "../lib/auth";
 import { useTheme } from "../lib/theme";
+import { useToast } from "./Toast";
 import { Car, Menu, X, LogOut, UserCircle, Scale, PlusCircle, Sun, Moon, Search, SlidersHorizontal, ChevronDown, Mail, Info } from "lucide-react";
 import ConfirmDialog from "./ConfirmDialog";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +40,16 @@ export default function Navbar() {
     closeSearch();
     closeMobileMenu();
   }, [searchQuery, navigate, closeSearch]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toastSuccess("Uspješno ste odjavljeni.");
+      closeMobileMenu();
+    } catch (err: any) {
+      toastError(err?.message || "Odjava nije uspjela. Pokušajte ponovno.");
+    }
+  };
 
   // "/" key shortcut: focus search
   useEffect(() => {
@@ -369,10 +381,7 @@ export default function Navbar() {
       <ConfirmDialog
         open={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
-        onConfirm={() => {
-          logout();
-          closeMobileMenu();
-        }}
+        onConfirm={handleLogout}
         title="Odjava"
         description="Jeste li sigurni da se želite odjaviti?"
         confirmLabel="Odjavi se"

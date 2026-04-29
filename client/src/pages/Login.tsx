@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
 import { authClient } from "../lib/auth-client";
+import { useToast } from "../components/Toast";
 import { useLocation, Link } from "wouter";
 import { LogIn } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
@@ -15,6 +16,7 @@ export default function Login() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { login } = useAuth();
+  const { success } = useToast();
   const [, setLocation] = useLocation();
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
@@ -42,6 +44,7 @@ export default function Login() {
     setResendSuccess(false);
     try {
       await login(email, password);
+      success("Uspješno ste prijavljeni.");
       setLocation("/");
     } catch (err: any) {
       const msg = err.message || "Prijava neuspješna";
@@ -91,7 +94,7 @@ export default function Login() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: "/?auth=google",
       });
     } catch (err: any) {
       setError("Google prijava nije uspjela. Pokušajte ponovno.");

@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast, success, error }}>
       {children}
       {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-20 left-1/2 z-[200] flex w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 flex-col gap-3 pointer-events-none">
         {toasts.map(t => (
           <ToastItem key={t.id} toast={t} onDismiss={dismiss} />
         ))}
@@ -56,10 +56,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   }, []);
 
   const icons = {
-    success: <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />,
-    error: <XCircle className="w-5 h-5 text-red-400 shrink-0" />,
-    warning: <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0" />,
-    info: <Info className="w-5 h-5 text-blue-400 shrink-0" />,
+    success: <CheckCircle className="w-6 h-6 text-green-400 shrink-0" />,
+    error: <XCircle className="w-6 h-6 text-red-400 shrink-0" />,
+    warning: <AlertTriangle className="w-6 h-6 text-yellow-400 shrink-0" />,
+    info: <Info className="w-6 h-6 text-blue-400 shrink-0" />,
   };
 
   const borders = {
@@ -71,13 +71,13 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-3 bg-slate-800 border ${borders[toast.type]} rounded-xl px-4 py-3 shadow-2xl max-w-sm w-full transition-all duration-300 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+      className={`pointer-events-auto flex min-h-16 w-full items-center gap-4 bg-slate-900/95 border ${borders[toast.type]} rounded-xl px-5 py-4 shadow-2xl backdrop-blur transition-all duration-300 ${visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-2 scale-95"}`}
     >
       {icons[toast.type]}
-      <p className="text-sm text-white flex-1 leading-snug">{toast.message}</p>
+      <p className="text-base sm:text-lg font-medium text-white flex-1 leading-snug">{toast.message}</p>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="p-1 text-slate-400 hover:text-white rounded transition"
+        className="p-1.5 text-slate-400 hover:text-white rounded transition"
       >
         <X className="w-4 h-4" />
       </button>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
 import { authClient } from "../lib/auth-client";
+import { useToast } from "../components/Toast";
 import { useLocation, Link } from "wouter";
 import { UserPlus } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
@@ -14,6 +15,7 @@ export default function Register() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { register } = useAuth();
+  const { success: toastSuccess } = useToast();
   const [, setLocation] = useLocation();
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
@@ -33,7 +35,9 @@ export default function Register() {
     setSuccess("");
     try {
       await register(email, password, name);
-      setSuccess("Registracija uspješna! Provjerite email za verifikaciju.");
+      const successMessage = "Registracija uspješna! Provjerite email za verifikaciju.";
+      setSuccess(successMessage);
+      toastSuccess(successMessage);
       setTimeout(() => setLocation("/"), 3000);
     } catch (err: any) {
       const msg = err.message || "Registracija neuspješna";
@@ -53,7 +57,7 @@ export default function Register() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/",
+        callbackURL: "/?auth=google",
       });
     } catch (err: any) {
       setError("Google registracija nije uspjela. Pokušajte ponovno.");

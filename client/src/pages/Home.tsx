@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Car, BookOpen, Shield, Search, ChevronRight, ChevronLeft } from "lucide-react";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost } from "@shared/schema";
@@ -13,23 +13,29 @@ export default function Home() {
     description: "Pretražite automobile po marki, modelu, generaciji i motoru te čitajte specifikacije i automobilske članke.",
   });
 
-  const [, setLocation] = useLocation();
-  const searchParams = new URLSearchParams(useSearch());
   const { success } = useToast();
   const [searchBrand, setSearchBrand] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
   const [selectedGenerationId, setSelectedGenerationId] = useState("");
   const [isDesktop, setIsDesktop] = useState(false);
 
-  // Show success toast if coming from email verification
+  // Show success toast if coming from email or external auth callbacks.
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
     const verified = searchParams.get("verified");
+    const auth = searchParams.get("auth");
+
     if (verified === "success") {
-      success("✅ Email uspješno verificiran! Dobrodošli na CarWiki.");
-      // Clean up URL
       window.history.replaceState({}, "", "/");
+      success("✅ Email uspješno verificiran! Dobrodošli na CarWiki.");
+      return;
     }
-  }, []);
+
+    if (auth === "google") {
+      window.history.replaceState({}, "", "/");
+      success("Uspješno ste prijavljeni s Google računom.");
+    }
+  }, [success]);
 
   // Track screen size for carousel
   useEffect(() => {

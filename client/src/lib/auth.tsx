@@ -42,7 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await authClient.signOut();
+    const result = await authClient.signOut();
+
+    if (result?.error) {
+      throw new Error(result.error.message || "Odjava neuspješna");
+    }
   };
 
   return (
