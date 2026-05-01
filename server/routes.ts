@@ -919,6 +919,22 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
+      if (mode !== "new" && mode !== "existing") {
+        return res.status(400).json({ message: "Invalid submission mode" });
+      }
+
+      if (mode === "new" && !model) {
+        return res.status(400).json({ message: "New submissions require model data" });
+      }
+
+      if (mode === "existing" && !modelId) {
+        return res.status(400).json({ message: "Existing submissions require a model ID" });
+      }
+
+      if (!generation && !generationId) {
+        return res.status(400).json({ message: "Submission requires either generation data or an existing generation ID" });
+      }
+
       const submission = await storage.createCarSubmission({
         submittedBy: session.user.id,
         submittedByName: session.user.name || session.user.email,
@@ -996,6 +1012,7 @@ export function registerRoutes(app: Express) {
 
       let modelId = submission.modelId;
       let generationId = submission.generationId;
+      const variantData = JSON.parse(submission.variantData);
 
       // If new model, create it
       if (submission.mode === "new" && submission.modelData) {
@@ -1012,8 +1029,12 @@ export function registerRoutes(app: Express) {
         modelId = newModel.id;
       }
 
+      if (!modelId) {
+        return res.status(400).json({ message: "Cannot approve submission without model data or model ID" });
+      }
+
       // If new generation, create it
-      if (submission.generationData && modelId) {
+      if (submission.generationData) {
         const genData = JSON.parse(submission.generationData);
         const newGeneration = await storage.createCarGeneration({
           modelId: modelId,
@@ -1027,18 +1048,28 @@ export function registerRoutes(app: Express) {
         generationId = newGeneration.id;
       }
 
-      // Create variant
-      if (generationId) {
-        const variantData = JSON.parse(submission.variantData);
-        await storage.createCarVariant({
-          generationId: generationId,
-          ...variantData,
-          slug: generateSlug(variantData.engineName),
-          status: "approved",
-          submittedBy: submission.submittedBy,
-          submittedByName: submission.submittedByName,
-        });
+      if (!generationId) {
+        return res.status(400).json({ message: "Cannot approve submission without generation data or generation ID" });
       }
+
+      const {
+        id: _ignoredId,
+        generationId: _ignoredGenerationId,
+        status: _ignoredStatus,
+        submittedBy: _ignoredSubmittedBy,
+        submittedByName: _ignoredSubmittedByName,
+        createdAt: _ignoredCreatedAt,
+        ...variantPayload
+      } = variantData;
+
+      await storage.createCarVariant({
+        ...variantPayload,
+        generationId,
+        slug: generateSlug(variantData.engineName),
+        status: "approved",
+        submittedBy: submission.submittedBy,
+        submittedByName: submission.submittedByName,
+      });
 
       // Update submission status
       await storage.updateCarSubmissionStatus(submission.id, "approved");
