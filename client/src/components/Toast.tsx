@@ -56,28 +56,29 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   }, []);
 
   const icons = {
-    success: <CheckCircle className="w-6 h-6 text-green-400 shrink-0" />,
-    error: <XCircle className="w-6 h-6 text-red-400 shrink-0" />,
-    warning: <AlertTriangle className="w-6 h-6 text-yellow-400 shrink-0" />,
-    info: <Info className="w-6 h-6 text-blue-400 shrink-0" />,
+    success: <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-green-400 shrink-0" />,
+    error: <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0" />,
+    warning: <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-yellow-400 shrink-0" />,
+    info: <Info className="w-6 h-6 text-blue-600 dark:text-blue-400 shrink-0" />,
   };
 
-  const borders = {
-    success: "border-green-500/40",
-    error: "border-red-500/40",
-    warning: "border-yellow-500/40",
-    info: "border-blue-500/40",
+  const variants = {
+    success: "bg-emerald-50/95 border-emerald-300 text-emerald-950 shadow-emerald-950/10 dark:bg-slate-900/95 dark:border-green-500/40 dark:text-white dark:shadow-black/30",
+    error: "bg-red-50/95 border-red-300 text-red-950 shadow-red-950/10 dark:bg-slate-900/95 dark:border-red-500/40 dark:text-white dark:shadow-black/30",
+    warning: "bg-amber-50/95 border-amber-300 text-amber-950 shadow-amber-950/10 dark:bg-slate-900/95 dark:border-yellow-500/40 dark:text-white dark:shadow-black/30",
+    info: "bg-blue-50/95 border-blue-300 text-blue-950 shadow-blue-950/10 dark:bg-slate-900/95 dark:border-blue-500/40 dark:text-white dark:shadow-black/30",
   };
 
   return (
     <div
-      className={`pointer-events-auto flex min-h-16 w-full items-center gap-4 bg-slate-900/95 border ${borders[toast.type]} rounded-xl px-5 py-4 shadow-2xl backdrop-blur transition-all duration-300 ${visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-2 scale-95"}`}
+      className={`pointer-events-auto flex min-h-16 w-full items-center gap-4 border rounded-xl px-5 py-4 shadow-2xl backdrop-blur transition-all duration-300 ${variants[toast.type]} ${visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-2 scale-95"}`}
     >
       {icons[toast.type]}
-      <p className="text-base sm:text-lg font-medium text-white flex-1 leading-snug">{toast.message}</p>
+      <p className="text-base sm:text-lg font-medium flex-1 leading-snug">{toast.message}</p>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="p-1.5 text-slate-400 hover:text-white rounded transition"
+        className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded transition"
+        aria-label="Zatvori poruku"
       >
         <X className="w-4 h-4" />
       </button>
