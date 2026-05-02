@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Car, BookOpen, Shield, Search, ChevronRight, ChevronLeft } from "lucide-react";
+import { Car, BookOpen, Shield, Search, ChevronRight, ChevronLeft, X } from "lucide-react";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost } from "@shared/schema";
 import ResponsiveImage from "../components/ResponsiveImage";
 import { useToast } from "../components/Toast";
@@ -362,8 +362,8 @@ export default function Home() {
                         onClick={clearSearch}
                         className="bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white hover:!text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
                       >
-                        <span className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center">
-                          <span className="text-xs">×</span>
+                        <span className="w-4 h-4 rounded-full border-2 border-current inline-flex items-center justify-center shrink-0">
+                          <X className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />
                         </span>
                         Kreni ispočetka
                       </button>
