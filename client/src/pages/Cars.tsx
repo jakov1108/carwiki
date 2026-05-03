@@ -4,6 +4,7 @@ import type { CarVariantWithDetails, CarModel } from "@shared/schema";
 import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Fuel, Gauge, Calendar, Cog } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { usePageMeta } from "../lib/seo";
+import { formatVariantSpec } from "../lib/specUnits";
 
 interface SearchFilters {
   search: string;
@@ -477,7 +478,7 @@ export default function Cars() {
                       <div className="flex items-center gap-1.5">
                         <Gauge className="w-3.5 h-3.5 text-slate-500" />
                         <span className="text-slate-400">Snaga:</span>
-                        <span className="text-slate-200 font-medium">{variant.power}</span>
+                        <span className="text-slate-200 font-medium">{formatVariantSpec(variant, "power")}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Fuel className="w-3.5 h-3.5 text-slate-500" />
@@ -493,13 +494,13 @@ export default function Cars() {
                         <div className="flex items-center gap-1.5">
                           <span className="text-slate-500 text-xs">⟳</span>
                           <span className="text-slate-400">Moment:</span>
-                          <span className="text-slate-200">{variant.torque}</span>
+                          <span className="text-slate-200">{formatVariantSpec(variant, "torque")}</span>
                         </div>
                       )}
                     </div>
                     {variant.acceleration && (
                       <div className="mt-2 text-xs text-slate-500">
-                        0-100: {variant.acceleration} · Potrošnja: {variant.consumption}
+                        0-100: {formatVariantSpec(variant, "acceleration")} · Potrošnja: {formatVariantSpec(variant, "consumption")}
                       </div>
                     )}
                   </div>

@@ -6,6 +6,7 @@ import ImageCarousel from "../components/ImageCarousel";
 import { DetailHeaderSkeleton, BreadcrumbSkeleton, VariantCardSkeleton } from "../components/Skeleton";
 import { getOptimizedGalleryImages } from "../lib/images";
 import { usePageMeta } from "../lib/seo";
+import { formatVariantSpec } from "../lib/specUnits";
 
 export default function GenerationDetail() {
   // Get params from the URL - wouter passes these through Route
@@ -213,15 +214,15 @@ export default function GenerationDetail() {
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="flex items-center gap-2 text-slate-400">
                               <Zap className="w-4 h-4 text-yellow-500" />
-                              <span>{variant.power}</span>
+                              <span>{formatVariantSpec(variant, "power")}</span>
                             </div>
                             <div className="flex items-center gap-2 text-slate-400">
                               <Gauge className="w-4 h-4 text-green-500" />
-                              <span>{variant.acceleration}</span>
+                              <span>{formatVariantSpec(variant, "acceleration")}</span>
                             </div>
                             <div className="flex items-center gap-2 text-slate-400">
                               <Fuel className="w-4 h-4 text-blue-500" />
-                              <span>{variant.consumption}</span>
+                              <span>{formatVariantSpec(variant, "consumption")}</span>
                             </div>
                             <div className="flex items-center gap-2 text-slate-400">
                               <Settings className="w-4 h-4 text-purple-500" />

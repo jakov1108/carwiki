@@ -6,6 +6,7 @@ import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost 
 import ResponsiveImage from "../components/ResponsiveImage";
 import { useToast } from "../components/Toast";
 import { usePageMeta } from "../lib/seo";
+import { formatVariantSpec } from "../lib/specUnits";
 
 export default function Home() {
   usePageMeta({
@@ -293,7 +294,7 @@ export default function Home() {
                             <div className="flex items-center gap-3">
                               <div className="flex-1">
                                 <p className="font-semibold selector-text">{variant.engineName}</p>
-                                <p className="text-xs text-slate-400">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
+                                <p className="text-xs text-slate-400">{formatVariantSpec(variant, "power")} • {variant.fuelType} • {variant.transmission}</p>
                               </div>
                               <ChevronRight className="w-4 h-4 text-slate-500 group-hover/item:text-cyan-400 group-hover/item:translate-x-0.5 transition-all" />
                             </div>

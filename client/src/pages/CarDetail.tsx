@@ -3,6 +3,7 @@ import { useRoute, Link } from "wouter";
 import type { Car } from "@shared/schema";
 import { ArrowLeft, Gauge, Zap, Fuel, Settings } from "lucide-react";
 import ResponsiveImage from "../components/ResponsiveImage";
+import { formatSpecWithUnit } from "../lib/specUnits";
 
 export default function CarDetail() {
   const [, params] = useRoute("/automobili/:id");
@@ -96,11 +97,11 @@ export default function CarDetail() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Snaga:</span>
-                    <span className="text-white font-medium">{car.power}</span>
+                    <span className="text-white font-medium">{formatSpecWithUnit(car.power, "power")}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Ubrzanje 0-100:</span>
-                    <span className="text-white font-medium">{car.acceleration}</span>
+                    <span className="text-white font-medium">{formatSpecWithUnit(car.acceleration, "acceleration")}</span>
                   </div>
                 </div>
               </div>
@@ -117,7 +118,7 @@ export default function CarDetail() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Potrošnja:</span>
-                    <span className="text-white font-medium">{car.consumption}</span>
+                    <span className="text-white font-medium">{formatSpecWithUnit(car.consumption, "consumption")}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Pouzdanost:</span>

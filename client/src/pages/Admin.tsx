@@ -11,6 +11,7 @@ import RichTextEditor from "../components/RichTextEditor";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
 import { LIVE_QUERY_GC_TIME, LIVE_QUERY_STALE_TIME } from "../lib/queryClient";
+import { formatVariantSpec } from "../lib/specUnits";
 import type { AdminCarSubmission as CarSubmission, AdminImageItem as ImageItem, AdminTab as Tab } from "./admin/types";
 
 export default function Admin() {
@@ -320,9 +321,9 @@ export default function Admin() {
                           {variant.model?.brand} {variant.model?.model} {variant.generation?.name}
                         </h3>
                         <p className="text-lg text-blue-400">{variant.engineName}</p>
-                        <p className="text-slate-400">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
+                        <p className="text-slate-400">{formatVariantSpec(variant, "power")} • {variant.fuelType} • {variant.transmission}</p>
                         <p className="text-sm text-slate-500 mt-2">
-                          Pogon: {variant.driveType} • Ubrzanje: {variant.acceleration} • Potrošnja: {variant.consumption}
+                          Pogon: {variant.driveType} • Ubrzanje: {formatVariantSpec(variant, "acceleration")} • Potrošnja: {formatVariantSpec(variant, "consumption")}
                         </p>
                         {variant.submittedByName && (
                           <p className="text-xs text-blue-400 mt-2">
@@ -437,15 +438,15 @@ export default function Admin() {
                           {/* Variant info */}
                           <div className="mt-3 p-3 bg-slate-900 rounded">
                             <p className="font-semibold text-cyan-400">{variantData.engineName}</p>
-                            <p className="text-slate-300">{variantData.power} • {variantData.fuelType} • {variantData.transmission}</p>
+                            <p className="text-slate-300">{formatVariantSpec(variantData, "power")} • {variantData.fuelType} • {variantData.transmission}</p>
                             <p className="text-sm text-slate-400">
-                              Pogon: {variantData.driveType} • Ubrzanje: {variantData.acceleration} • Potrošnja: {variantData.consumption}
+                              Pogon: {variantData.driveType} • Ubrzanje: {formatVariantSpec(variantData, "acceleration")} • Potrošnja: {formatVariantSpec(variantData, "consumption")}
                             </p>
                             {variantData.torque && (
-                              <p className="text-sm text-slate-400">Okretni moment: {variantData.torque}</p>
+                              <p className="text-sm text-slate-400">Okretni moment: {formatVariantSpec(variantData, "torque")}</p>
                             )}
                             {variantData.topSpeed && (
-                              <p className="text-sm text-slate-400">Max brzina: {variantData.topSpeed}</p>
+                              <p className="text-sm text-slate-400">Max brzina: {formatVariantSpec(variantData, "topSpeed")}</p>
                             )}
                             
                             {/* Dimenzije ako postoje */}
@@ -453,16 +454,16 @@ export default function Admin() {
                               <div className="mt-2 pt-2 border-t border-slate-700">
                                 <p className="text-xs text-slate-500 font-medium mb-1">Dimenzije:</p>
                                 <p className="text-xs text-slate-400">
-                                  {variantData.weight && `Masa: ${variantData.weight}`}
-                                  {variantData.length && ` • Dužina: ${variantData.length}`}
-                                  {variantData.width && ` • Širina: ${variantData.width}`}
-                                  {variantData.height && ` • Visina: ${variantData.height}`}
+                                  {variantData.weight && `Masa: ${formatVariantSpec(variantData, "weight")}`}
+                                  {variantData.length && ` • Dužina: ${formatVariantSpec(variantData, "length")}`}
+                                  {variantData.width && ` • Širina: ${formatVariantSpec(variantData, "width")}`}
+                                  {variantData.height && ` • Visina: ${formatVariantSpec(variantData, "height")}`}
                                 </p>
                                 {(variantData.wheelbase || variantData.trunkCapacity || variantData.fuelTankCapacity) && (
                                   <p className="text-xs text-slate-400">
-                                    {variantData.wheelbase && `Međuosovinski razmak: ${variantData.wheelbase}`}
-                                    {variantData.trunkCapacity && ` • Prtljažnik: ${variantData.trunkCapacity}`}
-                                    {variantData.fuelTankCapacity && ` • Spremnik: ${variantData.fuelTankCapacity}`}
+                                    {variantData.wheelbase && `Međuosovinski razmak: ${formatVariantSpec(variantData, "wheelbase")}`}
+                                    {variantData.trunkCapacity && ` • Prtljažnik: ${formatVariantSpec(variantData, "trunkCapacity")}`}
+                                    {variantData.fuelTankCapacity && ` • Spremnik: ${formatVariantSpec(variantData, "fuelTankCapacity")}`}
                                   </p>
                                 )}
                               </div>
@@ -770,7 +771,7 @@ export default function Admin() {
                             </span>
                           )}
                         </div>
-                        <p className="text-slate-400 text-sm">{variant.power} • {variant.fuelType} • {variant.transmission}</p>
+                        <p className="text-slate-400 text-sm">{formatVariantSpec(variant, "power")} • {variant.fuelType} • {variant.transmission}</p>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => { setEditingVariant(variant); setShowVariantForm(true); }} className="p-2 bg-blue-600 hover:bg-blue-700 text-white keep-white rounded">

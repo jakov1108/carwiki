@@ -8,6 +8,7 @@ import { Plus, X, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Check, Car, L
 import { Link } from "wouter";
 import MultiImageUploader from "../components/MultiImageUploader";
 import { LIVE_QUERY_GC_TIME, LIVE_QUERY_STALE_TIME } from "../lib/queryClient";
+import { formatVariantSpec } from "../lib/specUnits";
 
 interface CarSubmissionUser {
   id: string;
@@ -1277,7 +1278,7 @@ export default function SubmitCar() {
                           {mData ? `${mData.brand} ${mData.model}` : ""} {gData?.name || ""} — {vData.engineName}
                         </p>
                         <p className="text-sm text-slate-600 dark:text-slate-400">
-                          {vData.power} • {vData.fuelType} • {vData.transmission}
+                          {formatVariantSpec(vData, "power")} • {vData.fuelType} • {vData.transmission}
                         </p>
                       </div>
                       {sub.status === "rejected" && sub.adminNotes && (

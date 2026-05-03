@@ -7,6 +7,7 @@ import { DetailHeaderSkeleton, BreadcrumbSkeleton, SpecCardSkeleton } from "../c
 import { SpecValue } from "../components/Tooltip";
 import { getOptimizedGalleryImages } from "../lib/images";
 import { usePageMeta } from "../lib/seo";
+import { formatVariantSpec } from "../lib/specUnits";
 
 export default function VariantDetail() {
   // Get params from URL
@@ -46,7 +47,7 @@ export default function VariantDetail() {
       ? `${variant.model.brand} ${variant.model.model} ${variant.engineName} - Auto Wiki`
       : "Motorna varijanta - Auto Wiki",
     description: variant
-      ? `${variant.generation.name}, ${variant.power}, ${variant.fuelType}, ${variant.transmission}. Specifikacije, potrošnja i detalji varijante.`
+      ? `${variant.generation.name}, ${formatVariantSpec(variant, "power")}, ${variant.fuelType}, ${variant.transmission}. Specifikacije, potrošnja i detalji varijante.`
       : "Pregledajte specifikacije motorne varijante automobila.",
     image: variant?.generation?.image,
   });
@@ -174,17 +175,17 @@ export default function VariantDetail() {
             <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700/50">
               <div className="flex flex-wrap items-center gap-3 flex-1">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm font-medium">
-                  <Zap className="w-3.5 h-3.5" /> {variant.power}
+                  <Zap className="w-3.5 h-3.5" /> {formatVariantSpec(variant, "power")}
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 text-green-400 rounded-full text-sm font-medium">
-                  <Gauge className="w-3.5 h-3.5" /> {variant.acceleration}
+                  <Gauge className="w-3.5 h-3.5" /> {formatVariantSpec(variant, "acceleration")}
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 rounded-full text-sm font-medium">
-                  <Fuel className="w-3.5 h-3.5" /> {variant.consumption}
+                  <Fuel className="w-3.5 h-3.5" /> {formatVariantSpec(variant, "consumption")}
                 </span>
                 {variant.topSpeed && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 text-orange-400 rounded-full text-sm font-medium">
-                    {variant.topSpeed}
+                    {formatVariantSpec(variant, "topSpeed")}
                   </span>
                 )}
               </div>
@@ -218,27 +219,27 @@ export default function VariantDetail() {
                   {variant.displacement && (
                     <div className="flex justify-between">
                       <span className="text-slate-400">Zapremnina:</span>
-                      <span className="text-white font-medium">{variant.displacement}</span>
+                      <span className="text-white font-medium">{formatVariantSpec(variant, "displacement")}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span className="text-slate-400">Snaga:</span>
-                    <span className="text-white font-medium">{variant.power}</span>
+                    <span className="text-white font-medium">{formatVariantSpec(variant, "power")}</span>
                   </div>
                   {variant.torque && (
                     <div className="flex justify-between">
                       <span className="text-slate-400">Moment:</span>
-                      <span className="text-white font-medium">{variant.torque}</span>
+                      <span className="text-white font-medium">{formatVariantSpec(variant, "torque")}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span className="text-slate-400">Ubrzanje 0-100:</span>
-                    <span className="text-white font-medium">{variant.acceleration}</span>
+                    <span className="text-white font-medium">{formatVariantSpec(variant, "acceleration")}</span>
                   </div>
                   {variant.topSpeed && (
                     <div className="flex justify-between">
                       <span className="text-slate-400">Max brzina:</span>
-                      <span className="text-white font-medium">{variant.topSpeed}</span>
+                      <span className="text-white font-medium">{formatVariantSpec(variant, "topSpeed")}</span>
                     </div>
                   )}
                 </div>
@@ -264,12 +265,12 @@ export default function VariantDetail() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Potrošnja:</span>
-                    <span className="text-white font-medium">{variant.consumption}</span>
+                    <span className="text-white font-medium">{formatVariantSpec(variant, "consumption")}</span>
                   </div>
                   {variant.fuelTankCapacity && (
                     <div className="flex justify-between">
                       <span className="text-slate-400">Spremnik goriva:</span>
-                      <span className="text-white font-medium">{variant.fuelTankCapacity}</span>
+                      <span className="text-white font-medium">{formatVariantSpec(variant, "fuelTankCapacity")}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
@@ -294,13 +295,13 @@ export default function VariantDetail() {
                     {variant.weight && (
                       <div className="flex justify-between">
                         <span className="text-slate-400">Masa:</span>
-                        <span className="text-white font-medium">{variant.weight}</span>
+                        <span className="text-white font-medium">{formatVariantSpec(variant, "weight")}</span>
                       </div>
                     )}
                     {variant.trunkCapacity && (
                       <div className="flex justify-between">
                         <span className="text-slate-400">Prtljažnik:</span>
-                        <span className="text-white font-medium">{variant.trunkCapacity}</span>
+                        <span className="text-white font-medium">{formatVariantSpec(variant, "trunkCapacity")}</span>
                       </div>
                     )}
                   </div>
@@ -315,25 +316,25 @@ export default function VariantDetail() {
                     {variant.length && (
                       <div className="flex justify-between">
                         <span className="text-slate-400">Dužina:</span>
-                        <span className="text-white font-medium">{variant.length}</span>
+                        <span className="text-white font-medium">{formatVariantSpec(variant, "length")}</span>
                       </div>
                     )}
                     {variant.width && (
                       <div className="flex justify-between">
                         <span className="text-slate-400">Širina:</span>
-                        <span className="text-white font-medium">{variant.width}</span>
+                        <span className="text-white font-medium">{formatVariantSpec(variant, "width")}</span>
                       </div>
                     )}
                     {variant.height && (
                       <div className="flex justify-between">
                         <span className="text-slate-400">Visina:</span>
-                        <span className="text-white font-medium">{variant.height}</span>
+                        <span className="text-white font-medium">{formatVariantSpec(variant, "height")}</span>
                       </div>
                     )}
                     {variant.wheelbase && (
                       <div className="flex justify-between">
                         <span className="text-slate-400">Međuosovinski razmak:</span>
-                        <span className="text-white font-medium">{variant.wheelbase}</span>
+                        <span className="text-white font-medium">{formatVariantSpec(variant, "wheelbase")}</span>
                       </div>
                     )}
                   </div>

@@ -4,6 +4,7 @@ import { X, Check, ChevronRight, Fuel, Gauge, Zap, Settings, Car, Scale, Package
 import type { CarModel, CarGeneration, CarVariant } from "@shared/schema";
 import ResponsiveImage from "../components/ResponsiveImage";
 import { useToast } from "../components/Toast";
+import { formatSpecWithUnit, formatVariantSpec, isSpecUnitField } from "../lib/specUnits";
 
 interface VariantWithDetails extends CarVariant {
   generation?: CarGeneration;
@@ -265,6 +266,9 @@ export default function Compare() {
                     {specs.map((spec, idx) => {
                       const Icon = spec.icon;
                       const value = variant[spec.key as keyof CarVariant];
+                      const displayValue = isSpecUnitField(spec.key)
+                        ? formatSpecWithUnit(value, spec.key, { fuelType: variant.fuelType })
+                        : value;
                       const bestId = getBestValue(spec.key);
                       const isBest = bestId === variant.id;
                       
@@ -279,7 +283,7 @@ export default function Compare() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className={`text-sm font-medium ${isBest ? 'text-green-400' : 'text-white'}`}>
-                              {value || '-'}
+                              {displayValue || '-'}
                             </span>
                             {isBest && <Check className="w-4 h-4 text-green-400" />}
                           </div>
@@ -361,6 +365,9 @@ export default function Compare() {
                         </div>
                         {selectedVariants.map((variant) => {
                           const value = variant[spec.key as keyof CarVariant];
+                          const displayValue = isSpecUnitField(spec.key)
+                            ? formatSpecWithUnit(value, spec.key, { fuelType: variant.fuelType })
+                            : value;
                           const isBest = bestId === variant.id;
                           
                           return (
@@ -369,7 +376,7 @@ export default function Compare() {
                               className={`p-4 flex items-center justify-center ${isBest ? 'bg-green-500/10' : ''}`}
                             >
                               <span className={`text-sm font-medium ${isBest ? 'text-green-400' : 'text-white'}`}>
-                                {value || '-'}
+                                {displayValue || '-'}
                               </span>
                               {isBest && (
                                 <Check className="w-4 h-4 text-green-400 ml-2" />
@@ -546,7 +553,7 @@ export default function Compare() {
                               {isAlreadySelected && <Check className="w-4 h-4 text-green-400" />}
                             </div>
                             <div className="space-y-1 text-xs text-slate-400">
-                              <p>{variant.power}</p>
+                              <p>{formatVariantSpec(variant, "power")}</p>
                               <p>{variant.fuelType}</p>
                               <p>{variant.transmission}</p>
                             </div>
