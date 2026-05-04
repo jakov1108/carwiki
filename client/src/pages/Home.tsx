@@ -8,6 +8,23 @@ import { useToast } from "../components/Toast";
 import { usePageMeta } from "../lib/seo";
 import { formatVariantSpec } from "../lib/specUnits";
 
+type SearchPanelProps = {
+  idPrefix: string;
+  searchBrand: string;
+  selectedModelId: string;
+  selectedGenerationId: string;
+  brands: string[];
+  brandModels: CarModel[];
+  generations?: CarGenerationWithModel[];
+  variants?: CarVariantWithDetails[];
+  selectedModel?: CarModel;
+  selectedGeneration?: CarGenerationWithModel;
+  setSearchBrand: (value: string) => void;
+  setSelectedModelId: (value: string) => void;
+  setSelectedGenerationId: (value: string) => void;
+  clearSearch: () => void;
+};
+
 export default function Home() {
   usePageMeta({
     title: "Auto Wiki - Enciklopedija automobila",
@@ -18,7 +35,12 @@ export default function Home() {
   const [searchBrand, setSearchBrand] = useState("");
   const [selectedModelId, setSelectedModelId] = useState("");
   const [selectedGenerationId, setSelectedGenerationId] = useState("");
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth >= 768;
+  });
+  const [searchPanelStickyTop, setSearchPanelStickyTop] = useState(80);
+  const desktopSearchPanelRef = useRef<HTMLDivElement>(null);
 
   // Show success toast if coming from email or external auth callbacks.
   useEffect(() => {
@@ -152,6 +174,7 @@ export default function Home() {
 
   const selectedModel = models?.find(m => m.id === selectedModelId);
   const selectedGeneration = generations?.find(g => g.id === selectedGenerationId);
+  const showcaseModels = models?.slice(0, 4) || [];
 
   const clearSearch = () => {
     setSearchBrand("");
@@ -159,239 +182,134 @@ export default function Home() {
     setSelectedGenerationId("");
   };
 
+  const searchPanelProps = {
+    searchBrand,
+    selectedModelId,
+    selectedGenerationId,
+    brands,
+    brandModels,
+    generations,
+    variants,
+    selectedModel,
+    selectedGeneration,
+    setSearchBrand,
+    setSelectedModelId,
+    setSelectedGenerationId,
+    clearSearch,
+  };
+
+  useEffect(() => {
+    if (!isDesktop) {
+      return;
+    }
+
+    const panel = desktopSearchPanelRef.current;
+    if (!panel) return;
+
+    let frame = 0;
+    const updateStickyState = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const panelHeight = panel.getBoundingClientRect().height;
+        const topMargin = 80;
+        const bottomMargin = 24;
+        const centeredTop = Math.max(topMargin, Math.round((window.innerHeight - panelHeight) / 2));
+        const bottomLockedTop = Math.round(window.innerHeight - panelHeight - bottomMargin);
+
+        setSearchPanelStickyTop(
+          panelHeight + topMargin + bottomMargin <= window.innerHeight ? centeredTop : bottomLockedTop,
+        );
+      });
+    };
+
+    updateStickyState();
+    window.addEventListener("resize", updateStickyState);
+
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateStickyState) : null;
+    resizeObserver?.observe(panel);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateStickyState);
+      resizeObserver?.disconnect();
+    };
+  }, [
+    isDesktop,
+    searchBrand,
+    selectedModelId,
+    selectedGenerationId,
+    generations?.length,
+    variants?.length,
+    selectedModel?.id,
+  ]);
+
   return (
     <div className="min-h-screen">
-      <section className="relative pt-16 pb-28 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-xl text-slate-300 mb-20 max-w-2xl mx-auto">
-            Vaša kompletna enciklopedija automobila s detaljnim specifikacijama, recenzijama i najnovijim vijestima iz automobilskog svijeta.
-          </p>
+      {isDesktop ? (
+        <section className="relative overflow-visible pt-8 pb-16 lg:pt-10 lg:pb-20 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,0.18),transparent_32%),radial-gradient(circle_at_82%_10%,rgba(6,182,212,0.14),transparent_28%)] pointer-events-none" />
+          <div className="container mx-auto px-4 relative">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(360px,500px)] gap-10 lg:gap-14 items-start">
+              <div className="min-w-0">
+                <h1 className="text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight break-words mb-5">
+                  Automobilska enciklopedija za brzu potragu i usporedbu.
+                </h1>
+                <p className="text-lg text-slate-300 mb-7 max-w-2xl">
+                  Vaša kompletna enciklopedija automobila s detaljnim specifikacijama, recenzijama i najnovijim vijestima iz automobilskog svijeta.
+                </p>
 
-          {/* Search Section */}
-          <div className="max-w-lg mx-auto mb-20">
-            <div className="relative group">
-              {/* Animated gradient border */}
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-2000 animate-pulse"></div>
-              
-              <div className="car-selector-box relative backdrop-blur-xl p-8 rounded-2xl border border-slate-600/50 shadow-2xl">
-                {/* Header with icon */}
-                <div className="flex items-center justify-center gap-3 mb-6">
-                  <div className="p-2.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg shadow-blue-500/25">
-                    <Search className="w-5 h-5 text-white keep-white" />
-                  </div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                    Pronađi automobil
-                  </h2>
+                <div className="flex flex-wrap gap-4 mb-8">
+                  <Link href="/automobili" className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-7 py-3 rounded-lg font-semibold transition" data-testid="button-browse-cars">
+                    Pregledaj Automobile
+                  </Link>
+                  <Link href="/usporedi" className="bg-slate-500 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-white keep-white px-7 py-3 rounded-lg font-semibold transition border border-slate-400 dark:border-slate-500" data-testid="button-read-blog">
+                    Usporedi automobile
+                  </Link>
                 </div>
 
-                {/* Progress indicator */}
-                <div className="flex items-center justify-center gap-2 mb-6">
-                  <div className={`w-3 h-3 rounded-full transition-all duration-300 ${searchBrand ? 'bg-blue-500 shadow-lg shadow-blue-500/50' : 'bg-slate-600'}`}></div>
-                  <div className={`w-6 h-0.5 transition-all duration-300 ${searchBrand ? 'bg-blue-500' : 'bg-slate-600'}`}></div>
-                  <div className={`w-3 h-3 rounded-full transition-all duration-300 ${selectedModelId ? 'bg-blue-500 shadow-lg shadow-blue-500/50' : 'bg-slate-600'}`}></div>
-                  <div className={`w-6 h-0.5 transition-all duration-300 ${selectedModelId ? 'bg-blue-500' : 'bg-slate-600'}`}></div>
-                  <div className={`w-3 h-3 rounded-full transition-all duration-300 ${selectedGenerationId ? 'bg-blue-500 shadow-lg shadow-blue-500/50' : 'bg-slate-600'}`}></div>
-                  <div className={`w-6 h-0.5 transition-all duration-300 ${selectedGenerationId ? 'bg-cyan-500' : 'bg-slate-600'}`}></div>
-                  <div className={`w-3 h-3 rounded-full transition-all duration-300 ${variants && variants.length > 0 ? 'bg-cyan-500 shadow-lg shadow-cyan-500/50' : 'bg-slate-600'}`}></div>
-                </div>
-              
-                <div className="space-y-5">
-                  {/* Brand Select */}
-                  <div className="group/select">
-                    <label htmlFor="select-brand" className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">1</span>
-                      Odaberi marku
-                    </label>
-                    <p className="text-sm text-slate-400 mb-2 text-center">Odaberite marku automobila iz padajućeg izbornika</p>
-                    <div className="relative">
-                      <select
-                        id="select-brand"
-                        value={searchBrand}
-                        onChange={(e) => {
-                          setSearchBrand(e.target.value);
-                          setSelectedModelId("");
-                        }}
-                        className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
-                      >
-                        <option value="">-- Odaberi marku --</option>
-                        {brands.map(brand => (
-                          <option key={brand} value={brand}>{brand}</option>
-                        ))}
-                      </select>
-                      <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
-                    </div>
-                  </div>
+                <HeroModelGrid models={showcaseModels} />
+              </div>
 
-                  {/* Model Select - only show when brand is selected */}
-                  <div className={`transition-all duration-300 ease-out ${searchBrand ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 h-0 overflow-hidden'}`}>
-                    <label htmlFor="select-model" className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">2</span>
-                      Odaberi model
-                    </label>
-                    <p className="text-sm text-slate-400 mb-2 text-center">Odaberite model automobila za odabranu marku</p>
-                    <div className="relative">
-                      <select
-                        id="select-model"
-                        value={selectedModelId}
-                        onChange={(e) => {
-                          setSelectedModelId(e.target.value);
-                          setSelectedGenerationId("");
-                        }}
-                        className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
-                      >
-                        <option value="">-- Odaberi model --</option>
-                        {brandModels.map(model => (
-                          <option key={model.id} value={model.id}>{model.model}</option>
-                        ))}
-                      </select>
-                      <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Generation Select - show when model is selected */}
-                  {selectedModelId && generations && generations.length > 0 && (
-                    <div className="transition-all duration-300 ease-out">
-                      <label htmlFor="select-generation" className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">3</span>
-                        Odaberi generaciju
-                      </label>
-                      <p className="text-sm text-slate-400 mb-2 text-center">Odaberite generaciju (godište) odabranog modela</p>
-                      <div className="relative">
-                        <select
-                          id="select-generation"
-                          value={selectedGenerationId}
-                          onChange={(e) => setSelectedGenerationId(e.target.value)}
-                          className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
-                        >
-                          <option value="">-- Odaberi generaciju --</option>
-                          {generations.map(gen => (
-                            <option key={gen.id} value={gen.id}>{gen.name} ({gen.yearStart}-{gen.yearEnd || "danas"})</option>
-                          ))}
-                        </select>
-                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Variants List - show when generation is selected */}
-                  {selectedGenerationId && variants && variants.length > 0 && (
-                    <div className="transition-all duration-300 ease-out">
-                      <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-sm font-bold">4</span>
-                        Odaberi motor
-                      </label>
-                      <p className="text-sm text-slate-400 mb-2 text-center">Kliknite na motornu varijantu za prikaz detalja</p>
-                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                        {variants.map(variant => (
-                          <Link
-                            key={variant.id}
-                            href={selectedModel?.brandSlug && selectedModel?.modelSlug && selectedGeneration?.slug && variant.slug
-                              ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}/${selectedGeneration.slug}/${variant.slug}`
-                              : `/varijanta/${variant.id}`
-                            }
-                            className="block bg-slate-900/60 p-3 rounded-xl hover:bg-slate-700/60 transition-all duration-200 text-left border border-transparent hover:border-slate-600/50 group/item"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1">
-                                <p className="font-semibold selector-text">{variant.engineName}</p>
-                                <p className="text-xs text-slate-400">{formatVariantSpec(variant, "power")} • {variant.fuelType} • {variant.transmission}</p>
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-slate-500 group-hover/item:text-cyan-400 group-hover/item:translate-x-0.5 transition-all" />
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Show link to generation page if selected but no variants */}
-                  {selectedGenerationId && selectedGeneration && (!variants || variants.length === 0) && (
-                    <div className="bg-slate-900/60 p-4 rounded-xl text-center">
-                      <p className="text-slate-400 text-sm mb-3">Nema dostupnih motora za ovu generaciju.</p>
-                      <Link
-                        href={selectedModel?.brandSlug && selectedModel?.modelSlug && selectedGeneration?.slug
-                          ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}/${selectedGeneration.slug}`
-                          : `/generacija/${selectedGenerationId}`
-                        }
-                        className="text-blue-400 hover:text-blue-300 text-sm font-medium"
-                      >
-                        Pogledaj generaciju →
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* Show link to model page if selected */}
-                  {selectedModel && !selectedGenerationId && (
-                    <Link
-                      href={selectedModel.brandSlug && selectedModel.modelSlug
-                        ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}`
-                        : `/model/${selectedModel.id}`
-                      }
-                      className="block bg-gradient-to-r from-blue-600/20 to-cyan-600/20 p-4 rounded-xl hover:from-blue-600/30 hover:to-cyan-600/30 transition-all duration-300 border border-blue-500/30 hover:border-blue-400/50 group/result"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg blur opacity-40"></div>
-                          <ResponsiveImage 
-                            src={selectedModel.image}
-                            alt={`${selectedModel.brand} ${selectedModel.model}`}
-                            className="relative w-20 h-14 object-cover rounded-lg"
-                            targetWidth={320}
-                            responsiveWidths={[240, 320, 480]}
-                            sizes="80px"
-                            quality={75}
-                            resize="cover"
-                            loading="eager"
-                            decoding="async"
-                          />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="font-bold selector-text">{selectedModel.brand} {selectedModel.model}</p>
-                          <p className="text-sm text-slate-400">Pregledaj sve generacije</p>
-                        </div>
-                        <div className="p-2 bg-blue-500/20 rounded-lg group-hover/result:bg-blue-500/30 transition">
-                          <ChevronRight className="w-5 h-5 text-blue-400 group-hover/result:translate-x-0.5 transition-transform" />
-                        </div>
-                      </div>
-                    </Link>
-                  )}
-
-                  {/* Clear button */}
-                  {searchBrand && (
-                    <div className="flex justify-end">
-                      <button
-                        onClick={clearSearch}
-                        className="bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white hover:!text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
-                      >
-                        <span className="w-4 h-4 rounded-full border-2 border-current inline-flex items-center justify-center shrink-0">
-                          <X className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />
-                        </span>
-                        Kreni ispočetka
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <div
+                ref={desktopSearchPanelRef}
+                className="w-full max-w-lg mx-auto lg:mx-0 min-w-0 lg:sticky lg:self-start"
+                style={{ top: `${searchPanelStickyTop}px` }}
+              >
+                <SearchPanel idPrefix="desktop" {...searchPanelProps} />
               </div>
             </div>
           </div>
+        </section>
+      ) : (
+        <section className="relative pt-16 pb-28 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+          <div className="container mx-auto px-4 text-center">
+            <p className="text-xl text-slate-300 mb-20 max-w-2xl mx-auto">
+              Vaša kompletna enciklopedija automobila s detaljnim specifikacijama, recenzijama i najnovijim vijestima iz automobilskog svijeta.
+            </p>
 
-          <div className="flex justify-center gap-4 flex-wrap">
-            <Link href="/automobili" className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-8 py-3 rounded-lg font-semibold transition" data-testid="button-browse-cars">
-              Pregledaj Automobile
-            </Link>
-            <Link href="/usporedi" className="bg-slate-500 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-white keep-white px-8 py-3 rounded-lg font-semibold transition border border-slate-400 dark:border-slate-500" data-testid="button-read-blog">
-              Usporedi automobile
-            </Link>
+            <div className="max-w-lg mx-auto mb-20">
+              <SearchPanel idPrefix="mobile" {...searchPanelProps} />
+            </div>
+
+            <div className="flex justify-center gap-4 flex-wrap">
+              <Link href="/automobili" className="bg-blue-600 hover:bg-blue-700 text-white keep-white px-8 py-3 rounded-lg font-semibold transition" data-testid="button-browse-cars">
+                Pregledaj Automobile
+              </Link>
+              <Link href="/usporedi" className="bg-slate-500 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500 text-white keep-white px-8 py-3 rounded-lg font-semibold transition border border-slate-400 dark:border-slate-500" data-testid="button-read-blog">
+                Usporedi automobile
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Blog Carousel Section */}
       {visibleBlogPosts.length > 0 && (
         <section className="py-12 bg-slate-950">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent pb-1">
                 Najnoviji članci
               </h2>
               <Link href="/blog" className="text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center gap-1 transition">
@@ -548,6 +466,281 @@ export default function Home() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+function HeroModelGrid({ models }: { models: CarModel[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 w-full max-w-2xl" aria-label="Istaknuti automobili">
+      {models.length > 0 ? (
+        models.map((model, index) => (
+          <Link
+            key={model.id}
+            href={model.brandSlug && model.modelSlug ? `/automobili/${model.brandSlug}/${model.modelSlug}` : `/model/${model.id}`}
+            className={`group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-xl transition hover:border-blue-500/60 ${
+              index === 0 ? "row-span-2 min-h-[260px]" : index === 3 ? "col-span-2 min-h-[132px]" : "min-h-[124px]"
+            }`}
+          >
+            <ResponsiveImage
+              src={model.image}
+              alt={`${model.brand} ${model.model}`}
+              className="absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-105"
+              targetWidth={index === 0 ? 760 : 520}
+              responsiveWidths={[320, 480, 640, 960]}
+              sizes={index === 0 ? "(max-width: 1024px) 50vw, 34vw" : "(max-width: 1024px) 50vw, 18vw"}
+              quality={76}
+              resize="cover"
+              loading={index === 0 ? "eager" : "lazy"}
+              decoding="async"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+            <div className="absolute left-4 right-4 bottom-4">
+              <p className="keep-white text-white font-bold text-sm md:text-base leading-tight">
+                {model.brand} {model.model}
+              </p>
+            </div>
+          </Link>
+        ))
+      ) : (
+        <>
+          <div className="row-span-2 min-h-[260px] rounded-xl border border-slate-700 bg-slate-800/80 animate-pulse" />
+          <div className="min-h-[124px] rounded-xl border border-slate-700 bg-slate-800/80 animate-pulse" />
+          <div className="min-h-[124px] rounded-xl border border-slate-700 bg-slate-800/80 animate-pulse" />
+          <div className="col-span-2 min-h-[132px] rounded-xl border border-slate-700 bg-slate-800/80 animate-pulse" />
+        </>
+      )}
+    </div>
+  );
+}
+
+function SearchPanel({
+  idPrefix,
+  searchBrand,
+  selectedModelId,
+  selectedGenerationId,
+  brands,
+  brandModels,
+  generations,
+  variants,
+  selectedModel,
+  selectedGeneration,
+  setSearchBrand,
+  setSelectedModelId,
+  setSelectedGenerationId,
+  clearSearch,
+}: SearchPanelProps) {
+  const brandId = `${idPrefix}-select-brand`;
+  const modelId = `${idPrefix}-select-model`;
+  const generationId = `${idPrefix}-select-generation`;
+
+  return (
+    <div className="relative group">
+      {/* Animated gradient border */}
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-2000 animate-pulse"></div>
+
+      <div
+        className="car-selector-box relative backdrop-blur-xl p-6 sm:p-8 rounded-2xl border border-slate-600/50 shadow-2xl"
+      >
+        {/* Header with icon */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="p-2.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg shadow-blue-500/25">
+            <Search className="w-5 h-5 text-white keep-white" />
+          </div>
+          <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            Pronađi automobil
+          </h2>
+        </div>
+
+        {/* Progress indicator */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <div className={`w-3 h-3 rounded-full transition-all duration-300 ${searchBrand ? "bg-blue-500 shadow-lg shadow-blue-500/50" : "bg-slate-600"}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${searchBrand ? "bg-blue-500" : "bg-slate-600"}`}></div>
+          <div className={`w-3 h-3 rounded-full transition-all duration-300 ${selectedModelId ? "bg-blue-500 shadow-lg shadow-blue-500/50" : "bg-slate-600"}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${selectedModelId ? "bg-blue-500" : "bg-slate-600"}`}></div>
+          <div className={`w-3 h-3 rounded-full transition-all duration-300 ${selectedGenerationId ? "bg-blue-500 shadow-lg shadow-blue-500/50" : "bg-slate-600"}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${selectedGenerationId ? "bg-cyan-500" : "bg-slate-600"}`}></div>
+          <div className={`w-3 h-3 rounded-full transition-all duration-300 ${variants && variants.length > 0 ? "bg-cyan-500 shadow-lg shadow-cyan-500/50" : "bg-slate-600"}`}></div>
+        </div>
+
+        <div className="space-y-5">
+          {/* Brand Select */}
+          <div className="group/select">
+            <label htmlFor={brandId} className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">1</span>
+              Odaberi marku
+            </label>
+            <p className="text-sm text-slate-400 mb-2 text-center">Odaberite marku automobila iz padajućeg izbornika</p>
+            <div className="relative">
+              <select
+                id={brandId}
+                value={searchBrand}
+                onChange={(e) => {
+                  setSearchBrand(e.target.value);
+                  setSelectedModelId("");
+                  setSelectedGenerationId("");
+                }}
+                className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
+              >
+                <option value="">-- Odaberi marku --</option>
+                {brands.map(brand => (
+                  <option key={brand} value={brand}>{brand}</option>
+                ))}
+              </select>
+              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Model Select - only show when brand is selected */}
+          <div className={`transition-all duration-300 ease-out ${searchBrand ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 h-0 overflow-hidden"}`}>
+            <label htmlFor={modelId} className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">2</span>
+              Odaberi model
+            </label>
+            <p className="text-sm text-slate-400 mb-2 text-center">Odaberite model automobila za odabranu marku</p>
+            <div className="relative">
+              <select
+                id={modelId}
+                value={selectedModelId}
+                onChange={(e) => {
+                  setSelectedModelId(e.target.value);
+                  setSelectedGenerationId("");
+                }}
+                className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
+              >
+                <option value="">-- Odaberi model --</option>
+                {brandModels.map(model => (
+                  <option key={model.id} value={model.id}>{model.model}</option>
+                ))}
+              </select>
+              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Generation Select - show when model is selected */}
+          {selectedModelId && generations && generations.length > 0 && (
+            <div className="transition-all duration-300 ease-out">
+              <label htmlFor={generationId} className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">3</span>
+                Odaberi generaciju
+              </label>
+              <p className="text-sm text-slate-400 mb-2 text-center">Odaberite generaciju (godište) odabranog modela</p>
+              <div className="relative">
+                <select
+                  id={generationId}
+                  value={selectedGenerationId}
+                  onChange={(e) => setSelectedGenerationId(e.target.value)}
+                  className="w-full bg-slate-900/80 border-2 border-slate-600/50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 selector-text transition-all duration-200 cursor-pointer hover:border-slate-500 appearance-none"
+                >
+                  <option value="">-- Odaberi generaciju --</option>
+                  {generations.map(gen => (
+                    <option key={gen.id} value={gen.id}>{gen.name} ({gen.yearStart}-{gen.yearEnd || "danas"})</option>
+                  ))}
+                </select>
+                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
+              </div>
+            </div>
+          )}
+
+          {/* Variants List - show when generation is selected */}
+          {selectedGenerationId && variants && variants.length > 0 && (
+            <div className="transition-all duration-300 ease-out">
+              <label className="flex items-center gap-2 text-base font-semibold selector-text mb-1 text-left">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-sm font-bold">4</span>
+                Odaberi motor
+              </label>
+              <p className="text-sm text-slate-400 mb-2 text-center">Kliknite na motornu varijantu za prikaz detalja</p>
+              <div className="space-y-2">
+                {variants.map(variant => (
+                  <Link
+                    key={variant.id}
+                    href={selectedModel?.brandSlug && selectedModel?.modelSlug && selectedGeneration?.slug && variant.slug
+                      ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}/${selectedGeneration.slug}/${variant.slug}`
+                      : `/varijanta/${variant.id}`
+                    }
+                    className="block bg-slate-900/60 p-3 rounded-xl hover:bg-slate-700/60 transition-all duration-200 text-left border border-transparent hover:border-slate-600/50 group/item"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <p className="font-semibold selector-text">{variant.engineName}</p>
+                        <p className="text-xs text-slate-400">{formatVariantSpec(variant, "power")} • {variant.fuelType} • {variant.transmission}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover/item:text-cyan-400 group-hover/item:translate-x-0.5 transition-all" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Show link to generation page if selected but no variants */}
+          {selectedGenerationId && selectedGeneration && (!variants || variants.length === 0) && (
+            <div className="bg-slate-900/60 p-4 rounded-xl text-center">
+              <p className="text-slate-400 text-sm mb-3">Nema dostupnih motora za ovu generaciju.</p>
+              <Link
+                href={selectedModel?.brandSlug && selectedModel?.modelSlug && selectedGeneration?.slug
+                  ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}/${selectedGeneration.slug}`
+                  : `/generacija/${selectedGenerationId}`
+                }
+                className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+              >
+                Pogledaj generaciju →
+              </Link>
+            </div>
+          )}
+
+          {/* Show link to model page if selected */}
+          {selectedModel && !selectedGenerationId && (
+            <Link
+              href={selectedModel.brandSlug && selectedModel.modelSlug
+                ? `/automobili/${selectedModel.brandSlug}/${selectedModel.modelSlug}`
+                : `/model/${selectedModel.id}`
+              }
+              className="block bg-gradient-to-r from-blue-600/20 to-cyan-600/20 p-4 rounded-xl hover:from-blue-600/30 hover:to-cyan-600/30 transition-all duration-300 border border-blue-500/30 hover:border-blue-400/50 group/result"
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg blur opacity-40"></div>
+                  <ResponsiveImage
+                    src={selectedModel.image}
+                    alt={`${selectedModel.brand} ${selectedModel.model}`}
+                    className="relative w-20 h-14 object-cover rounded-lg"
+                    targetWidth={320}
+                    responsiveWidths={[240, 320, 480]}
+                    sizes="80px"
+                    quality={75}
+                    resize="cover"
+                    loading="eager"
+                    decoding="async"
+                  />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-bold selector-text">{selectedModel.brand} {selectedModel.model}</p>
+                  <p className="text-sm text-slate-400">Pregledaj sve generacije</p>
+                </div>
+                <div className="p-2 bg-blue-500/20 rounded-lg group-hover/result:bg-blue-500/30 transition">
+                  <ChevronRight className="w-5 h-5 text-blue-400 group-hover/result:translate-x-0.5 transition-transform" />
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {/* Clear button */}
+          {searchBrand && (
+            <div className="flex justify-end">
+              <button
+                onClick={clearSearch}
+                className="bg-slate-600 hover:bg-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white hover:!text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+              >
+                <span className="w-4 h-4 rounded-full border-2 border-current inline-flex items-center justify-center shrink-0">
+                  <X className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />
+                </span>
+                Kreni ispočetka
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
