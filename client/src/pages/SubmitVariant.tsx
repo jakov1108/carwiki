@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { X, Check, AlertCircle, ChevronRight } from "lucide-react";
 import { ObjectUploader } from "../components/ObjectUploader";
+import ResponsiveImage from "../components/ResponsiveImage";
 import type { CarModel, CarGenerationWithModel } from "@shared/schema";
 
 type Step = "model" | "generation" | "variant";
@@ -238,10 +239,17 @@ export default function SubmitCar() {
                           : "border-slate-700 hover:border-slate-500 bg-slate-900"
                       }`}
                     >
-                      <img
+                      <ResponsiveImage
                         src={model.image}
                         alt={`${model.brand} ${model.model}`}
                         className="w-16 h-16 object-cover rounded"
+                        targetWidth={160}
+                        responsiveWidths={[96, 160, 240]}
+                        sizes="64px"
+                        quality={72}
+                        resize="cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div>
                         <div className="font-bold text-white">
@@ -289,10 +297,17 @@ export default function SubmitCar() {
                           : "border-slate-700 hover:border-slate-500 bg-slate-900"
                       }`}
                     >
-                      <img
+                      <ResponsiveImage
                         src={gen.image}
                         alt={gen.name}
                         className="w-16 h-16 object-cover rounded"
+                        targetWidth={160}
+                        responsiveWidths={[96, 160, 240]}
+                        sizes="64px"
+                        quality={72}
+                        resize="cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div>
                         <div className="font-bold text-white">{gen.name}</div>

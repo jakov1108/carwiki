@@ -165,7 +165,7 @@ export default function Cars() {
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-2 text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+        <h1 className="pb-1 text-4xl font-bold leading-tight mb-2 text-center bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
           Napredna Pretraga
         </h1>
         <p className="text-slate-400 text-center mb-8">

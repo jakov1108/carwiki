@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hr" class="dark">
+<html lang="hr" class="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -10,7 +10,7 @@
     <meta property="og:title" content="Auto Wiki - Automotive Encyclopedia" />
     <meta property="og:description" content="Auto Wiki je enciklopedija automobila s modelima, generacijama, motornim varijantama, specifikacijama i blog člancima." />
     <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#f1f5f9" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Auto Wiki - Automotive Encyclopedia</title>
@@ -21,9 +21,12 @@
         if (saved === 'light') {
           document.documentElement.classList.remove('dark');
           document.documentElement.classList.add('light');
-        } else if (saved === 'dark' || !saved) {
+        } else if (saved === 'dark') {
           document.documentElement.classList.add('dark');
           document.documentElement.classList.remove('light');
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.add('light');
         }
       })();
     </script>

@@ -20,12 +20,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (saved === "light" || saved === "dark") {
         return saved;
       }
-      // Check system preference
-      if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-        return "light";
-      }
     }
-    return "dark"; // Default to dark
+    return "light"; // Default for new users
   });
 
   useEffect(() => {
