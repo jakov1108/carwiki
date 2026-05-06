@@ -19,4 +19,4 @@ export interface AdminCarSubmission {
   createdAt: string;
 }
 
-export type AdminTab = "cars" | "pending" | "submissions" | "blog" | "messages";
+export type AdminTab = "cars" | "submissions" | "blog" | "messages";

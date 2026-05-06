@@ -22,7 +22,7 @@ export default function Login() {
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
 
   const emailError = !email.trim() ? "Email je obavezan" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Unesite ispravnu email adresu" : "";
-  const passwordError = !password ? "Lozinka je obavezna" : password.length < 6 ? "Lozinka mora imati najmanje 6 znakova" : "";
+  const passwordError = !password ? "Lozinka je obavezna" : "";
 
   const isFormValid = !emailError && !passwordError;
 
@@ -48,7 +48,7 @@ export default function Login() {
       setLocation("/");
     } catch (err: any) {
       const msg = err.message || "Prijava neuspješna";
-      if (msg.includes("Invalid") || msg.includes("invalid") || msg.includes("credentials")) {
+      if (msg.includes("Invalid") || msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("short")) {
         setError("Neispravna email adresa ili lozinka. Provjerite podatke i pokušajte ponovno.");
       } else if (msg.includes("not found") || msg.includes("No user")) {
         setError("Ne postoji račun s ovom email adresom. Možda se trebate registrirati?");

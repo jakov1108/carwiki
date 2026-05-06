@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../lib/auth";
 import { toYouTubeEmbedUrl } from "../lib/youtube";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { CarModel, CarGenerationWithModel, CarVariantWithDetails, BlogPost, ContactMessage } from "@shared/schema";
-import { Plus, Edit, Trash2, X, Check, XCircle, Clock, Eye, Car, Layers, Settings, ChevronRight, ArrowLeft, FileText, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, X, Check, XCircle, Eye, Car, Layers, Settings, ChevronRight, ArrowLeft, FileText, Upload } from "lucide-react";
 import { ObjectUploader } from "../components/ObjectUploader";
 import MultiImageUploader from "../components/MultiImageUploader";
 import RichTextEditor from "../components/RichTextEditor";
@@ -182,7 +182,6 @@ export default function Admin() {
   const { data: models } = useQuery<CarModel[]>({ queryKey: ["/api/models"], ...adminQueryOptions });
   const { data: generations } = useQuery<CarGenerationWithModel[]>({ queryKey: ["/api/generations"], ...adminQueryOptions });
   const { data: variants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/all"], ...adminQueryOptions });
-  const { data: pendingVariants } = useQuery<CarVariantWithDetails[]>({ queryKey: ["/api/variants/admin/pending"], ...adminQueryOptions });
   const { data: posts } = useQuery<BlogPost[]>({ queryKey: ["/api/blog"], ...adminQueryOptions });
   const { data: messages } = useQuery<ContactMessage[]>({ queryKey: ["/api/contact"], ...adminQueryOptions });
   const { data: submissions } = useQuery<CarSubmission[]>({ queryKey: ["/api/submissions"], ...adminQueryOptions });
@@ -226,29 +225,9 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/pending"] });
       toastSuccess("Varijanta obrisana.");
     },
     onError: () => toastError("Greška pri brisanju varijante."),
-  });
-
-  const updateVariantStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
-      const res = await fetch(`/api/variants/${id}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error("Failed to update status");
-      return res.json();
-    },
-    onSuccess: (_, { status }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/pending"] });
-      toastSuccess(status === "approved" ? "Varijanta odobrena." : "Varijanta odbijena.");
-    },
-    onError: () => toastError("Greška pri ažuriranju statusa."),
   });
 
   const deleteBlog = useMutation({
@@ -377,22 +356,6 @@ export default function Admin() {
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-2 mb-8">
           <button
-            onClick={() => setActiveTab("pending")}
-            className={`px-4 py-2 rounded-lg font-semibold transition relative flex items-center gap-2 ${
-              activeTab === "pending"
-                ? "bg-yellow-600 text-white keep-white"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            Na čekanju ({pendingVariants?.length || 0})
-            {(pendingVariants?.length || 0) > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white keep-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {pendingVariants?.length}
-              </span>
-            )}
-          </button>
-          <button
             onClick={() => {
               setActiveTab("cars");
               setSelectedBrand(null);
@@ -445,83 +408,6 @@ export default function Admin() {
             Poruke ({messages?.length || 0})
           </button>
         </div>
-
-        {/* Pending Variants Tab */}
-        {activeTab === "pending" && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6 text-yellow-400">Varijante na čekanju</h2>
-            {pendingVariants?.length === 0 ? (
-              <div className="bg-slate-800 p-8 rounded-lg text-center border border-slate-700">
-                <Clock className="w-12 h-12 mx-auto mb-4 text-slate-500" />
-                <p className="text-slate-400">Nema varijanti na čekanju za odobrenje.</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {pendingVariants?.map((variant) => (
-                  <div key={variant.id} className="bg-slate-800 p-6 rounded-lg border border-yellow-500/50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-xl font-bold">
-                          {variant.model?.brand} {variant.model?.model} {variant.generation?.name}
-                        </h3>
-                        <p className="text-lg text-blue-400">{variant.engineName}</p>
-                        <p className="text-slate-400">{formatVariantSpec(variant, "power")} • {variant.fuelType} • {variant.transmission}</p>
-                        <p className="text-sm text-slate-500 mt-2">
-                          Pogon: {variant.driveType} • Ubrzanje: {formatVariantSpec(variant, "acceleration")} • Potrošnja: {formatVariantSpec(variant, "consumption")}
-                        </p>
-                        {variant.submittedByName && (
-                          <p className="text-xs text-blue-400 mt-2">
-                            Poslao: {variant.submittedByName}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col space-y-2">
-                        <button
-                          onClick={() => updateVariantStatus.mutate({ id: variant.id, status: "approved" })}
-                          disabled={updateVariantStatus.isPending}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white keep-white rounded flex items-center space-x-2 disabled:opacity-50"
-                        >
-                          <Check className="w-5 h-5" />
-                          <span>Odobri</span>
-                        </button>
-                        <button
-                          onClick={() => updateVariantStatus.mutate({ id: variant.id, status: "rejected" })}
-                          disabled={updateVariantStatus.isPending}
-                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white keep-white rounded flex items-center space-x-2 disabled:opacity-50"
-                        >
-                          <XCircle className="w-5 h-5" />
-                          <span>Odbij</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingVariant(variant);
-                            setShowVariantForm(true);
-                          }}
-                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white keep-white rounded flex items-center space-x-2"
-                        >
-                          <Edit className="w-5 h-5" />
-                          <span>Uredi</span>
-                        </button>
-                        <button
-                          onClick={() => showConfirm({
-                            title: "Obrisati varijantu?",
-                            description: `Jeste li sigurni da želite obrisati ovu varijantu? Ova radnja se ne može poništiti.`,
-                            onConfirm: () => deleteVariant.mutate(variant.id),
-                            variant: "danger",
-                          })}
-                          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded flex items-center space-x-2"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                          <span>Obriši</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Submissions Tab */}
         {activeTab === "submissions" && (
@@ -1265,6 +1151,9 @@ function SubmissionReviewModal({
   );
   const [rejectNotes, setRejectNotes] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = useRef(0);
+  const [mobileActionsVisible, setMobileActionsVisible] = useState(true);
 
   const fieldClass =
     "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500";
@@ -1356,6 +1245,27 @@ function SubmissionReviewModal({
     }
   };
 
+  useEffect(() => {
+    lastScrollTopRef.current = 0;
+    setMobileActionsVisible(true);
+  }, [submission.id]);
+
+  const handleReviewScroll = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches) {
+      return;
+    }
+
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) return;
+
+    const nextScrollTop = scrollArea.scrollTop;
+    const delta = nextScrollTop - lastScrollTopRef.current;
+    if (Math.abs(delta) < 8) return;
+
+    setMobileActionsVisible(delta > 0 || nextScrollTop < 24);
+    lastScrollTopRef.current = nextScrollTop;
+  };
+
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 md:p-5">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
@@ -1377,7 +1287,11 @@ function SubmissionReviewModal({
           </button>
         </div>
 
-        <div className="grid flex-1 overflow-y-auto xl:grid-cols-[minmax(0,1.05fr)_minmax(440px,0.95fr)]">
+        <div
+          ref={scrollAreaRef}
+          onScroll={handleReviewScroll}
+          className="grid flex-1 overflow-y-auto xl:grid-cols-[minmax(0,1.05fr)_minmax(440px,0.95fr)]"
+        >
           <div className="border-b border-slate-200 bg-slate-50 xl:border-b-0 xl:border-r dark:border-slate-800 dark:bg-slate-900">
             <div className="relative min-h-[380px] overflow-hidden">
               <ResponsiveImage
@@ -1750,7 +1664,11 @@ function SubmissionReviewModal({
               </div>
             )}
 
-            <div className="sticky bottom-0 -mx-5 -mb-5 border-t border-slate-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+            <div
+              className={`sticky bottom-0 -mx-5 -mb-5 border-t border-slate-200 bg-white/95 px-5 py-4 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur transition-[transform,opacity] duration-200 ease-out dark:border-slate-800 dark:bg-slate-900/95 dark:shadow-[0_-12px_30px_rgba(0,0,0,0.35)] md:translate-y-0 md:opacity-100 ${
+                mobileActionsVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-[calc(100%+1rem)] opacity-0"
+              }`}
+            >
               <div className="mb-3">
                 <label className={labelClass}>Razlog odbijanja</label>
                 <textarea
@@ -2345,7 +2263,6 @@ function VariantForm({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
       queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/variants/admin/pending"] });
       onClose();
     },
     onError: (err: Error) => {

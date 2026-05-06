@@ -3,7 +3,7 @@ import { useAuth } from "../lib/auth";
 import { authClient } from "../lib/auth-client";
 import { useToast } from "../components/Toast";
 import { useLocation, Link } from "wouter";
-import { UserPlus } from "lucide-react";
+import { CheckCircle2, Circle, UserPlus } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 
 export default function Register() {
@@ -26,6 +26,11 @@ export default function Register() {
   const passwordError = !password ? "Lozinka je obavezna" : password.length < 6 ? "Lozinka mora imati najmanje 6 znakova" : "";
 
   const isFormValid = !nameError && !emailError && !passwordError;
+  const passwordGuidelines = [
+    { label: "Najmanje 6 znakova", met: password.length >= 6 },
+    { label: "Veliko slovo za jaču lozinku", met: /[A-Z]/.test(password) },
+    { label: "Broj ili simbol za jaču lozinku", met: /[0-9]|[^A-Za-z0-9]/.test(password) },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +180,24 @@ export default function Register() {
                 const width = `${Math.min(100, strength * 20)}%`;
                 return (
                   <div className="mt-2">
+                    {passwordGuidelines.some((item) => !item.met) && (
+                      <ul className="mb-2 grid gap-1 text-xs sm:grid-cols-3">
+                        {passwordGuidelines.map((item) => {
+                          const Icon = item.met ? CheckCircle2 : Circle;
+                          return (
+                            <li
+                              key={item.label}
+                              className={`flex items-center gap-1.5 transition ${
+                                item.met ? "text-green-400" : "text-slate-400"
+                              }`}
+                            >
+                              <Icon className="h-3.5 w-3.5 shrink-0" />
+                              <span>{item.label}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                     <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${color}`}
