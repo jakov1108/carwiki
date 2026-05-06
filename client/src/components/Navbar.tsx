@@ -203,7 +203,7 @@ export default function Navbar() {
                 )}
                 {user.role === "admin" && (
                   <Link href="/admin" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/20 px-2 py-1.5 rounded-md transition-all font-medium" data-testid="link-admin">
-                    Admin
+                    Upravljačka ploča
                   </Link>
                 )}
                 <div className="flex items-center gap-1.5">

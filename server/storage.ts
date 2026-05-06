@@ -554,6 +554,14 @@ export const storage = {
     return submission;
   },
 
+  async updateCarSubmission(id: string, data: Partial<InsertCarSubmission>) {
+    const [submission] = await db.update(carSubmissions)
+      .set(data)
+      .where(eq(carSubmissions.id, id))
+      .returning();
+    return submission;
+  },
+
   async deleteCarSubmission(id: string) {
     await db.delete(carSubmissions).where(eq(carSubmissions.id, id));
   },

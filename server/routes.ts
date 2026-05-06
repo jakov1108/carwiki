@@ -998,6 +998,65 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Admin: Update pending submission before approval
+  app.put("/api/submissions/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const submission = await storage.getCarSubmissionById(req.params.id);
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+
+      if (submission.status !== "pending") {
+        return res.status(400).json({ message: "Only pending submissions can be edited" });
+      }
+
+      const { mode, model, modelId, generation, generationId, variant } = req.body;
+
+      if (mode !== undefined && mode !== "new" && mode !== "existing") {
+        return res.status(400).json({ message: "Invalid submission mode" });
+      }
+
+      if (variant !== undefined && (!variant || typeof variant !== "object")) {
+        return res.status(400).json({ message: "Variant data must be an object" });
+      }
+
+      const nextMode = mode ?? submission.mode;
+      const nextModelId = modelId !== undefined ? modelId || null : submission.modelId;
+      const nextGenerationId = generationId !== undefined ? generationId || null : submission.generationId;
+      const nextModelData = model !== undefined ? (model ? JSON.stringify(model) : null) : submission.modelData;
+      const nextGenerationData = generation !== undefined
+        ? (generation ? JSON.stringify(generation) : null)
+        : submission.generationData;
+      const nextVariantData = variant !== undefined ? JSON.stringify(variant) : submission.variantData;
+
+      if (nextMode === "new" && !nextModelData) {
+        return res.status(400).json({ message: "New submissions require model data" });
+      }
+
+      if (nextMode === "existing" && !nextModelId) {
+        return res.status(400).json({ message: "Existing submissions require a model ID" });
+      }
+
+      if (!nextGenerationData && !nextGenerationId) {
+        return res.status(400).json({ message: "Submission requires either generation data or an existing generation ID" });
+      }
+
+      const updatedSubmission = await storage.updateCarSubmission(req.params.id, {
+        mode: nextMode,
+        modelId: nextModelId,
+        generationId: nextGenerationId,
+        modelData: nextModelData,
+        generationData: nextGenerationData,
+        variantData: nextVariantData,
+      });
+
+      res.json(updatedSubmission);
+    } catch (error: any) {
+      console.error("Error updating submission:", error);
+      res.status(500).json({ message: "Failed to update submission" });
+    }
+  });
+
   // Admin: Approve submission (creates model/generation/variant)
   app.post("/api/submissions/:id/approve", isAdmin, async (req: Request, res: Response) => {
     try {
@@ -1017,6 +1076,10 @@ export function registerRoutes(app: Express) {
       // If new model, create it
       if (submission.mode === "new" && submission.modelData) {
         const modelData = JSON.parse(submission.modelData);
+        const modelImages = Array.isArray(modelData.images)
+          ? modelData.images.filter((image: any) => typeof image?.url === "string" && image.url.length > 0)
+          : [];
+        const modelImage = modelData.image || modelImages[0]?.url || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800";
         const newModel = await storage.createCarModel({
           brand: modelData.brand,
           brandSlug: generateSlug(modelData.brand),
@@ -1024,8 +1087,16 @@ export function registerRoutes(app: Express) {
           modelSlug: generateSlug(modelData.model),
           category: modelData.category,
           description: modelData.description,
-          image: modelData.image || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800",
+          image: modelImage,
         });
+        if (modelImages.length > 0) {
+          await storage.addImages(modelImages.map((image: any, index: number) => ({
+            entityType: "model",
+            entityId: newModel.id,
+            url: image.url,
+            sortOrder: image.order ?? index,
+          })));
+        }
         modelId = newModel.id;
       }
 
@@ -1036,6 +1107,10 @@ export function registerRoutes(app: Express) {
       // If new generation, create it
       if (submission.generationData) {
         const genData = JSON.parse(submission.generationData);
+        const generationImages = Array.isArray(genData.images)
+          ? genData.images.filter((image: any) => typeof image?.url === "string" && image.url.length > 0)
+          : [];
+        const generationImage = genData.image || generationImages[0]?.url || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800";
         const newGeneration = await storage.createCarGeneration({
           modelId: modelId,
           name: genData.name,
@@ -1043,8 +1118,16 @@ export function registerRoutes(app: Express) {
           yearStart: genData.yearStart,
           yearEnd: genData.yearEnd || null,
           description: genData.description,
-          image: genData.image || "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800",
+          image: generationImage,
         });
+        if (generationImages.length > 0) {
+          await storage.addImages(generationImages.map((image: any, index: number) => ({
+            entityType: "generation",
+            entityId: newGeneration.id,
+            url: image.url,
+            sortOrder: image.order ?? index,
+          })));
+        }
         generationId = newGeneration.id;
       }
 
